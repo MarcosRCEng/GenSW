@@ -1,0 +1,45 @@
+# Build outputs
+[Bb]in/
+[Oo]bj/
+artifacts/
+TestResults/
+coverage/
+
+# .NET local configuration and secrets
+appsettings.Development.local.json
+appsettings.*.local.json
+secrets.json
+*.pfx
+*.p12
+*.key
+*.pem
+
+# Node and frontend outputs
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# IDE and OS files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.DS_Store
+Thumbs.db
+
+# Logs and local data
+*.log
+logs/
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment files (keep examples versioned)
+.env
+.env.*
+!.env.example
