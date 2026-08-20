@@ -36,7 +36,11 @@ dotnet restore GenSW.sln
 dotnet run --project src/Backend/GenSW.API
 ```
 
-Configure `ConnectionStrings__GenSW` (ou User Secrets) antes de adicionar recursos que dependam de PostgreSQL. Sem essa configuração, o endpoint `GET /api/v1/health` continua disponível, mas não há acesso a banco de dados.
+Antes de iniciar a API, forneça `ConnectionStrings__GenSW` e `Authentication__Jwt__SigningKey` por variáveis de ambiente, User Secrets ou outro provedor externo de segredos. A chave JWT deve possuir pelo menos 256 bits e nunca deve ser adicionada aos arquivos `appsettings`. A aplicação falha cedo quando uma configuração obrigatória de autenticação ou persistência está ausente, evitando iniciar com endpoints indisponíveis.
+
+Issuer, audience e duração do access token são configurações não sensíveis em `Authentication:Jwt`. As origens CORS permitidas vêm de `Cors:AllowedOrigins`; em Development, a origem preparada para o frontend é `https://localhost:5173`. O limite inicial de login vem de `RateLimiting:Login` e é de 10 tentativas por minuto por endereço remoto.
+
+O perfil local `https` publica a API em `https://localhost:7001` (e mantém HTTP apenas para redirecionamento). Prepare uma vez o certificado de desenvolvimento com `dotnet dev-certs https --trust`; depois execute `dotnet run --launch-profile https --project src/Backend/GenSW.API`. Isso é necessário para o navegador reenviar o refresh cookie marcado como `Secure`.
 
 Frontend:
 

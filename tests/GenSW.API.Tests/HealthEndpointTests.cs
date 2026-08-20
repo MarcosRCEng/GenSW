@@ -1,14 +1,14 @@
-using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
 namespace GenSW.API.Tests;
 
-public sealed class HealthEndpointTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+[Collection(AuthApiCollection.Name)]
+public sealed class HealthEndpointTests(AuthWebApplicationFactory factory)
 {
     [Fact]
-    public async Task GetHealth_returns_ok()
+    public async Task GetHealth_remains_anonymous_and_returns_ok()
     {
-        var client = factory.CreateClient();
+        using var client = factory.CreateHttpsClient();
 
         var response = await client.GetAsync("/api/v1/health");
 

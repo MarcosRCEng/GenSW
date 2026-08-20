@@ -1,8 +1,8 @@
 namespace GenSW.Infrastructure.Identity;
 
 /// <summary>
-/// Persistence model reserved for future refresh-token rotation. Only canonical digest bytes are
-/// persisted; the raw refresh token must never be stored.
+/// Persisted refresh-token session used for single-use rotation and family replay revocation. Only
+/// canonical digest bytes are persisted; the raw refresh token must never be stored.
 /// </summary>
 public sealed class RefreshSession
 {
