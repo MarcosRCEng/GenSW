@@ -50,12 +50,18 @@ npm install
 npm run dev
 ```
 
+O frontend de desenvolvimento é servido em `https://localhost:5173` e exige a
+exportação local do certificado HTTPS confiável do .NET, sem versionar a chave
+privada. As instruções de `VITE_API_BASE_URL`, certificado e validação integrada
+estão no [README do frontend](src/Frontend/GenSW.Web/README.md).
+
 ## Como testar
 
 ```powershell
 dotnet test GenSW.sln
 
 cd src/Frontend/GenSW.Web
+npm test
 npm run lint
 npm run build
 ```
