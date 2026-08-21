@@ -16,6 +16,38 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddIdentityPersistence(configuration);
+
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IValidateOptions<JwtOptions>, JwtOptionsValidator>());
+        services
+            .AddOptions<JwtOptions>()
+            .Bind(configuration.GetSection(JwtOptions.SectionName))
+            .ValidateOnStart();
+
+        services
+            .AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer();
+        services.AddAuthorization();
+
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IConfigureOptions<JwtBearerOptions>, JwtBearerOptionsSetup>());
+        services.TryAddSingleton<TimeProvider>(TimeProvider.System);
+        services.TryAddSingleton<RefreshTokenProtector>();
+        services.TryAddSingleton<IAccessTokenService, JwtAccessTokenService>();
+        services.TryAddScoped<IAuthenticationSessionService, AuthenticationSessionService>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddIdentityPersistence(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
         var connectionString = configuration.GetConnectionString("GenSW");
 
         if (string.IsNullOrWhiteSpace(connectionString))
@@ -41,29 +73,6 @@ public static class DependencyInjection
             })
             .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<GenSWDbContext>();
-
-        services.TryAddEnumerable(
-            ServiceDescriptor.Singleton<IValidateOptions<JwtOptions>, JwtOptionsValidator>());
-        services
-            .AddOptions<JwtOptions>()
-            .Bind(configuration.GetSection(JwtOptions.SectionName))
-            .ValidateOnStart();
-
-        services
-            .AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-            .AddJwtBearer();
-        services.AddAuthorization();
-
-        services.TryAddEnumerable(
-            ServiceDescriptor.Singleton<IConfigureOptions<JwtBearerOptions>, JwtBearerOptionsSetup>());
-        services.TryAddSingleton<TimeProvider>(TimeProvider.System);
-        services.TryAddSingleton<RefreshTokenProtector>();
-        services.TryAddSingleton<IAccessTokenService, JwtAccessTokenService>();
-        services.TryAddScoped<IAuthenticationSessionService, AuthenticationSessionService>();
 
         return services;
     }

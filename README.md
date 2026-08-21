@@ -40,6 +40,10 @@ Antes de iniciar a API, forneça `ConnectionStrings__GenSW` e `Authentication__J
 
 Issuer, audience e duração do access token são configurações não sensíveis em `Authentication:Jwt`. As origens CORS permitidas vêm de `Cors:AllowedOrigins`; em Development, a origem preparada para o frontend é `https://localhost:5173`. O limite inicial de login vem de `RateLimiting:Login` e é de 10 tentativas por minuto por endereço remoto.
 
+### Provisionamento inicial do administrador
+
+O primeiro administrador é criado somente por uma execução administrativa explícita, nunca no startup da API e sem endpoint HTTP. Em uma base sem usuários, forneça externamente `ConnectionStrings__GenSW`, `InitialAdminBootstrap__Name`, `InitialAdminBootstrap__Username` e `InitialAdminBootstrap__Password`; então execute `dotnet run --project src/Backend/GenSW.AdminBootstrap`. A ferramenta recusa qualquer nova tentativa quando já existir um usuário e não exibe a senha.
+
 O perfil local `https` publica a API em `https://localhost:7001` (e mantém HTTP apenas para redirecionamento). Prepare uma vez o certificado de desenvolvimento com `dotnet dev-certs https --trust`; depois execute `dotnet run --launch-profile https --project src/Backend/GenSW.API`. Isso é necessário para o navegador reenviar o refresh cookie marcado como `Secure`.
 
 Frontend:
