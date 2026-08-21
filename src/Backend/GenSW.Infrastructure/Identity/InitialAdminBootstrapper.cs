@@ -62,12 +62,16 @@ public sealed class InitialAdminBootstrapper(
 
             EnsureSucceeded(await userManager.CreateAsync(user, password));
 
-            var role = new IdentityRole<Guid>
+            if (!await roleManager.RoleExistsAsync(AdminRoleName))
             {
-                Id = Guid.NewGuid(),
-                Name = AdminRoleName,
-            };
-            EnsureSucceeded(await roleManager.CreateAsync(role));
+                var role = new IdentityRole<Guid>
+                {
+                    Id = Guid.NewGuid(),
+                    Name = AdminRoleName,
+                };
+                EnsureSucceeded(await roleManager.CreateAsync(role));
+            }
+
             EnsureSucceeded(await userManager.AddToRoleAsync(user, AdminRoleName));
 
             await transaction.CommitAsync(cancellationToken);

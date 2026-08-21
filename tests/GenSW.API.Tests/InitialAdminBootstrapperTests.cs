@@ -53,6 +53,27 @@ public sealed class InitialAdminBootstrapperTests
     }
 
     [Fact]
+    public async Task Bootstrap_reuses_an_existing_admin_role_when_there_are_no_users()
+    {
+        await using var testHost = await InitialAdminBootstrapTestHost.CreateAsync();
+        var existingRoleId = await testHost.CreateRoleAsync(InitialAdminBootstrapper.AdminRoleName);
+        var password = CreateTestPassword();
+
+        await testHost.BootstrapAsync("Reused Role Admin", "reused_role_admin", password);
+
+        await testHost.VerifyAsync(async services =>
+        {
+            var context = services.GetRequiredService<GenSWDbContext>();
+            var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+            var role = await context.Roles.SingleAsync();
+            var user = await context.Users.SingleAsync();
+
+            Assert.Equal(existingRoleId, role.Id);
+            Assert.True(await userManager.IsInRoleAsync(user, InitialAdminBootstrapper.AdminRoleName));
+        });
+    }
+
+    [Fact]
     public async Task Bootstrap_rolls_back_the_person_when_identity_user_creation_fails()
     {
         await using var testHost = await InitialAdminBootstrapTestHost.CreateAsync();
@@ -120,6 +141,21 @@ public sealed class InitialAdminBootstrapperTests
             await using var scope = services.CreateAsyncScope();
             var bootstrapper = scope.ServiceProvider.GetRequiredService<InitialAdminBootstrapper>();
             await bootstrapper.BootstrapAsync(nome, userName, password);
+        }
+
+        public async Task<Guid> CreateRoleAsync(string roleName)
+        {
+            await using var scope = services.CreateAsyncScope();
+            var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+            var role = new IdentityRole<Guid>
+            {
+                Id = Guid.NewGuid(),
+                Name = roleName,
+            };
+            var result = await roleManager.CreateAsync(role);
+
+            Assert.True(result.Succeeded);
+            return role.Id;
         }
 
         public async Task VerifyAsync(Func<IServiceProvider, Task> verification)
