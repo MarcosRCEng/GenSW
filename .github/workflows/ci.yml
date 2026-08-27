@@ -68,6 +68,7 @@ jobs:
 
           echo "Using PostgreSQL binaries from: $postgres_bin"
           printf 'GENSW_TEST_POSTGRES_BIN=%s\n' "$postgres_bin" >> "$GITHUB_ENV"
+          printf 'GENSW_TEST_POSTGRES_REAL_PG_CTL=%s/pg_ctl\n' "$postgres_bin" >> "$GITHUB_ENV"
 
       - name: Confirm required PostgreSQL executables
         shell: bash
@@ -91,7 +92,49 @@ jobs:
       - name: Build solution
         run: dotnet build GenSW.sln --configuration Release --no-restore
 
+      - name: Prepare PostgreSQL startup diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          diagnostic_bin="$RUNNER_TEMP/gensw-postgresql-bin"
+          mkdir -p "$diagnostic_bin"
+          ln -sf "$GENSW_TEST_POSTGRES_BIN/initdb" "$diagnostic_bin/initdb"
+          ln -sf "$GENSW_TEST_POSTGRES_BIN/createdb" "$diagnostic_bin/createdb"
+
+          cat > "$diagnostic_bin/pg_ctl" <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          if "$GENSW_TEST_POSTGRES_REAL_PG_CTL" "$@"; then
+            exit 0
+          fi
+
+          status=$?
+          data_directory=""
+          arguments=("$@")
+
+          for ((index = 0; index < ${#arguments[@]}; index++)); do
+            if [[ "${arguments[index]}" == "-D" ]] && ((index + 1 < ${#arguments[@]})); then
+              data_directory="${arguments[index + 1]}"
+              break
+            fi
+          done
+
+          log_file="$data_directory/postgresql.log"
+          if [[ -f "$log_file" ]]; then
+            echo "PostgreSQL startup log: $log_file"
+            cat "$log_file"
+          fi
+
+          exit "$status"
+          EOF
+
+          chmod +x "$diagnostic_bin/pg_ctl"
+
       - name: Test solution
+        env:
+          GENSW_TEST_POSTGRES_BIN: ${{ runner.temp }}/gensw-postgresql-bin
         run: dotnet test GenSW.sln --configuration Release --no-build
 
   frontend:
