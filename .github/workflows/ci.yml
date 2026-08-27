@@ -99,9 +99,12 @@ jobs:
 
           diagnostic_bin="$RUNNER_TEMP/gensw-postgresql-bin"
           diagnostic_log="$RUNNER_TEMP/gensw-postgresql-startup.log"
+          socket_directory="$RUNNER_TEMP/gensw-postgresql-socket"
           mkdir -p "$diagnostic_bin"
+          mkdir -p "$socket_directory"
           : > "$diagnostic_log"
           printf 'GENSW_TEST_POSTGRES_DIAGNOSTIC_LOG=%s\n' "$diagnostic_log" >> "$GITHUB_ENV"
+          printf 'GENSW_TEST_POSTGRES_SOCKET_DIRECTORY=%s\n' "$socket_directory" >> "$GITHUB_ENV"
           ln -sf "$GENSW_TEST_POSTGRES_BIN/initdb" "$diagnostic_bin/initdb"
           ln -sf "$GENSW_TEST_POSTGRES_BIN/createdb" "$diagnostic_bin/createdb"
 
@@ -109,8 +112,21 @@ jobs:
           #!/usr/bin/env bash
           set -euo pipefail
 
+          adjusted_arguments=()
+          arguments=("$@")
+
+          for ((index = 0; index < ${#arguments[@]}; index++)); do
+            argument="${arguments[index]}"
+            adjusted_arguments+=("$argument")
+
+            if [[ "$argument" == "-o" ]] && ((index + 1 < ${#arguments[@]})); then
+              index=$((index + 1))
+              adjusted_arguments+=("${arguments[index]} -k $GENSW_TEST_POSTGRES_SOCKET_DIRECTORY")
+            fi
+          done
+
           set +e
-          "$GENSW_TEST_POSTGRES_REAL_PG_CTL" "$@"
+          "$GENSW_TEST_POSTGRES_REAL_PG_CTL" "${adjusted_arguments[@]}"
           status=$?
           set -e
 
@@ -120,8 +136,6 @@ jobs:
 
           data_directory=""
           log_file=""
-          arguments=("$@")
-
           for ((index = 0; index < ${#arguments[@]}; index++)); do
             if [[ "${arguments[index]}" == "-D" ]] && ((index + 1 < ${#arguments[@]})); then
               data_directory="${arguments[index + 1]}"
