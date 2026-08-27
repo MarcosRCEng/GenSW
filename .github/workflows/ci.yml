@@ -106,22 +106,29 @@ jobs:
           #!/usr/bin/env bash
           set -euo pipefail
 
-          if "$GENSW_TEST_POSTGRES_REAL_PG_CTL" "$@"; then
+          set +e
+          "$GENSW_TEST_POSTGRES_REAL_PG_CTL" "$@"
+          status=$?
+          set -e
+
+          if ((status == 0)); then
             exit 0
           fi
 
-          status=$?
           data_directory=""
+          log_file=""
           arguments=("$@")
 
           for ((index = 0; index < ${#arguments[@]}; index++)); do
             if [[ "${arguments[index]}" == "-D" ]] && ((index + 1 < ${#arguments[@]})); then
               data_directory="${arguments[index + 1]}"
-              break
+            fi
+
+            if [[ "${arguments[index]}" == "-l" ]] && ((index + 1 < ${#arguments[@]})); then
+              log_file="${arguments[index + 1]}"
             fi
           done
 
-          log_file="$data_directory/postgresql.log"
           if [[ -f "$log_file" ]]; then
             echo "PostgreSQL startup log: $log_file"
             cat "$log_file"
