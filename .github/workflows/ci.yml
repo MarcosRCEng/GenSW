@@ -1,0 +1,200 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Locate PostgreSQL binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          candidates=()
+
+          while IFS= read -r directory; do
+            candidates+=("$directory")
+          done < <(compgen -c initdb | while read -r command_path; do dirname "$(command -v "$command_path")"; done | awk '!seen[$0]++')
+
+          for directory in \
+            /usr/lib/postgresql/*/bin \
+            /usr/local/pgsql/bin \
+            /usr/local/bin \
+            /usr/bin
+          do
+            if [ -d "$directory" ]; then
+              candidates+=("$directory")
+            fi
+          done
+
+          postgres_bin=""
+
+          for directory in "${candidates[@]}"; do
+            if [ -x "$directory/initdb" ] && [ -x "$directory/pg_ctl" ] && [ -x "$directory/createdb" ]; then
+              postgres_bin="$(realpath "$directory")"
+              break
+            fi
+          done
+
+          if [ -z "$postgres_bin" ]; then
+            echo "PostgreSQL binaries not found. Expected initdb, pg_ctl, and createdb on the runner." >&2
+            exit 1
+          fi
+
+          echo "Using PostgreSQL binaries from: $postgres_bin"
+          printf 'GENSW_TEST_POSTGRES_BIN=%s\n' "$postgres_bin" >> "$GITHUB_ENV"
+          printf 'GENSW_TEST_POSTGRES_REAL_PG_CTL=%s/pg_ctl\n' "$postgres_bin" >> "$GITHUB_ENV"
+
+      - name: Confirm required PostgreSQL executables
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for executable in initdb pg_ctl createdb; do
+            path="$GENSW_TEST_POSTGRES_BIN/$executable"
+            if [ ! -x "$path" ]; then
+              echo "Required PostgreSQL executable not found: $path" >&2
+              exit 1
+            fi
+
+            echo "$executable -> $path"
+            "$path" --version
+          done
+
+      - name: Restore solution
+        run: dotnet restore GenSW.sln
+
+      - name: Build solution
+        run: dotnet build GenSW.sln --configuration Release --no-restore
+
+      - name: Prepare PostgreSQL startup diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          diagnostic_bin="$RUNNER_TEMP/gensw-postgresql-bin"
+          diagnostic_log="$RUNNER_TEMP/gensw-postgresql-startup.log"
+          socket_directory="$RUNNER_TEMP/gensw-postgresql-socket"
+          mkdir -p "$diagnostic_bin"
+          mkdir -p "$socket_directory"
+          : > "$diagnostic_log"
+          printf 'GENSW_TEST_POSTGRES_DIAGNOSTIC_LOG=%s\n' "$diagnostic_log" >> "$GITHUB_ENV"
+          printf 'GENSW_TEST_POSTGRES_SOCKET_DIRECTORY=%s\n' "$socket_directory" >> "$GITHUB_ENV"
+          ln -sf "$GENSW_TEST_POSTGRES_BIN/initdb" "$diagnostic_bin/initdb"
+          ln -sf "$GENSW_TEST_POSTGRES_BIN/createdb" "$diagnostic_bin/createdb"
+
+          cat > "$diagnostic_bin/pg_ctl" <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          adjusted_arguments=()
+          arguments=("$@")
+
+          for ((index = 0; index < ${#arguments[@]}; index++)); do
+            argument="${arguments[index]}"
+            adjusted_arguments+=("$argument")
+
+            if [[ "$argument" == "-o" ]] && ((index + 1 < ${#arguments[@]})); then
+              index=$((index + 1))
+              adjusted_arguments+=("${arguments[index]} -k $GENSW_TEST_POSTGRES_SOCKET_DIRECTORY")
+            fi
+          done
+
+          set +e
+          "$GENSW_TEST_POSTGRES_REAL_PG_CTL" "${adjusted_arguments[@]}"
+          status=$?
+          set -e
+
+          if ((status == 0)); then
+            exit 0
+          fi
+
+          data_directory=""
+          log_file=""
+          for ((index = 0; index < ${#arguments[@]}; index++)); do
+            if [[ "${arguments[index]}" == "-D" ]] && ((index + 1 < ${#arguments[@]})); then
+              data_directory="${arguments[index + 1]}"
+            fi
+
+            if [[ "${arguments[index]}" == "-l" ]] && ((index + 1 < ${#arguments[@]})); then
+              log_file="${arguments[index + 1]}"
+            fi
+          done
+
+          if [[ -f "$log_file" ]]; then
+            echo "PostgreSQL startup log: $log_file"
+            cat "$log_file"
+            cat "$log_file" >> "$GENSW_TEST_POSTGRES_DIAGNOSTIC_LOG"
+          fi
+
+          exit "$status"
+          EOF
+
+          chmod +x "$diagnostic_bin/pg_ctl"
+
+      - name: Test solution
+        env:
+          GENSW_TEST_POSTGRES_BIN: ${{ runner.temp }}/gensw-postgresql-bin
+        run: dotnet test GenSW.sln --configuration Release --no-build
+
+      - name: Display PostgreSQL startup diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -s "$GENSW_TEST_POSTGRES_DIAGNOSTIC_LOG" ]; then
+            cat "$GENSW_TEST_POSTGRES_DIAGNOSTIC_LOG"
+          fi
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: src/Frontend/GenSW.Web
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Build frontend
+        run: npm run build
