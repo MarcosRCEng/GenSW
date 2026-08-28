@@ -1,7 +1,9 @@
 using GenSW.Application.Authentication;
+using GenSW.Application.People;
 using GenSW.Infrastructure.Authentication;
 using GenSW.Infrastructure.Identity;
 using GenSW.Infrastructure.Persistence;
+using GenSW.Infrastructure.People;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -40,6 +42,7 @@ public static class DependencyInjection
         services.TryAddSingleton<RefreshTokenProtector>();
         services.TryAddSingleton<IAccessTokenService, JwtAccessTokenService>();
         services.TryAddScoped<IAuthenticationSessionService, AuthenticationSessionService>();
+        services.AddScoped<IPessoaRepository, PessoaRepository>();
 
         return services;
     }
