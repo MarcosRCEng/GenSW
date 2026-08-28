@@ -16,7 +16,7 @@ public sealed class PessoaService(IPessoaRepository repository, TimeProvider tim
 
     public async Task<PessoaResult?> GetByIdAsync(Guid pessoaId, CancellationToken cancellationToken = default)
     {
-        var pessoa = await repository.GetByIdAsync(pessoaId, tracking: false, cancellationToken);
+        var pessoa = await repository.GetByIdReadOnlyAsync(pessoaId, cancellationToken);
         return pessoa is null ? null : ToResult(pessoa);
     }
 
@@ -68,7 +68,7 @@ public sealed class PessoaService(IPessoaRepository repository, TimeProvider tim
     }
 
     private async Task<Pessoa> GetTrackedAsync(Guid pessoaId, CancellationToken cancellationToken)
-        => await repository.GetByIdAsync(pessoaId, tracking: true, cancellationToken)
+        => await repository.GetByIdForUpdateAsync(pessoaId, cancellationToken)
             ?? throw new PessoaNotFoundException(pessoaId);
 
     private static void ValidateListQuery(PessoaListQuery query)
@@ -86,6 +86,11 @@ public sealed class PessoaService(IPessoaRepository repository, TimeProvider tim
         if (!Enum.IsDefined(query.SortBy))
         {
             throw new ArgumentOutOfRangeException(nameof(query.SortBy));
+        }
+
+        if (query.TipoPessoa is { } tipoPessoa && !Enum.IsDefined(tipoPessoa))
+        {
+            throw new ArgumentOutOfRangeException(nameof(query.TipoPessoa));
         }
     }
 

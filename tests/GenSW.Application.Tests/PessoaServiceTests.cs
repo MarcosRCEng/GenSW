@@ -108,6 +108,18 @@ public sealed class PessoaServiceTests
         Assert.Null(repository.LastListQuery!.Search);
     }
 
+    [Fact]
+    public async Task List_rejects_invalid_person_type_without_calling_the_repository()
+    {
+        var repository = new FakePessoaRepository();
+        var service = CreateService(repository);
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => service.ListAsync(
+            new PessoaListQuery(TipoPessoa: (TipoPessoa)99)));
+
+        Assert.Equal(0, repository.ListCalls);
+    }
+
     private static PessoaService CreateService(FakePessoaRepository repository) => new(repository, new FixedTimeProvider(Now));
 
     private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
@@ -120,11 +132,13 @@ public sealed class PessoaServiceTests
         public List<Pessoa> Items { get; } = [];
         public PessoaListPage? ListPage { get; set; }
         public PessoaListQuery? LastListQuery { get; private set; }
+        public int ListCalls { get; private set; }
         public int SaveChangesCalls { get; private set; }
 
         public Task AddAsync(Pessoa pessoa, CancellationToken cancellationToken = default) { Items.Add(pessoa); return Task.CompletedTask; }
-        public Task<Pessoa?> GetByIdAsync(Guid id, bool tracking, CancellationToken cancellationToken = default) => Task.FromResult(Items.SingleOrDefault(item => item.Id == id));
-        public Task<PessoaListPage> ListAsync(PessoaListQuery query, CancellationToken cancellationToken = default) { LastListQuery = query; return Task.FromResult(ListPage ?? new PessoaListPage([], 0)); }
+        public Task<Pessoa?> GetByIdReadOnlyAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult(Items.SingleOrDefault(item => item.Id == id));
+        public Task<Pessoa?> GetByIdForUpdateAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult(Items.SingleOrDefault(item => item.Id == id));
+        public Task<PessoaListPage> ListAsync(PessoaListQuery query, CancellationToken cancellationToken = default) { ListCalls++; LastListQuery = query; return Task.FromResult(ListPage ?? new PessoaListPage([], 0)); }
         public Task SaveChangesAsync(CancellationToken cancellationToken = default) { SaveChangesCalls++; return Task.CompletedTask; }
     }
 }

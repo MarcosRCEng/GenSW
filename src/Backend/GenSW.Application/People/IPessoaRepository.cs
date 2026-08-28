@@ -6,7 +6,9 @@ public interface IPessoaRepository
 {
     Task AddAsync(Pessoa pessoa, CancellationToken cancellationToken = default);
 
-    Task<Pessoa?> GetByIdAsync(Guid id, bool tracking, CancellationToken cancellationToken = default);
+    Task<Pessoa?> GetByIdReadOnlyAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task<Pessoa?> GetByIdForUpdateAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<PessoaListPage> ListAsync(PessoaListQuery query, CancellationToken cancellationToken = default);
 

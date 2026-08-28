@@ -28,8 +28,8 @@ public sealed class PessoaRepositoryTests : IAsyncLifetime
 
         await using var readContext = CreateContext();
         var readRepository = new PessoaRepository(readContext);
-        Assert.Equal(pessoa.Id, (await readRepository.GetByIdAsync(pessoa.Id, false))!.Id);
-        Assert.Null(await readRepository.GetByIdAsync(Guid.NewGuid(), false));
+        Assert.Equal(pessoa.Id, (await readRepository.GetByIdReadOnlyAsync(pessoa.Id))!.Id);
+        Assert.Null(await readRepository.GetByIdReadOnlyAsync(Guid.NewGuid()));
     }
 
     [Fact]
@@ -62,6 +62,26 @@ public sealed class PessoaRepositoryTests : IAsyncLifetime
         Assert.Equal(TipoPessoa.Fisica, (await repository.ListAsync(new PessoaListQuery(SortBy: PessoaSortField.TipoPessoa))).Items[0].TipoPessoa);
         Assert.False((await repository.ListAsync(new PessoaListQuery(SortBy: PessoaSortField.Ativo))).Items[0].Ativo);
         Assert.Equal("Alpha", (await repository.ListAsync(new PessoaListQuery(SortBy: PessoaSortField.CreatedAtUtc))).Items[0].Nome);
+    }
+
+    [Fact]
+    public async Task List_uses_id_as_a_deterministic_secondary_sort_for_equal_names()
+    {
+        await using var context = CreateContext();
+        await context.Database.MigrateAsync();
+        var timestamp = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var first = Pessoa.Criar(TipoPessoa.Fisica, "Mesmo Nome", null, timestamp);
+        var second = Pessoa.Criar(TipoPessoa.Fisica, "Mesmo Nome", null, timestamp);
+        context.Pessoas.AddRange(first, second);
+        await context.SaveChangesAsync();
+        var repository = new PessoaRepository(context);
+
+        var ascending = await repository.ListAsync(new PessoaListQuery(PageSize: 25, SortBy: PessoaSortField.Nome));
+        var descending = await repository.ListAsync(new PessoaListQuery(PageSize: 25, SortBy: PessoaSortField.Nome, SortDescending: true));
+
+        var ids = new[] { first.Id, second.Id };
+        Assert.Equal(ids.OrderBy(id => id), ascending.Items.Select(pessoa => pessoa.Id));
+        Assert.Equal(ids.OrderByDescending(id => id), descending.Items.Select(pessoa => pessoa.Id));
     }
 
     private GenSWDbContext CreateContext() => new(new DbContextOptionsBuilder<GenSWDbContext>().UseNpgsql(postgreSql.ConnectionString).Options);

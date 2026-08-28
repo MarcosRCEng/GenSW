@@ -10,16 +10,11 @@ public sealed class PessoaRepository(GenSWDbContext context) : IPessoaRepository
     public Task AddAsync(Pessoa pessoa, CancellationToken cancellationToken = default)
         => context.Pessoas.AddAsync(pessoa, cancellationToken).AsTask();
 
-    public Task<Pessoa?> GetByIdAsync(Guid id, bool tracking, CancellationToken cancellationToken = default)
-    {
-        IQueryable<Pessoa> query = context.Pessoas;
-        if (!tracking)
-        {
-            query = query.AsNoTracking();
-        }
+    public Task<Pessoa?> GetByIdReadOnlyAsync(Guid id, CancellationToken cancellationToken = default)
+        => context.Pessoas.AsNoTracking().SingleOrDefaultAsync(pessoa => pessoa.Id == id, cancellationToken);
 
-        return query.SingleOrDefaultAsync(pessoa => pessoa.Id == id, cancellationToken);
-    }
+    public Task<Pessoa?> GetByIdForUpdateAsync(Guid id, CancellationToken cancellationToken = default)
+        => context.Pessoas.SingleOrDefaultAsync(pessoa => pessoa.Id == id, cancellationToken);
 
     public async Task<PessoaListPage> ListAsync(PessoaListQuery query, CancellationToken cancellationToken = default)
     {
