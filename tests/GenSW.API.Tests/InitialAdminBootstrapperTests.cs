@@ -1,5 +1,6 @@
 using GenSW.Infrastructure.Identity;
 using GenSW.Infrastructure.Persistence;
+using GenSW.Domain.People;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,9 @@ public sealed class InitialAdminBootstrapperTests
             var user = await context.Users.SingleAsync();
 
             Assert.Equal("Bootstrap Test", pessoa.Nome);
+            Assert.Equal(TipoPessoa.Fisica, pessoa.TipoPessoa);
+            Assert.Null(pessoa.NomeFantasia);
+            Assert.True(pessoa.Ativo);
             Assert.Equal(pessoa.Id, user.PessoaId);
             Assert.True(await roleManager.RoleExistsAsync(InitialAdminBootstrapper.AdminRoleName));
             Assert.True(await userManager.IsInRoleAsync(user, InitialAdminBootstrapper.AdminRoleName));

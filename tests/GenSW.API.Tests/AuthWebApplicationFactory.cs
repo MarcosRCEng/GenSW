@@ -170,13 +170,7 @@ public sealed class AuthWebApplicationFactory : WebApplicationFactory<Program>, 
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
         var now = DateTimeOffset.UtcNow;
-        var pessoa = new Pessoa
-        {
-            Id = Guid.NewGuid(),
-            Nome = $"Pessoa {userName}",
-            CreatedAtUtc = now,
-            UpdatedAtUtc = now,
-        };
+        var pessoa = Pessoa.Criar(TipoPessoa.Fisica, $"Pessoa {userName}", null, now);
 
         context.Pessoas.Add(pessoa);
         await context.SaveChangesAsync();

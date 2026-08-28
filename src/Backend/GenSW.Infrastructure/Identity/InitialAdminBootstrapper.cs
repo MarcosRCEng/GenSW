@@ -38,13 +38,7 @@ public sealed class InitialAdminBootstrapper(
             }
 
             var now = DateTimeOffset.UtcNow;
-            var pessoa = new Pessoa
-            {
-                Id = Guid.NewGuid(),
-                Nome = nome,
-                CreatedAtUtc = now,
-                UpdatedAtUtc = now,
-            };
+            var pessoa = Pessoa.Criar(TipoPessoa.Fisica, nome, null, now);
 
             context.Pessoas.Add(pessoa);
             await context.SaveChangesAsync(cancellationToken);
