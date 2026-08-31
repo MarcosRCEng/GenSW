@@ -9,7 +9,14 @@ import {
 } from '../features/auth/services/authService'
 import type { CurrentUser } from '../features/auth/types/auth'
 import { AuthProvider } from '../features/auth/providers/AuthProvider'
-import { listPessoas } from '../features/people/services/peopleService'
+import {
+  createPessoa,
+  getPessoaById,
+  listPessoas,
+  setPessoaAtivo,
+  updatePessoa,
+} from '../features/people/services/peopleService'
+import { TipoPessoa, type Pessoa } from '../features/people/types/people'
 import { AppRoutes } from './AppRoutes'
 
 vi.mock('../features/auth/services/authService', () => ({
@@ -20,7 +27,11 @@ vi.mock('../features/auth/services/authService', () => ({
 }))
 
 vi.mock('../features/people/services/peopleService', () => ({
+  createPessoa: vi.fn(),
+  getPessoaById: vi.fn(),
   listPessoas: vi.fn(),
+  setPessoaAtivo: vi.fn(),
+  updatePessoa: vi.fn(),
 }))
 
 const currentUser: CurrentUser = {
@@ -29,6 +40,16 @@ const currentUser: CurrentUser = {
   nome: 'Marina Silva',
   userName: 'marina',
   roles: [],
+}
+
+const activePerson: Pessoa = {
+  id: 'person-1',
+  tipoPessoa: TipoPessoa.Fisica,
+  nome: 'Marina Silva',
+  nomeFantasia: null,
+  ativo: true,
+  createdAtUtc: '2026-08-20T12:00:00Z',
+  updatedAtUtc: '2026-08-20T12:00:00Z',
 }
 
 function renderApplication(initialPath: string) {
@@ -46,6 +67,10 @@ describe('AppRoutes', () => {
     vi.mocked(loginSession).mockResolvedValue(currentUser)
     vi.mocked(logoutSession).mockResolvedValue()
     vi.mocked(subscribeToSessionInvalidation).mockReturnValue(vi.fn())
+    vi.mocked(createPessoa).mockResolvedValue(activePerson)
+    vi.mocked(getPessoaById).mockResolvedValue(activePerson)
+    vi.mocked(setPessoaAtivo).mockResolvedValue(activePerson)
+    vi.mocked(updatePessoa).mockResolvedValue(activePerson)
     vi.mocked(listPessoas).mockResolvedValue({
       items: [],
       page: 1,
@@ -116,5 +141,38 @@ describe('AppRoutes', () => {
     fireEvent.click(await screen.findByRole('link', { name: 'Pessoas' }))
 
     expect(await screen.findByRole('heading', { name: 'Pessoas' })).toBeInTheDocument()
+  })
+
+  it('protege a rota de criação para usuário anônimo', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(null)
+
+    renderApplication('/pessoas/nova')
+
+    expect(await screen.findByRole('heading', { name: 'Acessar o sistema' })).toBeInTheDocument()
+  })
+
+  it('renderiza a rota de criação para usuário autenticado', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
+
+    renderApplication('/pessoas/nova')
+
+    expect(await screen.findByRole('heading', { name: 'Nova pessoa' })).toBeInTheDocument()
+  })
+
+  it('protege a rota de edição para usuário anônimo', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(null)
+
+    renderApplication('/pessoas/person-1/editar')
+
+    expect(await screen.findByRole('heading', { name: 'Acessar o sistema' })).toBeInTheDocument()
+  })
+
+  it('renderiza a rota de edição para usuário autenticado', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
+
+    renderApplication('/pessoas/person-1/editar')
+
+    expect(await screen.findByRole('heading', { name: 'Editar pessoa' })).toBeInTheDocument()
+    expect(getPessoaById).toHaveBeenCalledWith('person-1')
   })
 })

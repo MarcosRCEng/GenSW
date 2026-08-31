@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { listPessoas } from '../services/peopleService'
+import { listPessoas, setPessoaAtivo } from '../services/peopleService'
 import {
   TipoPessoa,
   type ListPessoasParams,
@@ -25,7 +25,13 @@ function createdDateLabel(createdAtUtc: string): string {
   return dateFormatter.format(new Date(createdAtUtc))
 }
 
-function PessoasTable({ items }: { items: Pessoa[] }) {
+interface PessoasTableProps {
+  changingStatusId: string | null
+  items: Pessoa[]
+  onChangeStatus: (pessoa: Pessoa) => void
+}
+
+function PessoasTable({ changingStatusId, items, onChangeStatus }: PessoasTableProps) {
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
@@ -36,6 +42,7 @@ function PessoasTable({ items }: { items: Pessoa[] }) {
             <th className="px-4 py-3 font-semibold" scope="col">Tipo</th>
             <th className="px-4 py-3 font-semibold" scope="col">Status</th>
             <th className="px-4 py-3 font-semibold" scope="col">Cadastro</th>
+            <th className="px-4 py-3 font-semibold" scope="col">Ações</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
@@ -62,6 +69,37 @@ function PessoasTable({ items }: { items: Pessoa[] }) {
               <td className="whitespace-nowrap px-4 py-4">
                 {createdDateLabel(pessoa.createdAtUtc)}
               </td>
+              <td className="whitespace-nowrap px-4 py-4">
+                <div className="flex items-center gap-3">
+                  {pessoa.ativo ? (
+                    <Link
+                      className="font-semibold text-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+                      to={`/pessoas/${pessoa.id}/editar`}
+                    >
+                      Editar
+                    </Link>
+                  ) : (
+                    <button
+                      className="cursor-not-allowed font-semibold text-slate-400"
+                      disabled
+                      title="Pessoa inativa não pode ser editada."
+                      type="button"
+                    >
+                      Editar
+                    </button>
+                  )}
+                  <button
+                    className="font-semibold text-slate-700 hover:text-slate-950 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={changingStatusId === pessoa.id}
+                    onClick={() => onChangeStatus(pessoa)}
+                    type="button"
+                  >
+                    {changingStatusId === pessoa.id
+                      ? pessoa.ativo ? 'Inativando…' : 'Reativando…'
+                      : pessoa.ativo ? 'Inativar' : 'Reativar'}
+                  </button>
+                </div>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -75,6 +113,8 @@ export function PeopleListPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
+  const [changingStatusId, setChangingStatusId] = useState<string | null>(null)
+  const [statusMutationError, setStatusMutationError] = useState(false)
 
   const [searchDraft, setSearchDraft] = useState('')
   const [search, setSearch] = useState<string | undefined>()
@@ -138,6 +178,21 @@ export function PeopleListPage() {
     setReloadKey((current) => current + 1)
   }
 
+  const changeStatus = async (pessoa: Pessoa) => {
+    if (changingStatusId === pessoa.id) return
+
+    setChangingStatusId(pessoa.id)
+    setStatusMutationError(false)
+    try {
+      await setPessoaAtivo(pessoa.id, !pessoa.ativo)
+      setReloadKey((current) => current + 1)
+    } catch {
+      setStatusMutationError(true)
+    } finally {
+      setChangingStatusId(null)
+    }
+  }
+
   const controlClassName =
     'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 disabled:cursor-not-allowed disabled:bg-slate-100'
 
@@ -150,12 +205,20 @@ export function PeopleListPage() {
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">Pessoas</h1>
             <p className="mt-2 text-slate-600">Consulta do cadastro mestre de pessoas</p>
           </div>
-          <Link
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
-            to="/"
-          >
-            Voltar ao início
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+              to="/pessoas/nova"
+            >
+              Nova pessoa
+            </Link>
+            <Link
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+              to="/"
+            >
+              Voltar ao início
+            </Link>
+          </div>
         </header>
 
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -298,6 +361,12 @@ export function PeopleListPage() {
           </form>
         </section>
 
+        {statusMutationError ? (
+          <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700" role="alert">
+            Não foi possível alterar o status da pessoa.
+          </p>
+        ) : null}
+
         <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           {isLoading && result === null ? (
             <p className="p-8 text-center text-slate-600" role="status">
@@ -320,7 +389,11 @@ export function PeopleListPage() {
               <p className="mt-2 text-sm text-slate-600">Ajuste os filtros ou realize outra busca.</p>
             </div>
           ) : result ? (
-            <PessoasTable items={result.items} />
+            <PessoasTable
+              changingStatusId={changingStatusId}
+              items={result.items}
+              onChangeStatus={changeStatus}
+            />
           ) : null}
 
           {result && !hasError ? (
