@@ -79,6 +79,7 @@ public sealed class PessoasController(IPessoaService pessoas) : ControllerBase
 
     [HttpPatch("{id:guid}/ativo")]
     [ProducesResponseType(typeof(PessoaResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public Task<ActionResult<PessoaResponse>> SetActive(Guid id, UpdatePessoaStatusRequest request, CancellationToken cancellationToken)
