@@ -2,6 +2,7 @@ import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { AuthenticatedHomePage } from '../features/auth/pages/AuthenticatedHomePage'
 import { LoginPage } from '../features/auth/pages/LoginPage'
 import { useAuth } from '../features/auth/hooks/useAuth'
+import { PeopleListPage } from '../features/people/pages/PeopleListPage'
 
 function ApplicationLoading() {
   return (
@@ -37,6 +38,7 @@ export function AppRoutes() {
       </Route>
       <Route element={<ProtectedRoute />}>
         <Route element={<AuthenticatedHomePage />} path="/" />
+        <Route element={<PeopleListPage />} path="/pessoas" />
       </Route>
       <Route element={<Navigate replace to="/" />} path="*" />
     </Routes>

@@ -9,6 +9,7 @@ import {
 } from '../features/auth/services/authService'
 import type { CurrentUser } from '../features/auth/types/auth'
 import { AuthProvider } from '../features/auth/providers/AuthProvider'
+import { listPessoas } from '../features/people/services/peopleService'
 import { AppRoutes } from './AppRoutes'
 
 vi.mock('../features/auth/services/authService', () => ({
@@ -16,6 +17,10 @@ vi.mock('../features/auth/services/authService', () => ({
   login: vi.fn(),
   logout: vi.fn(),
   subscribeToSessionInvalidation: vi.fn(),
+}))
+
+vi.mock('../features/people/services/peopleService', () => ({
+  listPessoas: vi.fn(),
 }))
 
 const currentUser: CurrentUser = {
@@ -41,6 +46,13 @@ describe('AppRoutes', () => {
     vi.mocked(loginSession).mockResolvedValue(currentUser)
     vi.mocked(logoutSession).mockResolvedValue()
     vi.mocked(subscribeToSessionInvalidation).mockReturnValue(vi.fn())
+    vi.mocked(listPessoas).mockResolvedValue({
+      items: [],
+      page: 1,
+      pageSize: 25,
+      totalItems: 0,
+      totalPages: 0,
+    })
   })
 
   it('mostra loading e não renderiza a rota protegida durante o bootstrap', () => {
@@ -78,5 +90,31 @@ describe('AppRoutes', () => {
 
     await waitFor(() => expect(logoutSession).toHaveBeenCalledOnce())
     expect(await screen.findByRole('heading', { name: 'Acessar o sistema' })).toBeInTheDocument()
+  })
+
+  it('protege a rota de pessoas para usuário anônimo', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(null)
+
+    renderApplication('/pessoas')
+
+    expect(await screen.findByRole('heading', { name: 'Acessar o sistema' })).toBeInTheDocument()
+  })
+
+  it('renderiza a rota de pessoas para usuário autenticado', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
+
+    renderApplication('/pessoas')
+
+    expect(await screen.findByRole('heading', { name: 'Pessoas' })).toBeInTheDocument()
+  })
+
+  it('navega da home autenticada para pessoas', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
+
+    renderApplication('/')
+
+    fireEvent.click(await screen.findByRole('link', { name: 'Pessoas' }))
+
+    expect(await screen.findByRole('heading', { name: 'Pessoas' })).toBeInTheDocument()
   })
 })
