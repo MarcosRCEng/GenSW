@@ -19,9 +19,13 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
 
         builder.Entity<Pessoa>(pessoa =>
         {
-            pessoa.ToTable("Pessoas");
+            pessoa.ToTable("Pessoas", table =>
+                table.HasCheckConstraint("CK_Pessoas_TipoPessoa", "\"TipoPessoa\" IN (1, 2)"));
             pessoa.HasKey(entity => entity.Id);
-            pessoa.Property(entity => entity.Nome).IsRequired();
+            pessoa.Property(entity => entity.TipoPessoa).HasConversion<int>().IsRequired();
+            pessoa.Property(entity => entity.Nome).IsRequired().HasMaxLength(200);
+            pessoa.Property(entity => entity.NomeFantasia).HasMaxLength(200);
+            pessoa.Property(entity => entity.Ativo).IsRequired();
             pessoa.Property(entity => entity.CreatedAtUtc).IsRequired();
             pessoa.Property(entity => entity.UpdatedAtUtc).IsRequired();
         });
