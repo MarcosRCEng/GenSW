@@ -14,18 +14,27 @@ preservar o fluxo real do refresh cookie `Secure` e `HttpOnly`.
 
 ## Configuração local
 
-Instale as dependências e crie a configuração local a partir do exemplo:
+Na raiz do repositório, o caminho recomendado prepara tudo sem copiar segredos
+para arquivos versionados:
+
+```powershell
+.\setup-gensw.bat
+.\start-gensw.bat
+```
+
+Para a execução manual, instale as dependências e crie a configuração local a
+partir do exemplo:
 
 ```powershell
 cd src/Frontend/GenSW.Web
-npm install
+npm ci
 Copy-Item .env.example .env.local
 ```
 
 O valor de desenvolvimento esperado é:
 
 ```dotenv
-VITE_API_BASE_URL=https://localhost:7001/api/v1
+VITE_API_BASE_URL=https://localhost:7443/api/v1
 ```
 
 A URL não é um segredo. Somente variáveis prefixadas com `VITE_` ficam
@@ -83,11 +92,12 @@ npm run dev
 
 As origens locais são fixas para manter CORS e cookies previsíveis:
 
-- frontend: `https://localhost:5173`;
-- API: `https://localhost:7001`;
-- base REST: `https://localhost:7001/api/v1`.
+- frontend: `https://localhost:7441`;
+- API HTTPS: `https://localhost:7443`;
+- API HTTP: `http://localhost:7442`;
+- base REST: `https://localhost:7443/api/v1`.
 
-A porta do Vite é estrita: se `5173` estiver ocupada, libere-a em vez de usar
+A porta do Vite é estrita: se `7441` estiver ocupada, libere-a em vez de usar
 outra porta não configurada no CORS da API.
 
 ## Validação

@@ -1,4 +1,4 @@
-const DEVELOPMENT_API_BASE_URL = 'https://localhost:7001/api/v1'
+const DEVELOPMENT_API_BASE_URL = 'https://localhost:7443/api/v1'
 
 function normalizeBaseUrl(value: string): string {
   return value.trim().replace(/\/+$/, '')

@@ -79,7 +79,7 @@ export default defineConfig(({ command, isPreview, mode }) => {
     plugins: [react()],
     server: {
       host: 'localhost',
-      port: 5173,
+      port: 7441,
       strictPort: true,
       https: isDevelopmentServer ? resolveLocalHttps(env) : undefined,
     },
