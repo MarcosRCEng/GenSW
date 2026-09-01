@@ -1,6 +1,8 @@
 using GenSW.Infrastructure;
 using GenSW.Infrastructure.Identity;
 using GenSW.Infrastructure.Persistence;
+using GenSW.Application.Species;
+using GenSW.Infrastructure.Species;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -12,6 +14,22 @@ namespace GenSW.Infrastructure.Tests;
 
 public sealed class PersistenceConfigurationTests
 {
+    [Fact]
+    public void AddInfrastructure_registers_EspecieRepository_as_scoped()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:GenSW"] = "Host=localhost;Database=gensw_test" })
+            .Build();
+        var services = new ServiceCollection();
+
+        DependencyInjection.AddInfrastructure(services, configuration);
+
+        Assert.Contains(services, descriptor =>
+            descriptor.ServiceType == typeof(IEspecieRepository) &&
+            descriptor.ImplementationType == typeof(EspecieRepository) &&
+            descriptor.Lifetime == ServiceLifetime.Scoped);
+    }
+
     [Fact]
     public void AddInfrastructure_registers_postgresql_context_when_connection_string_is_configured()
     {
