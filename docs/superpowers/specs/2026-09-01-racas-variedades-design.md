@@ -12,9 +12,9 @@ Ficam fora de escopo Animal e as demandas #295–#299. Não haverá uma entidade
 
 O nome é obrigatório, tem no máximo 200 caracteres e é normalizado com a mesma regra de espaços de `Especie`. Cada domínio permite o mesmo nome em espécies diferentes e o rejeita, após normalização, na mesma espécie.
 
-`Ativo` inicia como `true`; inativar, reativar e editar registros inativos são operações idempotentes ou permitidas conforme o padrão de Espécies. Enquanto não existe Animal, uma alteração de `EspecieId` é permitida se a espécie de destino existir.
+`Ativo` inicia como `true`; inativar, reativar e editar registros inativos são operações idempotentes ou permitidas conforme o padrão de Espécies. Enquanto não existe Animal, uma alteração de `EspecieId` é permitida se a espécie de destino existir e estiver ativa.
 
-A API aceitará uma espécie inativa existente. A restrição operacional de não oferecer espécies inativas aplica-se à escolha padrão no frontend, preservando integridade histórica e possibilitando correções administrativas.
+CREATE de `Raca` ou `Variedade` com `EspecieId` de uma espécie inativa será rejeitado. No UPDATE, alterar `EspecieId` para uma espécie inativa também será rejeitado; manter o mesmo `EspecieId` já vinculado será permitido mesmo que a espécie tenha sido inativada posteriormente. Assim, editar `Nome` ou `Ativo` de uma `Raca` ou `Variedade` cuja espécie atual esteja inativa continuará permitido, bem como trocar esse vínculo por uma espécie ativa. A regra preserva vínculos históricos sem permitir novos vínculos com espécies inativas.
 
 ## Backend
 
@@ -38,6 +38,6 @@ As listagens permitem busca, filtro por espécie e por status, ordenação, pagi
 
 ## Verificação
 
-Os testes cobrirão, para cada domínio, criação, normalização, espécie inexistente, duplicidade por espécie, mesmo nome entre espécies diferentes, listagem, GET, troca de espécie, edição inativa, inativação e reativação. Os testes PostgreSQL confirmarão FK, constraints e índices únicos. A API cobrirá fluxo autenticado e ausência de DELETE. O frontend cobrirá contratos, HTTP, filtros, seleção de espécie, formulários, erros e lifecycle.
+Os testes cobrirão, para cada domínio, criação, normalização, espécie inexistente, duplicidade por espécie, mesmo nome entre espécies diferentes, listagem, GET, troca de espécie, edição inativa, inativação e reativação. A regra de espécie inativa será coberta explicitamente em `Raca` e `Variedade`: CREATE com espécie inativa será rejeitado; UPDATE alterando `EspecieId` para outra espécie inativa será rejeitado; UPDATE mantendo o mesmo `EspecieId`, após a espécie vinculada ser inativada, será permitido; a edição de `Nome` ou `Ativo` com a espécie atual inativa será permitida; e a troca da espécie inativa atualmente vinculada por uma espécie ativa será permitida. Os testes PostgreSQL confirmarão FK, constraints e índices únicos. A API cobrirá fluxo autenticado e ausência de DELETE. O frontend cobrirá contratos, HTTP, filtros, seleção de espécie, formulários, erros e lifecycle.
 
 Antes da PR serão executados restore, build e testes do backend; testes, lint e build do frontend; `git diff --check`; e uma inspeção de escopo, migration, dependências e segredos. A homologação manual só será solicitada após PR e CI verde e incluirá Raças, Variedades e o comportamento de espécie inativa.
