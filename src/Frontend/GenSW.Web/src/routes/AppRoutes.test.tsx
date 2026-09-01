@@ -17,6 +17,8 @@ import {
   updatePessoa,
 } from '../features/people/services/peopleService'
 import { TipoPessoa, type Pessoa } from '../features/people/types/people'
+import { createEspecie, getEspecieById, listEspecies, setEspecieAtivo, updateEspecie } from '../features/species/services/speciesService'
+import type { Especie } from '../features/species/types/species'
 import { AppRoutes } from './AppRoutes'
 
 vi.mock('../features/auth/services/authService', () => ({
@@ -32,6 +34,10 @@ vi.mock('../features/people/services/peopleService', () => ({
   listPessoas: vi.fn(),
   setPessoaAtivo: vi.fn(),
   updatePessoa: vi.fn(),
+}))
+
+vi.mock('../features/species/services/speciesService', () => ({
+  createEspecie: vi.fn(), getEspecieById: vi.fn(), listEspecies: vi.fn(), setEspecieAtivo: vi.fn(), updateEspecie: vi.fn(),
 }))
 
 const currentUser: CurrentUser = {
@@ -50,6 +56,11 @@ const activePerson: Pessoa = {
   ativo: true,
   createdAtUtc: '2026-08-20T12:00:00Z',
   updatedAtUtc: '2026-08-20T12:00:00Z',
+}
+
+const activeSpecies: Especie = {
+  id: 'species-1', nomeComum: 'Cão doméstico', nomeCientifico: 'Canis familiaris', ativo: true,
+  createdAtUtc: '2026-08-31T12:00:00Z', updatedAtUtc: '2026-08-31T12:00:00Z',
 }
 
 function renderApplication(initialPath: string) {
@@ -78,6 +89,11 @@ describe('AppRoutes', () => {
       totalItems: 0,
       totalPages: 0,
     })
+    vi.mocked(createEspecie).mockResolvedValue(activeSpecies)
+    vi.mocked(getEspecieById).mockResolvedValue(activeSpecies)
+    vi.mocked(setEspecieAtivo).mockResolvedValue(activeSpecies)
+    vi.mocked(updateEspecie).mockResolvedValue(activeSpecies)
+    vi.mocked(listEspecies).mockResolvedValue({ items: [], page: 1, pageSize: 25, totalItems: 0, totalPages: 0 })
   })
 
   it('mostra loading e não renderiza a rota protegida durante o bootstrap', () => {
@@ -174,5 +190,36 @@ describe('AppRoutes', () => {
 
     expect(await screen.findByRole('heading', { name: 'Editar pessoa' })).toBeInTheDocument()
     expect(getPessoaById).toHaveBeenCalledWith('person-1')
+  })
+
+  it('protege as rotas de espécies para usuário anônimo', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(null)
+    const list = renderApplication('/especies')
+    expect(await screen.findByRole('heading', { name: 'Acessar o sistema' })).toBeInTheDocument()
+    list.unmount()
+    const create = renderApplication('/especies/nova')
+    expect(await screen.findByRole('heading', { name: 'Acessar o sistema' })).toBeInTheDocument()
+    create.unmount()
+    renderApplication('/especies/species-1/editar')
+    expect(await screen.findByRole('heading', { name: 'Acessar o sistema' })).toBeInTheDocument()
+  })
+
+  it('renderiza as rotas de lista, criação e edição de espécies para usuário autenticado', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
+    const list = renderApplication('/especies')
+    expect(await screen.findByRole('heading', { name: 'Espécies' })).toBeInTheDocument()
+    list.unmount()
+    const create = renderApplication('/especies/nova')
+    expect(await screen.findByRole('heading', { name: 'Nova espécie' })).toBeInTheDocument()
+    create.unmount()
+    renderApplication('/especies/species-1/editar')
+    expect(await screen.findByRole('heading', { name: 'Editar espécie' })).toBeInTheDocument()
+  })
+
+  it('navega da home autenticada para espécies', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
+    renderApplication('/')
+    fireEvent.click(await screen.findByRole('link', { name: 'Espécies' }))
+    expect(await screen.findByRole('heading', { name: 'Espécies' })).toBeInTheDocument()
   })
 })

@@ -4,6 +4,8 @@ import { LoginPage } from '../features/auth/pages/LoginPage'
 import { useAuth } from '../features/auth/hooks/useAuth'
 import { PeopleFormPage } from '../features/people/pages/PeopleFormPage'
 import { PeopleListPage } from '../features/people/pages/PeopleListPage'
+import { SpeciesFormPage } from '../features/species/pages/SpeciesFormPage'
+import { SpeciesListPage } from '../features/species/pages/SpeciesListPage'
 
 function ApplicationLoading() {
   return (
@@ -42,6 +44,9 @@ export function AppRoutes() {
         <Route element={<PeopleListPage />} path="/pessoas" />
         <Route element={<PeopleFormPage />} path="/pessoas/nova" />
         <Route element={<PeopleFormPage />} path="/pessoas/:id/editar" />
+        <Route element={<SpeciesListPage />} path="/especies" />
+        <Route element={<SpeciesFormPage />} path="/especies/nova" />
+        <Route element={<SpeciesFormPage />} path="/especies/:id/editar" />
       </Route>
       <Route element={<Navigate replace to="/" />} path="*" />
     </Routes>
