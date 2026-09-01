@@ -20,6 +20,7 @@
 - CREATE com espécie inativa é inválido. No UPDATE, somente uma troca de `EspecieId` exige que a espécie de destino esteja ativa; manter a espécie já vinculada e posteriormente inativada, editar `Nome`/`Ativo` nesse estado e trocar dela para uma espécie ativa são válidos.
 - Toda API é autenticada. Retornar `400` para dado ou consulta inválida, `404` para registro ou espécie inexistente e `409` para duplicidade normalizada. Não expor DELETE.
 - O frontend usa somente espécies ativas em novos vínculos. Na edição, mantém visível a espécie atual inativa, permite conservá-la ou trocar por uma ativa e não oferece outra espécie inativa.
+- Não criar commits de implementação por Task nem fazer push parcial. Registrar checkpoints revisáveis sem commit entre Tasks e criar o único commit de implementação da #294 somente depois de todos os gates integrados finais PASS.
 
 ## File Map
 
@@ -73,12 +74,15 @@
 
   Expected: PASS.
 
-- [ ] **Step 5: Commit de marco**
+- [ ] **Step 5: Fazer checkpoint de revisão sem commit**
 
   ```bash
-  git add src/Backend/GenSW.Domain/Breeds/Raca.cs tests/GenSW.Domain.Tests/RacaTests.cs
-  git commit -m "feat: add breed domain model"
+  git diff --check
+  git diff --stat
+  git status --short
   ```
+
+  Expected: diff de Domain de Raça revisável e testes da Task PASS; não criar commit nem fazer push.
 
 ### Task 2: Modelo de domínio de Variedade
 
@@ -110,12 +114,15 @@
 
   Expected: PASS.
 
-- [ ] **Step 5: Commit de marco**
+- [ ] **Step 5: Fazer checkpoint de revisão sem commit**
 
   ```bash
-  git add src/Backend/GenSW.Domain/Varieties/Variedade.cs tests/GenSW.Domain.Tests/VariedadeTests.cs
-  git commit -m "feat: add variety domain model"
+  git diff --check
+  git diff --stat
+  git status --short
   ```
+
+  Expected: diff de Domain de Variedade revisável e testes das Tasks 1–2 PASS; não criar commit nem fazer push.
 
 ### Task 3: Contratos e serviço de aplicação de Raça
 
@@ -190,12 +197,15 @@
 
   Expected: PASS.
 
-- [ ] **Step 5: Commit de marco**
+- [ ] **Step 5: Fazer checkpoint de revisão sem commit**
 
   ```bash
-  git add src/Backend/GenSW.Application/Breeds src/Backend/GenSW.Application/DependencyInjection.cs tests/GenSW.Application.Tests/RacaServiceTests.cs tests/GenSW.Application.Tests/DependencyInjectionTests.cs
-  git commit -m "feat: add breed application service"
+  git diff --check
+  git diff --stat
+  git status --short
   ```
+
+  Expected: contratos e serviço de Raça revisáveis com os testes de aplicação PASS; não criar commit nem fazer push.
 
 ### Task 4: Contratos e serviço de aplicação de Variedade
 
@@ -239,12 +249,15 @@
 
   Expected: PASS.
 
-- [ ] **Step 5: Commit de marco**
+- [ ] **Step 5: Fazer checkpoint de revisão sem commit**
 
   ```bash
-  git add src/Backend/GenSW.Application/Varieties src/Backend/GenSW.Application/DependencyInjection.cs tests/GenSW.Application.Tests/VariedadeServiceTests.cs tests/GenSW.Application.Tests/DependencyInjectionTests.cs
-  git commit -m "feat: add variety application service"
+  git diff --check
+  git diff --stat
+  git status --short
   ```
+
+  Expected: contratos e serviço de Variedade revisáveis com os testes de aplicação PASS; não criar commit nem fazer push.
 
 ### Task 5: Persistência PostgreSQL, repositórios específicos e migration
 
@@ -309,12 +322,15 @@
 
   Expected: PASS; quando os binários PostgreSQL locais não estiverem instalados, a infraestrutura existente marca somente os testes de integração PostgreSQL como skipped.
 
-- [ ] **Step 5: Commit de marco**
+- [ ] **Step 5: Fazer checkpoint de revisão sem commit**
 
   ```bash
-  git add src/Backend/GenSW.Infrastructure tests/GenSW.Infrastructure.Tests
-  git commit -m "feat: persist breeds and varieties"
+  git diff --check
+  git diff --stat
+  git status --short
   ```
+
+  Expected: migration, snapshot e repositórios específicos revisáveis com a suíte de infraestrutura PASS ou integração PostgreSQL skipped pelo mecanismo existente; não criar commit nem fazer push.
 
 ### Task 6: API autenticada de Raças
 
@@ -354,12 +370,15 @@
 
   Expected: PASS.
 
-- [ ] **Step 5: Commit de marco**
+- [ ] **Step 5: Fazer checkpoint de revisão sem commit**
 
   ```bash
-  git add src/Backend/GenSW.API/Contracts/Breeds src/Backend/GenSW.API/Controllers/RacasController.cs tests/GenSW.API.Tests/RacasApiTests.cs
-  git commit -m "feat: expose breed api"
+  git diff --check
+  git diff --stat
+  git status --short
   ```
+
+  Expected: contratos e API de Raças revisáveis com os testes HTTP PASS; não criar commit nem fazer push.
 
 ### Task 7: API autenticada de Variedades
 
@@ -397,12 +416,15 @@
 
   Expected: PASS.
 
-- [ ] **Step 5: Commit de marco**
+- [ ] **Step 5: Fazer checkpoint de revisão sem commit**
 
   ```bash
-  git add src/Backend/GenSW.API/Contracts/Varieties src/Backend/GenSW.API/Controllers/VariedadesController.cs tests/GenSW.API.Tests/VariedadesApiTests.cs
-  git commit -m "feat: expose variety api"
+  git diff --check
+  git diff --stat
+  git status --short
   ```
+
+  Expected: contratos e API de Variedades revisáveis com os testes HTTP PASS; não criar commit nem fazer push.
 
 ### Task 8: Contrato HTTP frontend de Raças
 
@@ -437,12 +459,15 @@
 
   Expected: PASS.
 
-- [ ] **Step 5: Commit de marco**
+- [ ] **Step 5: Fazer checkpoint de revisão sem commit**
 
   ```bash
-  git add src/Frontend/GenSW.Web/src/features/breeds
-  git commit -m "feat: add breed frontend client"
+  git diff --check
+  git diff --stat
+  git status --short
   ```
+
+  Expected: tipos, parsers e cliente HTTP de Raças revisáveis com testes PASS; não criar commit nem fazer push.
 
 ### Task 9: Contrato HTTP frontend de Variedades
 
@@ -477,12 +502,15 @@
 
   Expected: PASS.
 
-- [ ] **Step 5: Commit de marco**
+- [ ] **Step 5: Fazer checkpoint de revisão sem commit**
 
   ```bash
-  git add src/Frontend/GenSW.Web/src/features/varieties
-  git commit -m "feat: add variety frontend client"
+  git diff --check
+  git diff --stat
+  git status --short
   ```
+
+  Expected: tipos, parsers e cliente HTTP de Variedades revisáveis com testes PASS; não criar commit nem fazer push.
 
 ### Task 10: Listagem e lifecycle de Raças no frontend
 
@@ -491,12 +519,12 @@
 - Create: `src/Frontend/GenSW.Web/src/features/breeds/pages/BreedsListPage.test.tsx`
 
 **Interfaces:**
-- Consumes: `listRacas`, `setRacaAtivo`, `ListRacasParams` e a rota de formulário `/racas/nova`/`/racas/:id/editar`.
+- Consumes: `listRacas`, `setRacaAtivo`, `listEspecies`, `ListRacasParams`, `EspeciesPage` e a rota de formulário `/racas/nova`/`/racas/:id/editar`.
 - Produces: listagem de Raças com busca, filtro de espécie, filtro de status, ordenação, paginação, links de edição e ação de ativar/inativar.
 
 - [ ] **Step 1: Escrever testes de página que falham**
 
-  Mockar o serviço de Raças. Verificar carregamento, tabela com nome e resumo de espécie, busca, filtro de espécie, status, ordem, paginação, estado vazio, erro e retry. Verificar que uma raça inativa ainda apresenta link `Editar`; que status mutation bloqueia duplo clique, recarrega os filtros atuais e trata erro.
+  Mockar os serviços de Raças e Espécies. Verificar carregamento, tabela com nome e resumo de espécie, busca, filtro de espécie, status, ordem, paginação, estado vazio, erro e retry. Para o filtro, retornar páginas de espécies sem parâmetro `ativo`, incluindo uma espécie inativa, e comprovar que ela aparece como opção, que seu `id` é enviado a `listRacas` e que os registros históricos associados a ela podem ser consultados. Verificar que uma raça inativa ainda apresenta link `Editar`; que status mutation bloqueia duplo clique, recarrega os filtros atuais e trata erro.
 
 - [ ] **Step 2: Executar o teste vermelho**
 
@@ -506,7 +534,7 @@
 
 - [ ] **Step 3: Implementar a listagem**
 
-  Adaptar apenas o comportamento de `SpeciesListPage`: usar `listRacas`, incluir o `select` de espécie no filtro, renderizar `raca.especie.nomeComum` e preservar os parâmetros atuais ao recarregar depois de `setRacaAtivo`.
+  Adaptar apenas o comportamento de `SpeciesListPage`: usar `listRacas`, carregar todas as páginas de `listEspecies` sem filtro `ativo` para o `select` histórico, incluir o `select` de espécie no filtro, renderizar `raca.especie.nomeComum` e preservar os parâmetros atuais ao recarregar depois de `setRacaAtivo`. Não filtrar as opções desse select para espécies ativas.
 
 - [ ] **Step 4: Executar o teste da página**
 
@@ -514,12 +542,15 @@
 
   Expected: PASS.
 
-- [ ] **Step 5: Commit de marco**
+- [ ] **Step 5: Fazer checkpoint de revisão sem commit**
 
   ```bash
-  git add src/Frontend/GenSW.Web/src/features/breeds/pages
-  git commit -m "feat: add breed list and lifecycle"
+  git diff --check
+  git diff --stat
+  git status --short
   ```
+
+  Expected: listagem e lifecycle de Raças revisáveis, incluindo filtro histórico com espécies inativas; não criar commit nem fazer push.
 
 ### Task 11: Listagem e lifecycle de Variedades no frontend
 
@@ -528,12 +559,12 @@
 - Create: `src/Frontend/GenSW.Web/src/features/varieties/pages/VarietiesListPage.test.tsx`
 
 **Interfaces:**
-- Consumes: `listVariedades`, `setVariedadeAtivo`, `ListVariedadesParams` e as rotas `/variedades`.
+- Consumes: `listVariedades`, `setVariedadeAtivo`, `listEspecies`, `ListVariedadesParams`, `EspeciesPage` e as rotas `/variedades`.
 - Produces: listagem independente de Variedades com o mesmo conjunto de controles de consulta e lifecycle.
 
 - [ ] **Step 1: Escrever testes de página que falham**
 
-  Cobrir dados, busca, filtros de espécie e status, ordenação, paginação, vazio, retry, edição de registro inativo, inativação, reativação e bloqueio de mutação concorrente da própria linha.
+  Cobrir dados, busca, filtros de espécie e status, ordenação, paginação, vazio, retry, edição de registro inativo, inativação, reativação e bloqueio de mutação concorrente da própria linha. Para o filtro de espécie, carregar páginas sem parâmetro `ativo`, incluir uma espécie inativa nas opções e comprovar que sua seleção consulta Variedades historicamente vinculadas a ela.
 
 - [ ] **Step 2: Executar o teste vermelho**
 
@@ -543,7 +574,7 @@
 
 - [ ] **Step 3: Implementar a listagem própria**
 
-  Usar somente `varietiesService` e os tipos de Variedade. Não reutilizar componente de Raças até existir uma necessidade comprovada além desta demanda.
+  Usar somente `varietiesService` e os tipos de Variedade. Carregar todas as páginas de `listEspecies` sem filtro `ativo` para o filtro histórico e encaminhar o `especieId` selecionado a `listVariedades`. Não reutilizar componente de Raças até existir uma necessidade comprovada além desta demanda.
 
 - [ ] **Step 4: Executar o teste da página**
 
@@ -551,12 +582,15 @@
 
   Expected: PASS.
 
-- [ ] **Step 5: Commit de marco**
+- [ ] **Step 5: Fazer checkpoint de revisão sem commit**
 
   ```bash
-  git add src/Frontend/GenSW.Web/src/features/varieties/pages
-  git commit -m "feat: add variety list and lifecycle"
+  git diff --check
+  git diff --stat
+  git status --short
   ```
+
+  Expected: listagem e lifecycle de Variedades revisáveis, incluindo filtro histórico com espécies inativas; não criar commit nem fazer push.
 
 ### Task 12: Formulário de Raça e seleção de espécie ativa
 
@@ -570,9 +604,9 @@
 
 - [ ] **Step 1: Escrever testes de formulário que falham**
 
-  Cobrir criação válida e nome localmente inválido; carregar espécies com `listEspecies({ ativo: true, pageSize: 100, sortBy: 'nomeComum', sortDirection: 'asc' })`; enviar apenas espécie ativa ao criar; `404`, `400` e `409` como erros de salvamento legíveis; e estados loading/not-found/retry.
+  Cobrir criação válida e nome localmente inválido; paginar `listEspecies` com `ativo: true` até `totalPages`, incluindo uma espécie ativa localizada após a primeira página; enviar apenas espécie ativa ao criar; `404`, `400` e `409` como erros de salvamento legíveis; e estados loading/not-found/retry.
 
-  Para edição, mockar uma raça cuja `especie.ativo` é `false` e afirmar: a espécie atual aparece selecionada; salvar alteração de nome com o mesmo `especieId` chama `updateRaca`; a lista não contém outra espécie inativa; e a troca para uma espécie ativa envia o identificador ativo. O teste não deve aceitar uma opção inativa diferente da vinculada.
+  Para edição, mockar uma raça cuja `especie.ativo` é `false` e afirmar: a espécie atual aparece selecionada; salvar alteração de nome com o mesmo `especieId` chama `updateRaca`; a lista não contém outra espécie inativa; e a troca para uma espécie ativa, inclusive da página seguinte, envia o identificador ativo. O teste não deve aceitar uma opção inativa diferente da vinculada nem chamar `setRacaAtivo`.
 
 - [ ] **Step 2: Executar o teste vermelho**
 
@@ -582,7 +616,7 @@
 
 - [ ] **Step 3: Implementar o formulário**
 
-  Carregar a raça antes de montar as opções na edição. Criar a lista de opções a partir de espécies ativas e, somente se `raca.especie.ativo` for falso, acrescentar a espécie atual como opção preservada. O submit normaliza `nome`, exige `1..200` e usa `createRaca` ou `updateRaca`; não permitir que o navegador envie uma espécie inativa que não esteja no vínculo atual.
+  Carregar a raça antes de montar as opções na edição. Buscar, página por página, todas as espécies ativas com `listEspecies`, usando o `totalPages` retornado e sem assumir um limite funcional de itens. Criar a lista de opções a partir dessas espécies ativas e, somente se `raca.especie.ativo` for falso, acrescentar a espécie atual como opção preservada. O submit normaliza `nome`, exige `1..200` e usa `createRaca` ou `updateRaca`; não permitir que o navegador envie uma espécie inativa que não esteja no vínculo atual. O formulário não chama `setRacaAtivo`; ativação e inativação pertencem à listagem/lifecycle.
 
 - [ ] **Step 4: Executar o teste do formulário**
 
@@ -590,12 +624,15 @@
 
   Expected: PASS.
 
-- [ ] **Step 5: Commit de marco**
+- [ ] **Step 5: Fazer checkpoint de revisão sem commit**
 
   ```bash
-  git add src/Frontend/GenSW.Web/src/features/breeds/pages/BreedFormPage.tsx src/Frontend/GenSW.Web/src/features/breeds/pages/BreedFormPage.test.tsx
-  git commit -m "feat: add breed form"
+  git diff --check
+  git diff --stat
+  git status --short
   ```
+
+  Expected: formulário de Raça revisável, com paginação integral de espécies ativas e sem mutação de `Ativo`; não criar commit nem fazer push.
 
 ### Task 13: Formulário de Variedade e seleção de espécie ativa
 
@@ -609,7 +646,7 @@
 
 - [ ] **Step 1: Escrever testes de formulário que falham**
 
-  Cobrir criação válida, nome localmente inválido, carregamento com `listEspecies({ ativo: true, pageSize: 100, sortBy: 'nomeComum', sortDirection: 'asc' })`, erro `404`/`400`/`409`, loading/not-found/retry e criação apenas com espécie ativa. Na edição de variedade com espécie atual inativa, exigir opção atual visível e selecionada, atualização de nome ou status com o mesmo `especieId`, ausência de outra espécie inativa e troca permitida para uma espécie ativa.
+  Cobrir criação válida, nome localmente inválido, paginação de `listEspecies` com `ativo: true` até `totalPages`, erro `404`/`400`/`409`, loading/not-found/retry e criação apenas com espécie ativa, inclusive uma opção ativa localizada após a primeira página. Na edição de variedade com espécie atual inativa, exigir opção atual visível e selecionada, atualização de nome com o mesmo `especieId`, ausência de outra espécie inativa e troca permitida para uma espécie ativa. O teste não deve chamar `setVariedadeAtivo`.
 
 - [ ] **Step 2: Executar o teste vermelho**
 
@@ -619,7 +656,7 @@
 
 - [ ] **Step 3: Implementar o formulário próprio**
 
-  Carregar a variedade e as espécies ativas. Montar opções somente com espécies ativas, acrescentando a espécie vinculada exclusivamente quando ela estiver inativa. Normalizar `nome`, validar `1..200`, enviar por `createVariedade` ou `updateVariedade` e manter nomes de componentes, state e chamadas HTTP próprios de Variedades.
+  Carregar a variedade e todas as páginas de espécies ativas por `listEspecies`, usando `totalPages` para encerrar a iteração. Montar opções somente com espécies ativas, acrescentando a espécie vinculada exclusivamente quando ela estiver inativa. Normalizar `nome`, validar `1..200`, enviar por `createVariedade` ou `updateVariedade` e manter nomes de componentes, state e chamadas HTTP próprios de Variedades. O formulário não chama `setVariedadeAtivo`; ativação e inativação pertencem à listagem/lifecycle.
 
 - [ ] **Step 4: Executar o teste do formulário**
 
@@ -627,12 +664,15 @@
 
   Expected: PASS.
 
-- [ ] **Step 5: Commit de marco**
+- [ ] **Step 5: Fazer checkpoint de revisão sem commit**
 
   ```bash
-  git add src/Frontend/GenSW.Web/src/features/varieties/pages/VarietyFormPage.tsx src/Frontend/GenSW.Web/src/features/varieties/pages/VarietyFormPage.test.tsx
-  git commit -m "feat: add variety form"
+  git diff --check
+  git diff --stat
+  git status --short
   ```
+
+  Expected: formulário de Variedade revisável, com paginação integral de espécies ativas e sem mutação de `Ativo`; não criar commit nem fazer push.
 
 ### Task 14: Rotas protegidas, navegação e teste de integração do frontend
 
@@ -665,12 +705,15 @@
 
   Expected: PASS.
 
-- [ ] **Step 5: Commit de marco**
+- [ ] **Step 5: Fazer checkpoint de revisão sem commit**
 
   ```bash
-  git add src/Frontend/GenSW.Web/src/routes/AppRoutes.tsx src/Frontend/GenSW.Web/src/routes/AppRoutes.test.tsx src/Frontend/GenSW.Web/src/features/auth/pages/AuthenticatedHomePage.tsx
-  git commit -m "feat: add breed and variety navigation"
+  git diff --check
+  git diff --stat
+  git status --short
   ```
+
+  Expected: rotas e navegação revisáveis com testes PASS; não criar commit nem fazer push.
 
 ### Task 15: Gates integrados e inspeção de escopo
 
@@ -705,17 +748,26 @@
 
 - [ ] **Step 4: Inspecionar migration, diff e escopo**
 
-  ```bash
-  git diff --check
-  git diff --name-only origin/main...HEAD
-  rg -n "Animal|IdentificacaoAnimal|RegistroAnimal|Filiacao|Pedigree|Cruzamento|Genética|Fenótipo|Produção|Propriedade|Lotes" src tests
+  ```powershell
+  $baseline = git merge-base origin/main HEAD
+  git diff --check "$baseline...HEAD"
+  git diff --name-only "$baseline...HEAD"
+  $forbidden = git diff "$baseline...HEAD" -- src tests | Select-String -Pattern 'Animal|IdentificacaoAnimal|RegistroAnimal|Filiacao|Pedigree|Cruzamento|Genética|Fenótipo|Produção|Propriedade|Lotes'
+  if ($forbidden) { $forbidden; throw 'A #294 introduziu escopo de #295–#299 no delta da branch.' }
   ```
 
-  Expected: `git diff --check` sem saída; o diff contém apenas RA-02 e a nova migration; nenhuma ocorrência nova é introduzida fora de texto de teste já existente.
+  Expected: `git diff --check` sem saída; a lista auditável de arquivos alterados contém somente escopo NA-02 e a nova migration; o diff de `src` e `tests` contra a baseline não introduz termos nem implementação de #295–#299.
 
 - [ ] **Step 5: Registrar o resultado dos gates**
 
-  Não criar commit vazio. Se algum gate falhar, voltar exclusivamente à tarefa proprietária do arquivo apontado, corrigir, repetir os comandos de validação e criar um commit com os paths corrigidos explicitamente listados. Se todos passarem, o estado final é uma árvore sem alterações pendentes e evidências prontas para PR e Redmine.
+  Não criar commit vazio. Se algum gate falhar, voltar exclusivamente à tarefa proprietária do arquivo apontado, corrigir e repetir os comandos de validação sem criar commit intermediário. Se todos passarem, revisar o delta completo, criar o único commit de implementação da #294 e não fazer push parcial:
+
+  ```bash
+  git add src/Backend tests src/Frontend/GenSW.Web/src
+  git commit -m "feat: add breeds and varieties"
+  ```
+
+  O commit só pode ocorrer depois de todos os gates desta Task PASS. Depois dele, registrar as evidências para PR e Redmine conforme a governança, sem merge automático.
 
 ## Coverage Matrix
 
