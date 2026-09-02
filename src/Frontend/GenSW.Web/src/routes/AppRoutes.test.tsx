@@ -301,6 +301,19 @@ describe('AppRoutes', () => {
     expect(getVariedadeById).toHaveBeenCalledWith('variety-1')
   })
 
+  it('expõe os cadastros na navegação da home autenticada', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
+    renderApplication('/')
+
+    const cadastros = await screen.findByRole('navigation', { name: 'Cadastros' })
+    expect(cadastros).toHaveTextContent('Pessoas')
+    expect(cadastros).toHaveTextContent('Raças')
+    expect(cadastros).toHaveTextContent('Variedades')
+    expect(cadastros.querySelector('a[href="/pessoas"]')).toBeInTheDocument()
+    expect(cadastros.querySelector('a[href="/racas"]')).toBeInTheDocument()
+    expect(cadastros.querySelector('a[href="/variedades"]')).toBeInTheDocument()
+  })
+
   it('navega da home autenticada para raças e variedades', async () => {
     vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
     const breeds = renderApplication('/')
