@@ -1,11 +1,15 @@
 using GenSW.Application.Authentication;
 using GenSW.Application.People;
 using GenSW.Application.Species;
+using GenSW.Application.Breeds;
+using GenSW.Application.Varieties;
 using GenSW.Infrastructure.Authentication;
 using GenSW.Infrastructure.Identity;
 using GenSW.Infrastructure.Persistence;
 using GenSW.Infrastructure.People;
 using GenSW.Infrastructure.Species;
+using GenSW.Infrastructure.Breeds;
+using GenSW.Infrastructure.Varieties;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -46,6 +50,8 @@ public static class DependencyInjection
         services.TryAddScoped<IAuthenticationSessionService, AuthenticationSessionService>();
         services.AddScoped<IPessoaRepository, PessoaRepository>();
         services.AddScoped<IEspecieRepository, EspecieRepository>();
+        services.AddScoped<IRacaRepository, RacaRepository>();
+        services.AddScoped<IVariedadeRepository, VariedadeRepository>();
 
         return services;
     }

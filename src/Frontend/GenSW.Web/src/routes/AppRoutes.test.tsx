@@ -9,6 +9,8 @@ import {
 } from '../features/auth/services/authService'
 import type { CurrentUser } from '../features/auth/types/auth'
 import { AuthProvider } from '../features/auth/providers/AuthProvider'
+import { createRaca, getRacaById, listRacas, setRacaAtivo, updateRaca } from '../features/breeds/services/breedsService'
+import type { Raca } from '../features/breeds/types/breeds'
 import {
   createPessoa,
   getPessoaById,
@@ -19,6 +21,8 @@ import {
 import { TipoPessoa, type Pessoa } from '../features/people/types/people'
 import { createEspecie, getEspecieById, listEspecies, setEspecieAtivo, updateEspecie } from '../features/species/services/speciesService'
 import type { Especie } from '../features/species/types/species'
+import { createVariedade, getVariedadeById, listVariedades, setVariedadeAtivo, updateVariedade } from '../features/varieties/services/varietiesService'
+import type { Variedade } from '../features/varieties/types/varieties'
 import { AppRoutes } from './AppRoutes'
 
 vi.mock('../features/auth/services/authService', () => ({
@@ -38,6 +42,14 @@ vi.mock('../features/people/services/peopleService', () => ({
 
 vi.mock('../features/species/services/speciesService', () => ({
   createEspecie: vi.fn(), getEspecieById: vi.fn(), listEspecies: vi.fn(), setEspecieAtivo: vi.fn(), updateEspecie: vi.fn(),
+}))
+
+vi.mock('../features/breeds/services/breedsService', () => ({
+  createRaca: vi.fn(), getRacaById: vi.fn(), listRacas: vi.fn(), setRacaAtivo: vi.fn(), updateRaca: vi.fn(),
+}))
+
+vi.mock('../features/varieties/services/varietiesService', () => ({
+  createVariedade: vi.fn(), getVariedadeById: vi.fn(), listVariedades: vi.fn(), setVariedadeAtivo: vi.fn(), updateVariedade: vi.fn(),
 }))
 
 const currentUser: CurrentUser = {
@@ -61,6 +73,18 @@ const activePerson: Pessoa = {
 const activeSpecies: Especie = {
   id: 'species-1', nomeComum: 'Cão doméstico', nomeCientifico: 'Canis familiaris', ativo: true,
   createdAtUtc: '2026-08-31T12:00:00Z', updatedAtUtc: '2026-08-31T12:00:00Z',
+}
+
+const activeBreed: Raca = {
+  id: 'breed-1', especieId: activeSpecies.id, nome: 'Pastor Alemão', ativo: true,
+  createdAtUtc: '2026-09-01T12:00:00Z', updatedAtUtc: '2026-09-01T12:00:00Z',
+  especie: { id: activeSpecies.id, nomeComum: activeSpecies.nomeComum, ativo: true },
+}
+
+const activeVariety: Variedade = {
+  id: 'variety-1', especieId: activeSpecies.id, nome: 'Variedade padrão', ativo: true,
+  createdAtUtc: '2026-09-01T12:00:00Z', updatedAtUtc: '2026-09-01T12:00:00Z',
+  especie: { id: activeSpecies.id, nomeComum: activeSpecies.nomeComum, ativo: true },
 }
 
 function renderApplication(initialPath: string) {
@@ -94,6 +118,16 @@ describe('AppRoutes', () => {
     vi.mocked(setEspecieAtivo).mockResolvedValue(activeSpecies)
     vi.mocked(updateEspecie).mockResolvedValue(activeSpecies)
     vi.mocked(listEspecies).mockResolvedValue({ items: [], page: 1, pageSize: 25, totalItems: 0, totalPages: 0 })
+    vi.mocked(createRaca).mockResolvedValue(activeBreed)
+    vi.mocked(getRacaById).mockResolvedValue(activeBreed)
+    vi.mocked(setRacaAtivo).mockResolvedValue(activeBreed)
+    vi.mocked(updateRaca).mockResolvedValue(activeBreed)
+    vi.mocked(listRacas).mockResolvedValue({ items: [], page: 1, pageSize: 25, totalItems: 0, totalPages: 0 })
+    vi.mocked(createVariedade).mockResolvedValue(activeVariety)
+    vi.mocked(getVariedadeById).mockResolvedValue(activeVariety)
+    vi.mocked(setVariedadeAtivo).mockResolvedValue(activeVariety)
+    vi.mocked(updateVariedade).mockResolvedValue(activeVariety)
+    vi.mocked(listVariedades).mockResolvedValue({ items: [], page: 1, pageSize: 25, totalItems: 0, totalPages: 0 })
   })
 
   it('mostra loading e não renderiza a rota protegida durante o bootstrap', () => {
@@ -221,5 +255,62 @@ describe('AppRoutes', () => {
     renderApplication('/')
     fireEvent.click(await screen.findByRole('link', { name: 'Espécies' }))
     expect(await screen.findByRole('heading', { name: 'Espécies' })).toBeInTheDocument()
+  })
+
+  it('protege as três rotas de raças para usuário anônimo', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(null)
+    for (const path of ['/racas', '/racas/nova', '/racas/breed-1/editar']) {
+      const view = renderApplication(path)
+      expect(await screen.findByRole('heading', { name: 'Acessar o sistema' })).toBeInTheDocument()
+      view.unmount()
+    }
+  })
+
+  it('renderiza as três rotas de raças para usuário autenticado', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
+    const list = renderApplication('/racas')
+    expect(await screen.findByRole('heading', { name: 'Raças' })).toBeInTheDocument()
+    list.unmount()
+    const create = renderApplication('/racas/nova')
+    expect(await screen.findByRole('heading', { name: 'Nova raça' })).toBeInTheDocument()
+    create.unmount()
+    renderApplication('/racas/breed-1/editar')
+    expect(await screen.findByRole('heading', { name: 'Editar raça' })).toBeInTheDocument()
+    expect(getRacaById).toHaveBeenCalledWith('breed-1')
+  })
+
+  it('protege as três rotas de variedades para usuário anônimo', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(null)
+    for (const path of ['/variedades', '/variedades/nova', '/variedades/variety-1/editar']) {
+      const view = renderApplication(path)
+      expect(await screen.findByRole('heading', { name: 'Acessar o sistema' })).toBeInTheDocument()
+      view.unmount()
+    }
+  })
+
+  it('renderiza as três rotas de variedades para usuário autenticado', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
+    const list = renderApplication('/variedades')
+    expect(await screen.findByRole('heading', { name: 'Variedades' })).toBeInTheDocument()
+    list.unmount()
+    const create = renderApplication('/variedades/nova')
+    expect(await screen.findByRole('heading', { name: 'Nova variedade' })).toBeInTheDocument()
+    create.unmount()
+    renderApplication('/variedades/variety-1/editar')
+    expect(await screen.findByRole('heading', { name: 'Editar variedade' })).toBeInTheDocument()
+    expect(getVariedadeById).toHaveBeenCalledWith('variety-1')
+  })
+
+  it('navega da home autenticada para raças e variedades', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
+    const breeds = renderApplication('/')
+    fireEvent.click(await screen.findByRole('link', { name: 'Raças' }))
+    expect(await screen.findByRole('heading', { name: 'Raças' })).toBeInTheDocument()
+    breeds.unmount()
+
+    const varieties = renderApplication('/')
+    fireEvent.click(await screen.findByRole('link', { name: 'Variedades' }))
+    expect(await screen.findByRole('heading', { name: 'Variedades' })).toBeInTheDocument()
+    varieties.unmount()
   })
 })

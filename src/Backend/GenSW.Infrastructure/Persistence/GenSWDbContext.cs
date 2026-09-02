@@ -1,5 +1,7 @@
 using GenSW.Domain.People;
 using GenSW.Domain.Species;
+using GenSW.Domain.Breeds;
+using GenSW.Domain.Varieties;
 using GenSW.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -14,6 +16,10 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
 
     public DbSet<Especie> Especies => Set<Especie>();
 
+    public DbSet<Raca> Racas => Set<Raca>();
+
+    public DbSet<Variedade> Variedades => Set<Variedade>();
+
     public DbSet<RefreshSession> RefreshSessions => Set<RefreshSession>();
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -26,6 +32,9 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
         var scientificNameCanonicalConstraint = usesNpgsql
             ? "\"NomeCientifico\" IS NULL OR (\"NomeCientifico\" <> '' AND \"NomeCientifico\" !~ U&'[\\0009-\\000D\\0085\\00A0\\1680\\2000-\\200A\\2028\\2029\\202F\\205F\\3000]' AND \"NomeCientifico\" !~ '(^ | $|  )')"
             : "\"NomeCientifico\" IS NULL OR (\"NomeCientifico\" <> '' AND \"NomeCientifico\" = trim(\"NomeCientifico\") AND \"NomeCientifico\" NOT LIKE '%  %')";
+        var nameCanonicalConstraint = usesNpgsql
+            ? "\"Nome\" <> '' AND \"Nome\" !~ U&'[\\0009-\\000D\\0085\\00A0\\1680\\2000-\\200A\\2028\\2029\\202F\\205F\\3000]' AND \"Nome\" !~ '(^ | $|  )'"
+            : "\"Nome\" <> '' AND \"Nome\" = trim(\"Nome\") AND \"Nome\" NOT LIKE '%  %'";
 
         builder.Entity<Pessoa>(pessoa =>
         {
@@ -57,6 +66,32 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
             especie.Property(entity => entity.Ativo).IsRequired().HasDefaultValue(true);
             especie.Property(entity => entity.CreatedAtUtc).IsRequired();
             especie.Property(entity => entity.UpdatedAtUtc).IsRequired();
+        });
+
+        builder.Entity<Raca>(raca =>
+        {
+            raca.ToTable("Racas", table =>
+                table.HasCheckConstraint("CK_Racas_Nome_Canonical", nameCanonicalConstraint));
+            raca.HasKey(entity => entity.Id);
+            raca.Property(entity => entity.EspecieId).IsRequired();
+            raca.Property(entity => entity.Nome).IsRequired().HasMaxLength(200);
+            raca.Property(entity => entity.Ativo).IsRequired().HasDefaultValue(true);
+            raca.Property(entity => entity.CreatedAtUtc).IsRequired();
+            raca.Property(entity => entity.UpdatedAtUtc).IsRequired();
+            raca.HasOne<Especie>().WithMany().HasForeignKey(entity => entity.EspecieId).IsRequired().OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<Variedade>(variedade =>
+        {
+            variedade.ToTable("Variedades", table =>
+                table.HasCheckConstraint("CK_Variedades_Nome_Canonical", nameCanonicalConstraint));
+            variedade.HasKey(entity => entity.Id);
+            variedade.Property(entity => entity.EspecieId).IsRequired();
+            variedade.Property(entity => entity.Nome).IsRequired().HasMaxLength(200);
+            variedade.Property(entity => entity.Ativo).IsRequired().HasDefaultValue(true);
+            variedade.Property(entity => entity.CreatedAtUtc).IsRequired();
+            variedade.Property(entity => entity.UpdatedAtUtc).IsRequired();
+            variedade.HasOne<Especie>().WithMany().HasForeignKey(entity => entity.EspecieId).IsRequired().OnDelete(DeleteBehavior.Restrict);
         });
 
         builder.Entity<ApplicationUser>(user =>

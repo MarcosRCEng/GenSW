@@ -1,0 +1,10 @@
+import { httpRequest } from '../../../shared/http/httpClient'
+import type { CreateVariedadeRequest, ListVariedadesParams, UpdateVariedadeRequest, UpdateVariedadeStatusRequest, Variedade, VariedadesPage } from '../types/varieties'
+import { parseVariedade, parseVariedadesPage } from './varietiesContractParsers'
+const endpoint = '/variedades'
+function buildListPath(params?: ListVariedadesParams): string { const query = new URLSearchParams(); if (params?.page !== undefined) query.set('page', String(params.page)); if (params?.pageSize !== undefined) query.set('pageSize', String(params.pageSize)); if (params?.search !== undefined) query.set('search', params.search); if (params?.especieId !== undefined) query.set('especieId', params.especieId); if (params?.ativo !== undefined) query.set('ativo', String(params.ativo)); if (params?.sortBy !== undefined) query.set('sortBy', params.sortBy); if (params?.sortDirection !== undefined) query.set('sortDirection', params.sortDirection); const text = query.toString(); return text ? `${endpoint}?${text}` : endpoint }
+export async function createVariedade(request: CreateVariedadeRequest): Promise<Variedade> { return parseVariedade(await httpRequest<unknown>(endpoint, { method: 'POST', authenticated: true, body: request })) }
+export async function getVariedadeById(id: string): Promise<Variedade> { return parseVariedade(await httpRequest<unknown>(`${endpoint}/${id}`, { authenticated: true })) }
+export async function listVariedades(params?: ListVariedadesParams): Promise<VariedadesPage> { return parseVariedadesPage(await httpRequest<unknown>(buildListPath(params), { authenticated: true })) }
+export async function updateVariedade(id: string, request: UpdateVariedadeRequest): Promise<Variedade> { return parseVariedade(await httpRequest<unknown>(`${endpoint}/${id}`, { method: 'PUT', authenticated: true, body: request })) }
+export async function setVariedadeAtivo(id: string, ativo: boolean): Promise<Variedade> { const body: UpdateVariedadeStatusRequest = { ativo }; return parseVariedade(await httpRequest<unknown>(`${endpoint}/${id}/ativo`, { method: 'PATCH', authenticated: true, body })) }
