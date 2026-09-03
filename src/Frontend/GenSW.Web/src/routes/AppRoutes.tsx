@@ -2,10 +2,14 @@ import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { AuthenticatedHomePage } from '../features/auth/pages/AuthenticatedHomePage'
 import { LoginPage } from '../features/auth/pages/LoginPage'
 import { useAuth } from '../features/auth/hooks/useAuth'
+import { BreedFormPage } from '../features/breeds/pages/BreedFormPage'
+import { BreedsListPage } from '../features/breeds/pages/BreedsListPage'
 import { PeopleFormPage } from '../features/people/pages/PeopleFormPage'
 import { PeopleListPage } from '../features/people/pages/PeopleListPage'
 import { SpeciesFormPage } from '../features/species/pages/SpeciesFormPage'
 import { SpeciesListPage } from '../features/species/pages/SpeciesListPage'
+import { VarietiesListPage } from '../features/varieties/pages/VarietiesListPage'
+import { VarietyFormPage } from '../features/varieties/pages/VarietyFormPage'
 
 function ApplicationLoading() {
   return (
@@ -47,6 +51,12 @@ export function AppRoutes() {
         <Route element={<SpeciesListPage />} path="/especies" />
         <Route element={<SpeciesFormPage />} path="/especies/nova" />
         <Route element={<SpeciesFormPage />} path="/especies/:id/editar" />
+        <Route element={<BreedsListPage />} path="/racas" />
+        <Route element={<BreedFormPage />} path="/racas/nova" />
+        <Route element={<BreedFormPage />} path="/racas/:id/editar" />
+        <Route element={<VarietiesListPage />} path="/variedades" />
+        <Route element={<VarietyFormPage />} path="/variedades/nova" />
+        <Route element={<VarietyFormPage />} path="/variedades/:id/editar" />
       </Route>
       <Route element={<Navigate replace to="/" />} path="*" />
     </Routes>

@@ -1,0 +1,6 @@
+import { describe, expect, it } from 'vitest'
+import { InvalidApiResponseError } from '../../../shared/http/httpErrors'
+import { parseVariedade, parseVariedadesPage } from './varietiesContractParsers'
+const variedade = { id: 'variety-1', especieId: 'species-1', nome: 'Pelo curto', ativo: true, createdAtUtc: '2026-09-01T12:00:00Z', updatedAtUtc: '2026-09-01T12:00:00Z', especie: { id: 'species-1', nomeComum: 'Cão', ativo: true } }
+describe('parseVariedade', () => { it('aceita variedade com resumo de espécie', () => expect(parseVariedade(variedade)).toEqual(variedade)); it.each([null, { ...variedade, especieId: 1 }, { ...variedade, nome: 1 }, { ...variedade, ativo: 'true' }, { ...variedade, createdAtUtc: 'invalid' }, { ...variedade, especie: { ...variedade.especie, ativo: 'true' } }])('rejeita contrato inválido %#', (value) => expect(() => parseVariedade(value)).toThrow(InvalidApiResponseError)) })
+describe('parseVariedadesPage', () => { it('aceita página válida', () => expect(parseVariedadesPage({ items: [variedade], page: 1, pageSize: 25, totalItems: 1, totalPages: 1 })).toEqual({ items: [variedade], page: 1, pageSize: 25, totalItems: 1, totalPages: 1 })); it('rejeita metadados inválidos', () => expect(() => parseVariedadesPage({ items: [], page: 0, pageSize: 25, totalItems: 0, totalPages: 0 })).toThrow(InvalidApiResponseError)) })

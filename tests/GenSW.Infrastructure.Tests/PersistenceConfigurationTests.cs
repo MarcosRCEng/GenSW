@@ -2,7 +2,11 @@ using GenSW.Infrastructure;
 using GenSW.Infrastructure.Identity;
 using GenSW.Infrastructure.Persistence;
 using GenSW.Application.Species;
+using GenSW.Application.Breeds;
+using GenSW.Application.Varieties;
 using GenSW.Infrastructure.Species;
+using GenSW.Infrastructure.Breeds;
+using GenSW.Infrastructure.Varieties;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -28,6 +32,21 @@ public sealed class PersistenceConfigurationTests
             descriptor.ServiceType == typeof(IEspecieRepository) &&
             descriptor.ImplementationType == typeof(EspecieRepository) &&
             descriptor.Lifetime == ServiceLifetime.Scoped);
+    }
+
+    [Theory]
+    [InlineData(typeof(IRacaRepository), typeof(RacaRepository))]
+    [InlineData(typeof(IVariedadeRepository), typeof(VariedadeRepository))]
+    public void AddInfrastructure_registers_master_data_repositories_as_scoped(Type serviceType, Type implementationType)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:GenSW"] = "Host=localhost;Database=gensw_test" })
+            .Build();
+        var services = new ServiceCollection();
+
+        DependencyInjection.AddInfrastructure(services, configuration);
+
+        Assert.Contains(services, descriptor => descriptor.ServiceType == serviceType && descriptor.ImplementationType == implementationType && descriptor.Lifetime == ServiceLifetime.Scoped);
     }
 
     [Fact]

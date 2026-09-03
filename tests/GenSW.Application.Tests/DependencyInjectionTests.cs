@@ -2,6 +2,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using GenSW.Application.People;
 using GenSW.Application.Species;
+using GenSW.Application.Breeds;
+using GenSW.Application.Varieties;
 
 namespace GenSW.Application.Tests;
 
@@ -18,7 +20,7 @@ public sealed class DependencyInjectionTests
     }
 
     [Fact]
-    public void AddApplication_registers_person_and_species_services_as_scoped()
+    public void AddApplication_registers_person_species_breed_and_variety_services_as_scoped()
     {
         var services = new ServiceCollection();
 
@@ -26,5 +28,7 @@ public sealed class DependencyInjectionTests
 
         Assert.Equal(ServiceLifetime.Scoped, Assert.Single(services, service => service.ServiceType == typeof(IPessoaService)).Lifetime);
         Assert.Equal(ServiceLifetime.Scoped, Assert.Single(services, service => service.ServiceType == typeof(IEspecieService)).Lifetime);
+        Assert.Equal(ServiceLifetime.Scoped, Assert.Single(services, service => service.ServiceType == typeof(IRacaService)).Lifetime);
+        Assert.Equal(ServiceLifetime.Scoped, Assert.Single(services, service => service.ServiceType == typeof(IVariedadeService)).Lifetime);
     }
 }
