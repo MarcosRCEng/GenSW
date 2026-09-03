@@ -1,4 +1,5 @@
 import { buildApiUrl } from '../config/api'
+import { logAuthDiagnostic } from './authDiagnostics'
 import { HttpError, InvalidApiResponseError, NetworkError, SessionExpiredError } from './httpErrors'
 import {
   getSessionSnapshot,
@@ -100,6 +101,14 @@ async function executeRequest<T>(
 ): Promise<T> {
   const requestSnapshot = getSessionSnapshot()
   const response = await sendRequest(path, options, requestSnapshot)
+  const normalizedEndpoint = endpointPath(path)
+
+  if (normalizedEndpoint === '/auth/login') {
+    logAuthDiagnostic({ event: 'login.post.response_received', status: response.status })
+  } else if (normalizedEndpoint === '/auth/me') {
+    logAuthDiagnostic({ event: 'auth.me.response_received', status: response.status })
+  }
+
   const currentSnapshot = getSessionSnapshot()
 
   if (

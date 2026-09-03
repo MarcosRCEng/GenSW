@@ -225,4 +225,97 @@ describe('authService', () => {
     await expect(oldLogin).rejects.toBeInstanceOf(NetworkError)
     expect(getSessionSnapshot().accessToken).toBe('new-session-token')
   })
+
+  it('registra os estágios do login sem expor senha, token, Authorization ou cookies', async () => {
+    const password = 'SENSITIVE_PASSWORD_AUTH_309'
+    const accessToken = 'SENSITIVE_ACCESS_TOKEN_AUTH_309'
+    const refreshToken = 'SENSITIVE_REFRESH_TOKEN_AUTH_309'
+    const authorization = `Bearer ${accessToken}`
+    const cookie = `GenSW.RefreshSession=${refreshToken}`
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    const fetchMock = vi.fn(
+      (input: RequestInfo | URL): Promise<Response> => {
+        const path = new URL(String(input)).pathname
+
+        return Promise.resolve(
+          path.endsWith('/auth/login')
+            ? jsonResponse({ ...accessTokenResponse, accessToken })
+            : jsonResponse(currentUser),
+        )
+      },
+    )
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(login({ userName: 'marina', password })).resolves.toEqual(currentUser)
+
+    const diagnostics = infoSpy.mock.calls.map(([message]) =>
+      JSON.parse(String(message).replace('[GenSW auth] ', '')),
+    )
+    expect(diagnostics).toEqual(
+      expect.arrayContaining([
+        { event: 'login.attempt.started' },
+        { event: 'login.post.started' },
+        { event: 'login.post.response_received', status: 200 },
+        { event: 'login.parser.started' },
+        { event: 'login.parser.pass' },
+        { event: 'login.token_store.started', tokenPresent: true },
+        { event: 'login.token_store.completed', tokenPresent: true },
+        { event: 'login.current_user_load.started' },
+        { event: 'auth.me.started' },
+        { event: 'auth.me.response_received', status: 200 },
+        { event: 'login.completed' },
+      ]),
+    )
+
+    const serializedDiagnostics = JSON.stringify(infoSpy.mock.calls)
+    expect(serializedDiagnostics).not.toContain(password)
+    expect(serializedDiagnostics).not.toContain(accessToken)
+    expect(serializedDiagnostics).not.toContain(refreshToken)
+    expect(serializedDiagnostics).not.toContain(authorization)
+    expect(serializedDiagnostics).not.toContain(cookie)
+  })
+
+  it('registra falha segura do parser e o estágio onde o login aborta', async () => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    const fetchMock = vi.fn((): Promise<Response> => Promise.resolve(jsonResponse({ accepted: true })))
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(login({ userName: 'marina', password: 'SENSITIVE_PASSWORD_AUTH_309' })).rejects.toThrow(
+      'A API retornou um token de acesso inválido.',
+    )
+
+    const diagnostics = infoSpy.mock.calls.map(([message]) =>
+      JSON.parse(String(message).replace('[GenSW auth] ', '')),
+    )
+    expect(diagnostics).toEqual(
+      expect.arrayContaining([
+        { event: 'login.parser.fail', errorType: 'InvalidApiResponseError' },
+        {
+          event: 'login.flow_aborted',
+          errorType: 'InvalidApiResponseError',
+          stage: 'request_access_token',
+        },
+      ]),
+    )
+  })
+
+  it('mantém o fluxo funcional quando o console rejeita o diagnóstico', async () => {
+    vi.spyOn(console, 'info').mockImplementation(() => {
+      throw new Error('diagnostic sink unavailable')
+    })
+    const fetchMock = vi.fn(
+      (input: RequestInfo | URL): Promise<Response> =>
+        Promise.resolve(
+          new URL(String(input)).pathname.endsWith('/auth/login')
+            ? jsonResponse(accessTokenResponse)
+            : jsonResponse(currentUser),
+        ),
+    )
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(login({ userName: 'marina', password: 'secret' })).resolves.toEqual(currentUser)
+  })
 })

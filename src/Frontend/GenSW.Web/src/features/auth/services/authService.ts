@@ -1,4 +1,5 @@
 import { HttpError, SessionExpiredError } from '../../../shared/http/httpErrors'
+import { getAuthErrorType, logAuthDiagnostic } from '../../../shared/http/authDiagnostics'
 import { httpRequest } from '../../../shared/http/httpClient'
 import {
   getSessionSnapshot,
@@ -34,6 +35,7 @@ async function waitForPendingLogout(): Promise<void> {
 }
 
 async function requestAccessToken(request: LoginRequest): Promise<AccessTokenResponse> {
+  logAuthDiagnostic({ event: 'login.post.started' })
   const response = await httpRequest<unknown>(AUTH_ENDPOINTS.login, {
     method: 'POST',
     body: request,
@@ -41,7 +43,16 @@ async function requestAccessToken(request: LoginRequest): Promise<AccessTokenRes
     retryOnUnauthorized: false,
   })
 
-  return parseAccessTokenResponse(response)
+  logAuthDiagnostic({ event: 'login.parser.started' })
+
+  try {
+    const parsedResponse = parseAccessTokenResponse(response)
+    logAuthDiagnostic({ event: 'login.parser.pass' })
+    return parsedResponse
+  } catch (error) {
+    logAuthDiagnostic({ event: 'login.parser.fail', errorType: getAuthErrorType(error) })
+    throw error
+  }
 }
 
 async function requestRefreshedAccessToken(): Promise<AccessTokenResponse | null> {
@@ -69,6 +80,7 @@ export function refreshSession(): Promise<AccessTokenResponse | null> {
 }
 
 export async function getCurrentUser(): Promise<CurrentUser> {
+  logAuthDiagnostic({ event: 'auth.me.started' })
   const response = await httpRequest<unknown>(AUTH_ENDPOINTS.me, {
     authenticated: true,
     retryOnUnauthorized: false,
@@ -78,6 +90,7 @@ export async function getCurrentUser(): Promise<CurrentUser> {
 }
 
 async function loadCurrentUserAfterToken(): Promise<CurrentUser> {
+  logAuthDiagnostic({ event: 'login.current_user_load.started' })
   const expectedGeneration = getSessionSnapshot().generation
 
   try {
@@ -102,13 +115,40 @@ export async function bootstrapSession(): Promise<CurrentUser | null> {
 }
 
 export async function login(request: LoginRequest): Promise<CurrentUser> {
-  await waitForPendingLogout()
-  await waitForSessionRefresh()
+  logAuthDiagnostic({ event: 'login.attempt.started' })
+  let stage = 'wait_for_pending_logout'
 
-  const accessTokenResponse = await requestAccessToken(request)
-  setAccessToken(accessTokenResponse.accessToken)
+  try {
+    await waitForPendingLogout()
+    stage = 'wait_for_session_refresh'
+    await waitForSessionRefresh()
 
-  return loadCurrentUserAfterToken()
+    stage = 'request_access_token'
+    const accessTokenResponse = await requestAccessToken(request)
+
+    stage = 'set_access_token'
+    logAuthDiagnostic({
+      event: 'login.token_store.started',
+      tokenPresent: accessTokenResponse.accessToken.length > 0,
+    })
+    setAccessToken(accessTokenResponse.accessToken)
+    logAuthDiagnostic({
+      event: 'login.token_store.completed',
+      tokenPresent: getSessionSnapshot().accessToken !== null,
+    })
+
+    stage = 'load_current_user'
+    const currentUser = await loadCurrentUserAfterToken()
+    logAuthDiagnostic({ event: 'login.completed' })
+    return currentUser
+  } catch (error) {
+    logAuthDiagnostic({
+      event: 'login.flow_aborted',
+      errorType: getAuthErrorType(error),
+      stage,
+    })
+    throw error
+  }
 }
 
 export function logout(): Promise<void> {
