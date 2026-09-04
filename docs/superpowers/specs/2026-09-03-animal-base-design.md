@@ -1,6 +1,6 @@
 # NA-03 — Animal base: design
 
-**Status:** `NA_03_SPEC_PROPOSTA`, aguardando validação humana do artefato; sem implementação nesta fase
+**Status:** `NA_03_SPEC_AJUSTADA`, aguardando validação humana do artefato; sem implementação nesta fase
 **Redmine:** #295, filha da Evolução #291
 **Base analisada:** `main` em `0445b482c4f8f5362a2d7a3a00cdd6c7236dc914`
 **Dependências integradas:** NA-01 (#293, Espécies) e NA-02 (#294, Raças e Variedades)
@@ -40,7 +40,7 @@ O desenho segue os módulos verticais existentes e seus contratos específicos; 
 | `RacaId` | `Guid?` | Opcional e diretamente relacionada a `EspecieId`. |
 | `VariedadeId` | `Guid?` | Opcional e diretamente relacionada a `EspecieId`. |
 | `Sexo` | `SexoAnimal` | Obrigatório: `Macho = 1`, `Femea = 2`, `Indeterminado = 3`. |
-| `DataNascimento` | `DateOnly?` | Opcional; não persiste idade. Data futura em UTC é inválida. |
+| `DataNascimento` | `DateOnly?` | Opcional; não persiste idade. Não pode ser posterior à data corrente derivada do relógio UTC da aplicação. |
 | `Escopo` | `EscopoAnimal` | Obrigatório: `Operacional = 1`, `Referencia = 2`. |
 | `Ativo` | `bool` | Começa em `true`; representa somente participação operacional corrente. |
 | `CreatedAtUtc` / `UpdatedAtUtc` | `DateTimeOffset` | Obrigatórios e UTC, seguindo o padrão atual. |
@@ -55,6 +55,7 @@ O domínio valida regras locais: valores de enum definidos, `Guid` obrigatório 
 - `CodigoInterno` manual é normalizado somente quanto a espaços: sem vazio, bordas ou sequências internas de espaços não canônicas. A caixa apresentada é preservada, mas `AN-000001` e `an-000001` são o mesmo código para unicidade.
 - Em `POST`, apenas `null` ou a omissão de `codigoInterno` pedem geração automática. String vazia ou apenas espaços é `400`, não pedido implícito de geração. Em `PUT`, `codigoInterno` é obrigatório; não existe regeneração automática durante edição.
 - `Nome` nulo ou vazio após normalização é persistido como `null`; não há unicidade ou código derivado do nome.
+- `DateOnly` não contém timezone. Para criação e edição, a data corrente é `DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime)` — o relógio UTC da Application já usado no projeto, não `CURRENT_DATE`, horário local do servidor ou horário do navegador.
 - Raça e Variedade são independentes: qualquer uma, ambas ou nenhuma podem ser informadas. Nunca se deduz uma pela outra.
 - Um vínculo classificatório novo deve apontar a uma classificação existente, ativa e pertencente à espécie do Animal. A manutenção de um vínculo histórico já existente não revalida o estado ativo dessa classificação.
 - Não existe DELETE físico para Animal. Inatividade não significa morte, venda, descarte, transferência ou evento biológico.
@@ -82,21 +83,46 @@ O índice `UX_Animais_CodigoInterno_CaseInsensitive` é a autoridade final para 
 
 Um código manual que se pareça com código automático, por exemplo `AN-000001`, é permitido quando livre. Ele não chama `setval` nem altera a sequence; quando uma criação automática alcançar esse mesmo texto, a restrição única detectará a colisão.
 
-Para uma criação automática, a repetição é estritamente limitada a este caso conhecido:
+### Retry automático limitado e fronteira transacional
 
-1. alocar o próximo valor atômico da sequence e montar o candidato;
-2. tentar persistir;
-3. repetir **somente** se o banco reportar `23505` para `UX_Animais_CodigoInterno_CaseInsensitive` daquele candidato automático;
-4. restaurar o estado de tracking antes da nova tentativa, ou executar a tentativa em uma unidade de persistência limpa;
-5. propagar qualquer outro erro — inclusive FK, timeout, erro de conexão, outra constraint ou duplicidade em código manual.
+O limite fixo do MVP é de **cinco tentativas automáticas totais** por `POST` sem `codigoInterno`: a tentativa inicial e, no máximo, quatro novas alocações. O número é deliberadamente interno e fixo, sem configuração externa. Cinco candidatos absorvem uma pequena sequência patológica de códigos manuais previamente ocupados sem transformar o endpoint em laço aberto, consumir valores indefinidamente ou ocultar uma ocupação anômala do namespace automático.
 
-Isso não é retry cego: cada nova tentativa é sustentada por uma sequence atômica e por uma constraint estrutural que provou que o candidato já existe. Criação ou edição com código informado manualmente nunca troca o valor do usuário: colisão é `AnimalDuplicateException` e `409`.
+Uma repetição é permitida somente quando **todas** as condições abaixo forem verdadeiras:
+
+1. o `POST` é automático — `codigoInterno` foi omitido ou é `null`;
+2. o `CodigoInterno` da entidade na tentativa que falhou é exatamente o candidato automático alocado para ela;
+3. a exceção PostgreSQL interna tem `SqlState = 23505`;
+4. o nome da constraint é exatamente `UX_Animais_CodigoInterno_CaseInsensitive`, que pertence exclusivamente à unicidade de `CodigoInterno`;
+5. ainda não foram consumidas as cinco tentativas totais.
+
+A correspondência do candidato é determinada pelo estado da própria tentativa — o `CodigoInterno` que a entidade tentou persistir deve ser o candidato automático recém-alocado — junto do SQLSTATE e do nome da constraint. A implementação não interpreta `Detail` ou qualquer texto de erro do PostgreSQL para habilitar retry.
+
+Não existe retry genérico. Outro `23505`, outra constraint, `25P02`, FK, check, timeout, cancelamento, falha de conexão ou qualquer outro SQLSTATE/erro é propagado imediatamente. Criação ou edição com código manual nunca troca ou repete o valor do usuário: uma colisão manual continua sendo `AnimalDuplicateException` e `409`.
+
+Cada candidato automático define uma unidade transacional de persistência completa e isolada:
+
+```text
+tentativa nova → iniciar transação nova → nextval → INSERT/SaveChanges → commit e sucesso
+
+ou
+
+tentativa nova → iniciar transação nova → nextval → 23505 elegível
+→ rollback e encerramento integral da transação/unidade da tentativa
+→ limpar o estado EF da entidade falhada quando aplicável
+→ iniciar transação nova → novo nextval → nova tentativa
+```
+
+Um `23505` torna a transação PostgreSQL corrente abortada. Nenhum comando adicional — inclusive `nextval` — pode reutilizá-la. A próxima tentativa começa apenas depois do rollback e do descarte/encerramento integral da transação anterior. A implementação pode manter ou recriar o `DbContext` conforme o padrão concreto do projeto, mas nenhum `DbTransaction` nem entidade EF pendente/falhada pode atravessar tentativas: se o contexto for mantido, a entrada falhada precisa ser destacada e não pode restar transação ativa ou abortada. Se rollback, descarte ou limpeza falhar, o erro é propagado e não se inicia nova tentativa. Essa semântica transacional não fica em aberto para o implementation plan.
+
+Se a quinta tentativa elegível também colidir, ela é encerrada/rollbackada e a Application lança `AnimalAutomaticCodeCollisionLimitExceededException`, determinística e mapeada para `409 Conflict`; não há sexta alocação. Como `nextval` não volta no rollback, todos os valores tentados permanecem consumidos e as lacunas continuam sendo comportamento aceito.
+
+Isso não é retry cego: cada nova tentativa é sustentada por uma sequence atômica e por uma constraint estrutural que provou que o candidato automático existe, tem condições de erro estritamente fechadas e possui limite fixo. Código manual não chama `setval` nem é modificado por esse fluxo.
 
 ### Alternativas avaliadas
 
 | Alternativa | Vantagem | Desvantagem | Decisão |
 |---|---|---|---|
-| Sequence PostgreSQL + índice único + repetição dirigida | Atômica, global, simples, sem hot row e coerente com PostgreSQL. | Aceita lacunas e eventual colisão com código manual autoformatado. | **Adotada.** |
+| Sequence PostgreSQL + índice único + repetição dirigida limitada | Atômica, global, simples, sem hot row e coerente com PostgreSQL. | Aceita lacunas e eventual colisão com código manual autoformatado; limita a cinco tentativas totais. | **Adotada.** |
 | Tabela-contador com `UPDATE … RETURNING` em transação | Pode manter sequência sem lacunas se todos os fluxos forem serializados. | Hot row global, menor concorrência, coordenação obrigatória também para códigos manuais e nova convenção sem necessidade do MVP. | Não adotar. |
 | `MAX(CodigoInterno)+1`, contador em memória ou lock de processo | Parece simples. | Não é seguro entre sessões/processos e falha em concorrência. | Proibida. |
 | `DEFAULT nextval` diretamente na coluna | Aloca no banco. | Não resolve formato textual, input manual nem a colisão latente com um código manual. | Não adotar. |
@@ -279,22 +305,23 @@ O padrão HTTP acompanha os módulos atuais: dados ou query inválidos em `400`,
 | Cenário | Fonte de verdade | Resultado Application/API |
 |---|---|---|
 | Dois `POST` automáticos simultâneos | `nextval` retorna valores distintos; índice único é defesa final. | Ambos criam Animal com códigos distintos (`201`), ainda que a ordem de commit seja diferente. |
-| `POST` automático concorre com manual igual ao próximo candidato | `UX_Animais_CodigoInterno_CaseInsensitive`. | Se o manual persistir primeiro, o automático reconhece somente essa violação conhecida, aloca o próximo e ambos podem retornar `201`. Se o automático persistir primeiro, o manual recebe `AnimalDuplicateException` e `409`; o valor manual nunca é alterado. |
+| `POST` automático concorre com manual igual ao próximo candidato | `UX_Animais_CodigoInterno_CaseInsensitive`. | Se o manual persistir primeiro, o automático repete somente no fluxo qualificado e ambos retornam `201` se surgir candidato livre entre as cinco tentativas; se a quinta também colidir, o automático retorna a exceção de limite/`409`. Se o automático persistir primeiro, o manual recebe `AnimalDuplicateException` e `409`; o valor manual nunca é alterado. |
 | Dois `POST` manuais com o mesmo código | Índice único case-insensitive. | Um persiste; o outro recebe `AnimalDuplicateException`/`409`, mesmo que a pré-validação tenha passado em ambos. |
 | Edição para código já usado | Mesmo índice único. | `AnimalDuplicateException`/`409`; o código anterior permanece. |
 | Espécie, Raça ou Variedade ausente | Consulta de Application e FK. | Exceção `*NotFound`/`404`. |
 | Destino de vínculo inativo ou classificação de espécie diversa | Regra de Application; FK composta reforça a espécie. | `ArgumentException` ou exceção de regra de vínculo/`400`. |
 | Mudança de espécie com classificação conservada incompatível | Política B no snapshot completo; FK composta é defesa final. | `400` com campo conflitante e orientação de limpar/substituir. |
 | Tentar mudar `Raca.EspecieId` ou `Variedade.EspecieId` após uso por Animal | Pré-consulta e FK composta `Restrict`. | Exceção específica de classificação em uso/`409`; corrida de banco recebe a mesma tradução. |
+| Quinta colisão elegível de candidato automático | Limite fixo de cinco tentativas, após rollback da quinta unidade. | `AnimalAutomaticCodeCollisionLimitExceededException`/`409`; nenhuma sexta alocação. |
 | Esgotamento da sequence | Sequence PostgreSQL. | Exceção de exaustão de código/`409`, sem reciclagem ou retry genérico. |
 
 ## 13. Estratégia de testes
 
 | Camada | Cobertura requerida |
 |---|---|
-| Domain | Criação mínima válida; enums inválidos; normalização e limites de Código/Nome; campos opcionais; data futura; edição de código, nome, sexo, escopo e classificações; lifecycle idempotente; edição de Animal inativo; ausência de idade persistida. |
-| Application | Create manual/automático; enum e query inválidos; espécie ausente/inativa; todas as combinações de Raça/Variedade; cada classificação em espécie divergente; manutenção de vínculos inativos; novo vínculo inativo rejeitado; troca de espécie segundo política B; código duplicado; atualização de código; lifecycle; proteção de alteração de espécie de Raça/Variedade em uso. |
-| Infrastructure/PostgreSQL | Modelo EF e migration; defaults, checks, índices, FKs `Restrict`, chaves alternativas e FKs compostas; round-trip `Up`/`Down` que remove também as chaves alternativas; unicidade case-insensitive; paginação/ordenação/filtros; dois contextos reais criando automaticamente em concorrência; colisão manual `AN-000001`; rollback consumindo número e lacuna aceita; tentativa SQL de classificação de espécie incompatível; tentativa de mover classificação referenciada. |
+| Domain | Criação mínima válida; enums inválidos; normalização e limites de Código/Nome; campos opcionais; `DataNascimento` posterior à data corrente derivada do relógio UTC da aplicação, inclusive teste de fronteira com relógio fixo; edição de código, nome, sexo, escopo e classificações; lifecycle idempotente; edição de Animal inativo; ausência de idade persistida. |
+| Application | Create manual/automático; enum e query inválidos; espécie ausente/inativa; todas as combinações de Raça/Variedade; cada classificação em espécie divergente; manutenção de vínculos inativos; novo vínculo inativo rejeitado; troca de espécie segundo política B; código duplicado; atualização de código; lifecycle; proteção de alteração de espécie de Raça/Variedade em uso; retry automático somente para `23505`/constraint nomeada/candidato correspondente, sem parse de texto de erro; sucesso dentro de cinco tentativas; exceção determinística na quinta colisão sem sexta alocação; manual, limpeza/rollback falhos e erros não elegíveis sem retry. |
+| Infrastructure/PostgreSQL | Modelo EF e migration; defaults, checks, índices, FKs `Restrict`, chaves alternativas e FKs compostas; round-trip `Up`/`Down` que remove também as chaves alternativas; unicidade case-insensitive; paginação/ordenação/filtros; dois contextos reais criando automaticamente em concorrência; colisão manual `AN-000001`; rollback consumindo número e lacuna aceita; teste PostgreSQL real que preenche o próximo código, inclusive uma variante de caixa diferente, força a primeira colisão automática e registra a identidade transacional de cada tentativa (por instrumentação de teste ou `txid_current()`), observa rollback/encerramento antes do segundo `nextval`, comprova segunda transação distinta, persiste o candidato seguinte e não produz `25P02`; teste PostgreSQL real que preenche os cinco próximos candidatos, comprova exatamente cinco alocações/tentativas, nenhum sexto `nextval` e a exceção de limite/`409`; teste manual duplicado com uma única tentativa; tentativa SQL de classificação de espécie incompatível; tentativa de mover classificação referenciada. |
 | API | Autenticação; `201`/Location; listagem, paginação e todos os filtros; GET ativo/inativo; PUT; PATCH lifecycle; `400`, `404`, `409`; cenários de concorrência acima quando o harness permitir; inexistência de DELETE (`405`). |
 | Frontend | Parsers estritos, inclusive enums e resumos anuláveis; serialização de todos os filtros; rotas protegidas; loading/erro/retry/vazio/paginação; criação com código vazio; edição de código; seletores de espécie/raça/variedade; ambas as classificações simultâneas; vínculo histórico inativo; aviso de troca de espécie; mensagens de erro e lifecycle. |
 
@@ -328,7 +355,7 @@ Cada domínio futuro acrescentará suas regras de lifecycle, integridade e permi
 |---|---|
 | Identidade operacional | `CodigoInterno` é único global, editável e semanticamente neutro; `Id` é a identidade técnica imutável. |
 | Geração automática | Sequence PostgreSQL global, `bigint`, `CACHE 1`, formatação mínima de seis dígitos, lacunas aceitas. |
-| Colisão manual/automática | Índice único global e repetição somente para colisão comprovada de candidato automático. |
+| Colisão manual/automática | Índice único global e até cinco tentativas totais somente para colisão comprovada (`23505` e constraint nomeada) de candidato automático; cada colisão encerra a transação antes da próxima tentativa. |
 | Integridade de classificações | FKs compostas contra chaves alternativas, além de validação de estado na Application. |
 | Raça e Variedade | Independentes, diretamente ligadas à Espécie e simultaneamente opcionais no Animal. |
 | Troca de espécie | Política B: rejeitar snapshot incompatível; limpeza/substituição deve ser explícita. |
@@ -340,7 +367,7 @@ Não foi encontrada contradição entre esta SPEC, a issue #295 e os contratos i
 ## Critérios de aceite desta fase de design
 
 - A SPEC cobre os campos, invariantes, lifecycle, API, persistência, frontend, erros, concorrência e testes de NA-03.
-- A estratégia de `CodigoInterno` é global, atômica, concorrente, sem `MAX+1` ou contador em memória, e define manual/rollback/overflow.
+- A estratégia de `CodigoInterno` é global, atômica, concorrente, sem `MAX+1` ou contador em memória, e define manual/rollback/overflow, limite fixo de cinco tentativas e fronteira transacional após `23505`.
 - A política de troca de espécie e as classificações inativas são explícitas.
 - A integridade Espécie/Raça/Variedade tem defesa de Application e banco.
 - Não há código, migration, branch de implementação, plano de implementação ou alteração das issues #296–#299.
