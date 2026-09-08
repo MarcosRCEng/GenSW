@@ -4,7 +4,7 @@
 
 **Goal:** Deliver the NA-03 Animal base aggregate with safe operational-code allocation, classifications, lifecycle, PostgreSQL integrity, authenticated API, React UI, and complete regression coverage.
 
-**Architecture:** Animal is a dedicated vertical module. The Domain owns only local invariants; the Application validates Species, Breed, and Variety relationships; EF Core and PostgreSQL enforce structural compatibility with composite foreign keys. Automatic code creation uses one new PostgreSQL transaction per candidate through a scoped allocator and never retries any error other than the named Animal-code uniqueness violation.
+**Architecture:** Animal is a dedicated vertical module. The Domain owns only local invariants; the Application validates Species, Breed, and Variety relationships; EF Core and PostgreSQL enforce structural compatibility with composite foreign keys. Automatic code creation uses one new PostgreSQL transaction per candidate through a scoped allocator and retries only a persisted, named `CodigoInterno` constraint violation with structured provenance that matches the candidate of the current automatic attempt.
 
 **Tech Stack:** .NET 8/C#; EF Core 8.0.10; Npgsql/PostgreSQL; ASP.NET Core controllers and ProblemDetails; xUnit; React 18; TypeScript; React Router; Vitest; Testing Library; Vite; ESLint.
 
@@ -19,14 +19,15 @@
 - Do not modify historical migrations. The Animal migration is additive, and its Down path must remove Animal artifacts and the two new alternate keys completely.
 - Do not create a DELETE route, physical deletion flow, StatusAnimal, or any implementation from #296, #297, #298, or #299.
 - Automatic CodigoInterno allocation is PostgreSQL-only: bigint sequence, CACHE 1, NO CYCLE, nextval, AN- plus invariant D6 minimum-width formatting. Never use MAX+1, a process counter, lpad alone, or setval for a manual code.
-- MAX_AUTOMATIC_CODE_ATTEMPTS=5 is a fixed plan invariant; implement it as private const int MaxAutomaticCodeAttempts = 5 in AnimalAutomaticCreator. A manual code has zero automatic retries; every other SQLSTATE, other constraint, cleanup failure, rollback failure, or cancellation has zero automatic retries.
+- AnimalDuplicateException means only a CodigoInterno conflict. A HasCodigoInternoConflictAsync pre-check creates it with structured PreCheck provenance; AnimalRepository creates it with persisted named-constraint provenance only for PostgreSQL 23505 on UX_Animais_CodigoInterno_CaseInsensitive. The automatic creator retries only the latter provenance when its CodigoInterno matches its current automatic candidate; it never parses exception text or PostgreSQL Detail.
+- MAX_AUTOMATIC_CODE_ATTEMPTS=5 is a fixed plan invariant; implement it as private const int MaxAutomaticCodeAttempts = 5 in AnimalAutomaticCreator. A manual code has zero automatic retries; a pre-check conflict, every other SQLSTATE, other constraint, cleanup failure, rollback failure, or cancellation has zero automatic retries.
 - Each automatic candidate has a new transaction: begin transaction, nextval, insert/SaveChanges, commit; or rollback, detach the failed entity, dispose the transaction, then begin a new transaction. Never run nextval in an aborted PostgreSQL transaction.
 - Keep the working tree free of .gensw/ and .env.local changes. Do not add either path to Git or expose a secret.
-- Use red test, minimal implementation, green test, and a review checkpoint for every task. Do not commit implementation after individual tasks. Only Task 16 may create the one implementation commit after every integrated gate passes.
+- Implementation tasks use red test, minimal implementation, green test, and a review checkpoint. Task 8 is a PostgreSQL integration verification gate, Task 15 is an NA-01/NA-02 regression gate, and Task 16 is the integrated final gate: newly added gate coverage may already pass, and no gate requires an artificial red failure. A gate failure is corrected only in its owning task before the gate is rerun. Do not commit implementation after individual tasks. Only Task 16 may create the one implementation commit after every integrated gate passes.
 
 ## Execution dependency order
 
-The task numbers preserve the requested audit grouping. The executable topological order is 1, 2, 3, 5, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16. Task 5 precedes Task 4 because IsReferencedByAnimalAsync and the API regression must run against the mapped Animal table and composite foreign keys; this is the minimum ordering change needed to keep Task 4 independently green.
+The task numbers preserve the requested audit grouping. The executable topological order is 1, 2, 3, 5, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16. Tasks 1 through 7 and 9 through 14 are implementation tasks; Tasks 8, 15, and 16 are verification gates. Task 5 precedes Task 4 because IsReferencedByAnimalAsync and the API regression must run against the mapped Animal table and composite foreign keys; this is the minimum ordering change needed to keep Task 4 independently green.
 
 ## File Map
 
@@ -84,6 +85,28 @@ public interface IAnimalAutomaticCodeAttempt : IAsyncDisposable
     Task<string> AllocateNextCodigoInternoAsync(CancellationToken cancellationToken = default);
     Task CommitAsync(CancellationToken cancellationToken = default);
     Task RollbackAndDetachAsync(Animal failedAnimal, CancellationToken cancellationToken = default);
+}
+
+public enum AnimalDuplicateConflictSource
+{
+    PreCheck,
+    PersistedNamedCodigoInternoUniqueConstraint
+}
+
+public sealed class AnimalDuplicateException : Exception
+{
+    public AnimalDuplicateException(
+        string codigoInterno,
+        AnimalDuplicateConflictSource source,
+        Exception? innerException = null)
+        : base("CodigoInterno conflict.", innerException)
+    {
+        CodigoInterno = codigoInterno;
+        ConflictSource = source;
+    }
+
+    public string CodigoInterno { get; }
+    public AnimalDuplicateConflictSource ConflictSource { get; }
 }
 ~~~
 
@@ -232,7 +255,7 @@ public interface IAnimalRepository
 
 - [ ] **Step 1: Write failing contract tests**
 
-  In AnimalContractsTests.cs construct every command, summary, result, page, query, and typed exception. Assert AnimalListQuery defaults are page 1, pageSize 25, CodigoInterno ascending sort; assert all six AnimalSortField values are distinct; and assert the Create command preserves null CodigoInterno distinctly from an empty string.
+  In AnimalContractsTests.cs construct every command, summary, result, page, query, and typed exception. Assert AnimalListQuery defaults are page 1, pageSize 25, CodigoInterno ascending sort; assert all six AnimalSortField values are distinct; assert the Create command preserves null CodigoInterno distinctly from an empty string; and assert AnimalDuplicateException preserves both the conflicting CodigoInterno and its explicit PreCheck or PersistedNamedCodigoInternoUniqueConstraint source without deriving either from exception text.
 
 - [ ] **Step 2: Confirm the contract stage is red**
 
@@ -246,7 +269,7 @@ public interface IAnimalRepository
 
 - [ ] **Step 3: Define immutable records and narrow exceptions**
 
-  Create the exact contracts above. AnimalDuplicateException represents only the named PostgreSQL index UX_Animais_CodigoInterno_CaseInsensitive. AnimalAutomaticCodeCollisionLimitExceededException represents a fifth qualifying automatic collision. AnimalCodeSequenceExhaustedException represents PostgreSQL sequence exhaustion. Keep the exceptions distinct so API mapping never guesses from exception text.
+  Create the exact contracts above. AnimalDuplicateException represents a CodigoInterno conflict, never a generic database conflict, and carries its conflicting code plus AnimalDuplicateConflictSource. AnimalService uses PreCheck only after HasCodigoInternoConflictAsync reports a conflict. AnimalRepository uses PersistedNamedCodigoInternoUniqueConstraint only after translating PostgreSQL 23505 on UX_Animais_CodigoInterno_CaseInsensitive; every other database failure remains untransformed. AnimalAutomaticCodeCollisionLimitExceededException represents a fifth qualifying automatic collision. AnimalCodeSequenceExhaustedException represents PostgreSQL sequence exhaustion. Keep the exceptions distinct so API mapping and retry eligibility never guess from exception text.
 
 - [ ] **Step 4: Run the contract test green**
 
@@ -293,7 +316,7 @@ internal sealed class AnimalClassificationValidator(
 
 - [ ] **Step 1: Write failing rule tests**
 
-  In AnimalClassificationValidatorTests.cs use concrete fakes for the three existing repositories. Cover: missing Species/Breed/Variety maps to its existing not-found exception; create requires active Species and active supplied classifications; Breed and Variety each independently require the requested Species; either, both, or neither classification is valid; existing inactive Species/Breed/Variety links may be preserved; a new inactive destination is rejected; and Policy B rejects a changed Species combined with a retained incompatible classification.
+  In AnimalClassificationValidatorTests.cs use concrete fakes for the three existing repositories. Cover: missing Species/Breed/Variety maps to its existing not-found exception; create requires active Species and active supplied classifications; Breed and Variety each independently require the requested Species; either, both, or neither classification is valid; existing inactive Species/Breed/Variety links may be preserved; a new inactive destination is rejected; and Policy B rejects a changed Species combined with a retained incompatible classification. Add explicit update cases where the retained Especie A became inactive after the Animal was linked: a newly selected active Raca of Especie A is valid, and independently a newly selected active Variedade of Especie A is valid; a new inactive Raca/Variedade, a classification of another Species, or a change to another inactive Species is rejected.
 
 - [ ] **Step 2: Run the red validator tests**
 
@@ -307,7 +330,7 @@ internal sealed class AnimalClassificationValidator(
 
 - [ ] **Step 3: Implement the explicit snapshot policy**
 
-  Validate the complete incoming snapshot, never one classification by inference from the other. For create, active Species is mandatory and each non-null classification must exist, be active, and match that Species. For update, permit the current inactive historical IDs only when the same link is retained. When a classification is newly supplied or changed, require active and compatible. When Species changes, require the new Species active and require each non-null Breed/Variety in the same request to be active and compatible; return ArgumentException with the conflicting parameter name instead of silently clearing it.
+  Validate the complete incoming snapshot, never one classification by inference from the other. For create, active Species is mandatory and each non-null classification must exist, be active, and match that Species. For update, permit the current inactive historical IDs only when the same link is retained. When the current EspecieId is retained even though that Species is now inactive, a newly supplied or changed Raca and/or Variedade is still permitted only when it is active and compatible with that same retained Species. A newly supplied or changed classification is otherwise required to be active and compatible. When Species changes, require the new Species active and require each non-null Breed/Variety in the same request to be active and compatible; return ArgumentException with the conflicting parameter name instead of silently clearing it. Preserve Policy B.
 
   Register AnimalClassificationValidator as scoped in AddApplication. Do not create a generic classification service.
 
@@ -385,8 +408,8 @@ Task<bool> IsReferencedByAnimalAsync(Guid variedadeId, CancellationToken cancell
 **Files:**
 
 - Modify: src/Backend/GenSW.Infrastructure/Persistence/GenSWDbContext.cs
-- Create: src/Backend/GenSW.Infrastructure/Persistence/Migrations/AddAnimalBase.cs
-- Create: src/Backend/GenSW.Infrastructure/Persistence/Migrations/AddAnimalBase.Designer.cs
+- Create: src/Backend/GenSW.Infrastructure/Persistence/Migrations/<MigrationId>_AddAnimalBase.cs (the exact filename generated by EF Core)
+- Create: src/Backend/GenSW.Infrastructure/Persistence/Migrations/<MigrationId>_AddAnimalBase.Designer.cs (the matching exact filename generated by EF Core)
 - Modify: src/Backend/GenSW.Infrastructure/Persistence/Migrations/GenSWDbContextModelSnapshot.cs
 - Create: tests/GenSW.Infrastructure.Tests/AnimalPersistenceModelTests.cs
 - Create: tests/GenSW.Infrastructure.Tests/AnimalMigrationTests.cs
@@ -396,7 +419,7 @@ Task<bool> IsReferencedByAnimalAsync(Guid variedadeId, CancellationToken cancell
 - Consumes: Task 1 Animal and enums.
 - Produces: GenSWDbContext.Animais, exact database constraint names, alternate keys, composite FKs, and migration schema required by Tasks 4, 6, 7, and 8.
 
-The migration source pair has the fixed paths listed above. Scaffold with the command in Step 3, preserve the MigrationAttribute generated by EF Core, and place the generated partial-class contents in AddAnimalBase.cs and AddAnimalBase.Designer.cs. The filename does not determine the EF migration identity; the generated MigrationAttribute does.
+The migration source pair is the exact <MigrationId>_AddAnimalBase.cs and <MigrationId>_AddAnimalBase.Designer.cs pair produced by the scaffold command in Step 3. Preserve EF Core's generated filenames, partial classes, MigrationAttribute, and normal conventions; do not rename the generated migration manually.
 
 - [ ] **Step 1: Write red model and migration tests**
 
@@ -432,7 +455,7 @@ The migration source pair has the fixed paths listed above. Scaffold with the co
   dotnet ef migrations add AddAnimalBase --project src/Backend/GenSW.Infrastructure/GenSW.Infrastructure.csproj --startup-project src/Backend/GenSW.API/GenSW.API.csproj --output-dir Persistence/Migrations
   ~~~
 
-  Edit only the new migration's Up/Down as needed. Up creates the alternate keys before Animais, creates Animais and its named constraints/indexes, and executes:
+  Keep the generated <MigrationId>_AddAnimalBase.cs and <MigrationId>_AddAnimalBase.Designer.cs filenames, partial classes, and MigrationAttribute exactly as EF Core produced them. Edit only the new migration's Up/Down as needed. Up creates the alternate keys before Animais, creates Animais and its named constraints/indexes, and executes:
 
   ~~~sql
   CREATE SEQUENCE "AnimalCodigoInternoSequence"
@@ -452,7 +475,7 @@ The migration source pair has the fixed paths listed above. Scaffold with the co
 
 - [ ] **Step 5: Review checkpoint without commit**
 
-  Run git diff --check, git diff --stat, git status --short, and git diff --name-only against the pre-Task-5 migration. Expected: AddAnimalBase.cs, AddAnimalBase.Designer.cs, and the snapshot are the only migration artifacts changed; no historical migration changed.
+  Run git diff --check, git diff --stat, git status --short, and git diff --name-only against the pre-Task-5 migration. Expected: exactly one newly generated <MigrationId>_AddAnimalBase.cs and <MigrationId>_AddAnimalBase.Designer.cs pair plus the snapshot are the only migration artifacts changed; no historical migration changed.
 
 ### Task 6: PostgreSQL allocator
 
@@ -471,6 +494,8 @@ The migration source pair has the fixed paths listed above. Scaffold with the co
 
   In AnimalCodeAllocatorTests.cs, using EphemeralPostgreSql, assert first allocation is AN-000001, values after 999999 retain all digits, a manual-looking code never invokes setval, and a started attempt keeps its allocated number after rollback. Add a sequence-exhaustion setup with ALTER SEQUENCE using a maximum of 1, consume its only value, and assert AnimalCodeSequenceExhaustedException on the next allocation.
 
+  Use an instrumented transaction or equivalent observable test seam to assert the attempt lifecycle: CommitAsync followed by DisposeAsync performs no later rollback; RollbackAndDetachAsync followed by DisposeAsync performs no second rollback; and DisposeAsync on an open attempt performs exactly one rollback and one transaction disposal. Repeat DisposeAsync in each terminal state and assert it is a no-op: no second rollback, detach, commit, disposal, or nextval, and no transaction remains active.
+
 - [ ] **Step 2: Run the red allocator tests**
 
   Run:
@@ -485,7 +510,7 @@ The migration source pair has the fixed paths listed above. Scaffold with the co
 
   BeginAttemptAsync starts a new GenSWDbContext.Database transaction and returns an attempt that owns it. AllocateNextCodigoInternoAsync executes SELECT nextval('"AnimalCodigoInternoSequence"') using the current transaction connection, converts the bigint with n.ToString("D6", CultureInfo.InvariantCulture), and prefixes AN-. Catch only PostgreSQL sequence-limit SQLSTATE 2200H and throw AnimalCodeSequenceExhaustedException.
 
-  CommitAsync commits and disposes the owned transaction. RollbackAndDetachAsync rolls back first, detaches exactly the failed Animal through the same DbContext ChangeTracker, then disposes the transaction. If rollback, detach, or disposal fails, propagate that error. DisposeAsync rolls back an unfinished attempt; it must never begin another attempt or issue another nextval. Register IAnimalCodeAllocator as scoped.
+  The attempt records terminal state. CommitAsync commits and disposes the owned transaction, then leaves the attempt terminal. RollbackAndDetachAsync rolls back first, detaches exactly the failed Animal through the same DbContext ChangeTracker, then disposes the transaction and leaves the attempt terminal. If rollback, detach, or disposal fails, propagate that error. DisposeAsync rolls back and disposes an unfinished attempt exactly once; after CommitAsync, RollbackAndDetachAsync, or an earlier DisposeAsync, it is an idempotent no-op. It must never begin another attempt or issue another nextval. Register IAnimalCodeAllocator as scoped.
 
 - [ ] **Step 4: Run allocator tests green**
 
@@ -524,9 +549,9 @@ internal sealed class AnimalAutomaticCreator(
 
 - [ ] **Step 1: Write red retry and repository tests**
 
-  In AnimalAutomaticCreatorTests.cs, use fakes that expose the sequence of attempts. Prove exactly this sequence for an eligible collision: BeginAttemptAsync, AllocateNextCodigoInternoAsync, AddAsync, SaveChangesAsync, RollbackAndDetachAsync, then a new BeginAttemptAsync. Assert a fifth eligible collision throws AnimalAutomaticCodeCollisionLimitExceededException after rollback and performs no sixth allocation. Assert an unrelated exception, a rollback failure, and a detach failure do not trigger a new attempt. Manual-code zero-retry behavior belongs to the IAnimalService tests in Task 9.
+  In AnimalAutomaticCreatorTests.cs, use fakes that expose the sequence of attempts. Prove exactly this sequence for an eligible collision: BeginAttemptAsync, AllocateNextCodigoInternoAsync, AddAsync, SaveChangesAsync, RollbackAndDetachAsync, then a new BeginAttemptAsync. Eligibility requires an AnimalDuplicateException whose ConflictSource is PersistedNamedCodigoInternoUniqueConstraint and whose CodigoInterno equals the automatic candidate built by the current attempt. Assert a fifth eligible collision throws AnimalAutomaticCodeCollisionLimitExceededException after rollback and performs no sixth allocation. Assert an AnimalDuplicateException with PreCheck provenance, one with a different CodigoInterno, an unrelated exception, a rollback failure, and a detach failure do not trigger a new attempt. Manual-code zero-retry behavior belongs to the IAnimalService tests in Task 9.
 
-  In AnimalRepositoryTests.cs, exercise PostgreSQL read projection, case-insensitive code pre-check, optional Breed/Variety projection, all filters, sorting with Id tie-breaker, and translation only of UX_Animais_CodigoInterno_CaseInsensitive into AnimalDuplicateException.
+  In AnimalRepositoryTests.cs, exercise PostgreSQL read projection, case-insensitive code pre-check, optional Breed/Variety projection, all filters, sorting with Id tie-breaker, and translation only of PostgreSQL 23505 on UX_Animais_CodigoInterno_CaseInsensitive into AnimalDuplicateException with PersistedNamedCodigoInternoUniqueConstraint provenance. Assert another constraint or SQLSTATE is not translated to AnimalDuplicateException.
 
 - [ ] **Step 2: Run the red tests**
 
@@ -545,9 +570,9 @@ internal sealed class AnimalAutomaticCreator(
 
   - adds/loads Animals with AsNoTracking read projections that join Especies, Racas, and Variedades in one query; nullable left joins create nullable summaries and avoid N+1;
   - filters search with escaped EF.Functions.ILike over CodigoInterno and Nome; applies each optional classification/enumeration/Ativo filter; orders each allowed sort field and then Id;
-  - catches DbUpdateException only when InnerException is PostgresException with SqlState 23505 and ConstraintName UX_Animais_CodigoInterno_CaseInsensitive, then throws AnimalDuplicateException; every other database failure escapes unchanged.
+  - catches DbUpdateException only when InnerException is PostgresException with SqlState 23505 and ConstraintName UX_Animais_CodigoInterno_CaseInsensitive, then throws AnimalDuplicateException for the failed Animal.CodigoInterno with PersistedNamedCodigoInternoUniqueConstraint provenance; every other database failure escapes unchanged.
 
-  AnimalAutomaticCreator loops attemptNumber from 1 through 5. For every attempt it begins a fresh allocator attempt, allocates one candidate, creates Animal with that candidate, adds it, saves it, commits it, and returns it. It catches AnimalDuplicateException only for the Animal just built with that exact candidate, calls RollbackAndDetachAsync, and either starts a new attempt or throws AnimalAutomaticCodeCollisionLimitExceededException after the fifth rollback. It does not parse PostgreSQL Detail, retry a raw DbUpdateException, or run a sixth nextval.
+  AnimalAutomaticCreator loops attemptNumber from 1 through 5. For every attempt it uses await using around a fresh allocator attempt, allocates one candidate, creates Animal with that candidate, adds it, saves it, commits it, and returns it. It retries only an AnimalDuplicateException raised by the current SaveChangesAsync when ConflictSource is PersistedNamedCodigoInternoUniqueConstraint and CodigoInterno equals the candidate just allocated for the failed Animal. For that one qualified case, await RollbackAndDetachAsync to completion; the subsequent await using disposal is idempotent, and only then may the next BeginAttemptAsync occur. On the fifth qualified collision, throw AnimalAutomaticCodeCollisionLimitExceededException after the fifth rollback. Pre-check conflicts, manual codes, another constraint, another SQLSTATE, a different candidate, a raw DbUpdateException, cleanup failures, cancellation, and every generic error propagate without retry. Do not parse PostgreSQL Detail or exception text, and never run a sixth nextval.
 
 - [ ] **Step 4: Run the focused tests green**
 
@@ -557,7 +582,7 @@ internal sealed class AnimalAutomaticCreator(
 
   Run git diff --check, git diff --stat, and git status --short. Expected: no transaction object or failed tracked Animal can cross an automatic attempt boundary; no commit and no push.
 
-### Task 8: PostgreSQL integration and concurrency tests
+### Task 8: PostgreSQL integration verification gate
 
 **Files:**
 
@@ -569,9 +594,9 @@ internal sealed class AnimalAutomaticCreator(
 **Interfaces:**
 
 - Consumes: Tasks 4 through 7 and the existing EphemeralPostgreSql harness.
-- Produces: real PostgreSQL evidence for the sequence, retry boundary, constraints, and classification update protection.
+- Produces: real PostgreSQL evidence for the sequence, retry boundary, constraints, and classification update protection. This is a verification gate, not an implementation task with an artificial red phase.
 
-- [ ] **Step 1: Write all PostgreSQL-only scenarios**
+- [ ] **Step 1: Add or complete PostgreSQL-only integration scenarios after Tasks 4 through 7 are green**
 
   Use EphemeralPostgreSql.StartAsync and a non-parallel xUnit collection. Do not substitute SQLite. Reuse AuthWebApplicationFactory(postgreSql.ConnectionString) and the existing automatic skip when PostgreSQL binaries are absent.
 
@@ -582,14 +607,14 @@ internal sealed class AnimalAutomaticCreator(
   3. Two concurrent equal manual codes yield one 201 and one 409, without allocator retry.
   4. PUT to another Animal's code returns 409 and preserves the original persisted code.
   5. Manual inserts for AN-000001 through AN-000005 cause an automatic request to roll back five attempts, return the deterministic 409 limit exception, and leave the sequence at 5 without a sixth allocation.
-  6. A test-only additional unique index creates an other-constraint 23505; verify a single allocation and no retry.
+  6. The expected code-index collision reports the structured PersistedNamedCodigoInternoUniqueConstraint provenance for its actual automatic candidate. A test-only additional unique index creates an other-constraint 23505; verify it is not translated to that provenance, uses a single allocation, and does not retry.
   7. A test-only trigger that raises a non-23505 SQLSTATE causes one allocation and no retry.
   8. A failed automatic first candidate consumes its sequence value; the next successful code proves the gap is accepted.
   9. A direct attempt test records SELECT txid_current() immediately after the first allocator nextval, causes the named code uniqueness collision, calls RollbackAndDetachAsync, starts a second attempt, records txid_current() again, and asserts different transaction IDs, no active old transaction, successful second nextval/insert/commit, and no 25P02.
   10. A direct SQL insert with a Breed or Variety from another Species violates its corresponding composite FK.
   11. Moving a referenced Breed and a referenced Variety to another Species is blocked by the API pre-check and by a direct PostgreSQL update against the Restrict composite FK.
 
-- [ ] **Step 2: Run the red PostgreSQL suite**
+- [ ] **Step 2: Run the PostgreSQL integration verification gate**
 
   Run:
 
@@ -598,15 +623,15 @@ internal sealed class AnimalAutomaticCreator(
   dotnet test tests/GenSW.Infrastructure.Tests/GenSW.Infrastructure.Tests.csproj --filter "FullyQualifiedName~AnimalCodeAllocatorTests|FullyQualifiedName~AnimalRepositoryTests|FullyQualifiedName~AnimalMigrationTests"
   ~~~
 
-  Expected: tests fail until all previous Animal persistence pieces exist, or are skipped only by the existing missing-PostgreSQL-binary mechanism.
+  Expected: every non-skipped test passes after its owner Tasks 4 through 7 are complete; tests may be skipped only by the existing missing-PostgreSQL-binary mechanism. A newly added integration test that already passes is valid and does not require an artificial red failure.
 
-- [ ] **Step 3: Make no harness rewrite**
+- [ ] **Step 3: Correct only the owner of a verified gate failure**
 
-  Adjust only the implementation owned by Tasks 4 through 7 when a test identifies a defect. Keep EphemeralPostgreSql intact; do not add Docker, Testcontainers, a new local database convention, timing sleeps, or a retry outside Animal automatic-code creation.
+  If the gate identifies a defect, adjust only the implementation owned by Tasks 4 through 7, then return to the focused owner tests and this gate. Keep EphemeralPostgreSql intact; do not add Docker, Testcontainers, a new local database convention, timing sleeps, a retry outside Animal automatic-code creation, or an artificial red phase.
 
-- [ ] **Step 4: Run the PostgreSQL suite green**
+- [ ] **Step 4: Re-run the PostgreSQL integration verification gate**
 
-  Run the commands from Step 2. Expected: every non-skipped test proves real PostgreSQL behavior, including transaction replacement after the aborted collision.
+  Run the commands from Step 2. Expected: every non-skipped test proves real PostgreSQL behavior, including structured retry eligibility and transaction replacement after the aborted collision.
 
 - [ ] **Step 5: Review checkpoint without commit**
 
@@ -628,7 +653,7 @@ internal sealed class AnimalAutomaticCreator(
 
 - [ ] **Step 1: Write red Application service tests**
 
-  Cover manual create and automatic create; omitted/null code invoking automatic flow while empty or whitespace code is a 400-worthy Domain failure; all local enum/query validation; missing/inactive/compatible/incompatible classifications; historical inactive preservation; Policy B; get including inactive; complete list query; manual duplicate; update duplicate; editable sex/escopo/data/name/code; inactive Animal update/reactivation; and lifecycle idempotency.
+  Cover manual create and automatic create; omitted/null code invoking automatic flow while empty or whitespace code is a 400-worthy Domain failure; all local enum/query validation; missing/inactive/compatible/incompatible classifications; historical inactive preservation, including a retained inactive Species with a newly selected active matching Raca and independently a newly selected active matching Variedade; Policy B; get including inactive; complete list query; manual pre-check conflict and persisted manual-race conflict; update duplicate; editable sex/escopo/data/name/code; inactive Animal update/reactivation; and lifecycle idempotency.
 
 - [ ] **Step 2: Run the red service and DI tests**
 
@@ -642,7 +667,7 @@ internal sealed class AnimalAutomaticCreator(
 
 - [ ] **Step 3: Implement orchestration without N+1**
 
-  CreateAsync first validates classifications. If CodigoInterno is null, call AnimalAutomaticCreator; otherwise construct Animal with the requested code, pre-check through HasCodigoInternoConflictAsync for a fast message, add/save once, and never call the allocator. GetByIdAsync and ListAsync map repository read models. UpdateAsync loads the tracked Animal, validates the entire proposed classification snapshot, calls AlterarCadastro with DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime), pre-checks code excluding current Id, saves, and returns the projected result. SetActiveAsync applies the existing idempotent lifecycle convention.
+  CreateAsync first validates classifications. If CodigoInterno is null, call AnimalAutomaticCreator; otherwise construct Animal with the requested code, pre-check through HasCodigoInternoConflictAsync for a fast message, and when it reports a conflict throw AnimalDuplicateException with PreCheck provenance. Then add/save once and never call the allocator for a manual code. A race translated by AnimalRepository remains the same CodigoInterno-conflict exception with persisted named-constraint provenance, but manual creation still never retries. GetByIdAsync and ListAsync map repository read models. UpdateAsync loads the tracked Animal, validates the entire proposed classification snapshot (including the retained-inactive-Species/new-active-Raca-or-Variedade case), calls AlterarCadastro with DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime), pre-checks code excluding current Id with the same explicit provenance, saves, and returns the projected result. SetActiveAsync applies the existing idempotent lifecycle convention.
 
   Validate page 1.., pageSize 1..100, defined optional enums, defined sort field, and normalized optional search. Register IAnimalService as scoped. Do not translate raw database errors here except the typed Animal exceptions already defined.
 
@@ -824,7 +849,7 @@ export async function setAnimalAtivo(id: string, ativo: boolean): Promise<Animal
 
 - [ ] **Step 1: Write red parser and service tests**
 
-  Assert parsers reject absent/wrong-type fields, invalid numeric enums, invalid dates, invalid summaries, and non-null optional summaries that lack required data. Assert they accept nullable Nome/DataNascimento/Raca/Variedade. Assert service tests verify all HTTP methods, authenticated option, all query names, and that create with blank UI code omits codigoInterno rather than sending an empty string.
+  Assert parsers reject absent/wrong-type fields, invalid numeric enums, invalid dates, invalid summaries, and non-null optional summaries that lack required data. Assert they accept nullable Nome/DataNascimento/Raca/Variedade. Assert service tests verify all HTTP methods, authenticated option, and all query names. For create serialization, assert codigoInterno undefined is omitted from the request body, explicit null is preserved as null, and explicit empty or whitespace strings are serialized unchanged. animalsService must never silently convert an explicit string into property omission.
 
 - [ ] **Step 2: Run the red frontend contract tests**
 
@@ -838,7 +863,7 @@ export async function setAnimalAtivo(id: string, ativo: boolean): Promise<Animal
 
 - [ ] **Step 3: Implement types, strict parsers, and client**
 
-  Use endpoint /animais and the existing feature-local parser style. Parse DataNascimento as null or an exact calendar date string, timestamps as ISO dates, enums only from the closed numeric sets, and nested summaries only when their shape is complete. Build query strings only from supplied values. All calls use authenticated: true and no new library.
+  Use endpoint /animais and the existing feature-local parser style. Parse DataNascimento as null or an exact calendar date string, timestamps as ISO dates, enums only from the closed numeric sets, and nested summaries only when their shape is complete. Build query strings only from supplied values. For create, forward the request object without semantic reinterpretation: JavaScript serialization naturally omits codigoInterno when it is undefined, while null, empty strings, and whitespace strings remain explicit values. Form-state policy belongs exclusively to Task 13, not animalsService. All calls use authenticated: true and no new library.
 
 - [ ] **Step 4: Run the frontend contract tests green**
 
@@ -905,12 +930,13 @@ export async function setAnimalAtivo(id: string, ativo: boolean): Promise<Animal
   Cover:
 
   - new form with empty untouched CodigoInterno omitting that property and showing the automatic-code hint;
-  - a user-entered whitespace-only code rejected locally rather than silently treated as automatic;
-  - manual code normalization, optional null Nome, selectable Sexo/Escopo, and optional date;
+  - a CodigoInterno input that was touched then emptied, or contains only user-entered whitespace, rejected locally rather than silently treated as automatic or omitted;
+  - an explicit nonempty manual code sent normally, with manual code normalization, optional null Nome, selectable Sexo/Escopo, and optional date;
   - all active Species/Breed/Variety selector pages being loaded without truncation at 100;
   - a new classification selectable only when active and matching the selected Species;
   - either/both/neither Breed/Variety;
   - edit loading its Animal first and preserving its inactive Species/Breed/Variety as the only retained inactive option;
+  - with the retained current Species inactive, a newly selected active matching Raca and independently a newly selected active matching Variedade remaining selectable and valid; a different inactive Species, a new inactive classification, or a classification of another Species remaining unavailable/invalid;
   - Species change retaining incompatible selected IDs in state, visibly warning, blocking submit, and allowing only explicit clear or replacement;
   - 400, 404, and 409 messages that do not display database details; loading, not-found, generic error, retry, and navigation after save.
 
@@ -926,9 +952,9 @@ export async function setAnimalAtivo(id: string, ativo: boolean): Promise<Animal
 
 - [ ] **Step 3: Implement the explicit-classification form**
 
-  On edit, load getAnimalById before options. Fetch all active catalog pages for new destinations. Append only a currently linked inactive item as a retained option; never offer any other inactive item as a new destination. Store selected classification option metadata, including its Species ID, so a Species change leaves existing incompatible IDs selected but marked incompatible. Do not set those IDs to null automatically. Block submit until each is null or matches the selected Species, then send the complete PUT snapshot atomically.
+  On edit, load getAnimalById before options. Fetch all active catalog pages for new destinations. Append only a currently linked inactive item as a retained option; never offer any other inactive item as a new destination. When the retained current Species is inactive, continue to offer active Raca and Variedade options whose EspecieId matches that same retained Species, so either classification can be newly selected or replaced without changing Species. Store selected classification option metadata, including its Species ID, so a Species change leaves existing incompatible IDs selected but marked incompatible. Do not set those IDs to null automatically. Block submit until each is null or matches the selected Species, then send the complete PUT snapshot atomically. Preserve Policy B.
 
-  On create, use an omitted codigoInterno only for the untouched empty input; on update require a canonical nonempty code. Normalize text locally for usability but let API remain the authority for UTC date, active-state, and concurrency validation. Use date input without calculating/persisting age.
+  On create, construct a request without codigoInterno only when the input is both empty and untouched. If the user has touched it, reject an empty or whitespace-only value locally; for an explicit nonempty manual code, include codigoInterno normally and let animalsService forward it unchanged. On update require a canonical nonempty code. Normalize text locally for usability but let API remain the authority for UTC date, active-state, and concurrency validation. Use date input without calculating/persisting age.
 
 - [ ] **Step 4: Run the form test green**
 
@@ -977,7 +1003,7 @@ export async function setAnimalAtivo(id: string, ativo: boolean): Promise<Animal
 
   Run git diff --check, git diff --stat, and git status --short. Expected: all Animal screens are reachable but no unrelated navigation is changed; no commit and no push.
 
-### Task 15: NA-01 and NA-02 regression
+### Task 15: NA-01 and NA-02 regression gate
 
 **Files:**
 
@@ -994,9 +1020,9 @@ export async function setAnimalAtivo(id: string, ativo: boolean): Promise<Animal
 **Interfaces:**
 
 - Consumes: the production protection from Task 4 and structural model from Task 5.
-- Produces: evidence that NA-01/NA-02 behavior is retained while the new Animal reference protection is enforced.
+- Produces: evidence that NA-01/NA-02 behavior is retained while the new Animal reference protection is enforced. This is a regression gate, not an implementation task with an artificial red phase.
 
-- [ ] **Step 1: Write focused regression cases**
+- [ ] **Step 1: Add or complete focused regression coverage after Tasks 4 and 5 are green**
 
   Add tests for:
 
@@ -1006,7 +1032,7 @@ export async function setAnimalAtivo(id: string, ativo: boolean): Promise<Animal
   - database Restrict/composite keys blocking a direct species reassignment under concurrency;
   - existing no-DELETE behavior still returning 405.
 
-- [ ] **Step 2: Run the red regression tests**
+- [ ] **Step 2: Run the NA-01/NA-02 regression gate**
 
   Run:
 
@@ -1016,13 +1042,13 @@ export async function setAnimalAtivo(id: string, ativo: boolean): Promise<Animal
   dotnet test tests/GenSW.API.Tests/GenSW.API.Tests.csproj --filter "FullyQualifiedName~EspeciesApiTests|FullyQualifiedName~RacasApiTests|FullyQualifiedName~VariedadesApiTests"
   ~~~
 
-  Expected: new protection assertions fail until the owner implementation is complete.
+  Expected: existing behavior and the new protection assertions pass after owner Tasks 4 and 5 are complete. A newly added regression test that already passes is valid and does not require an artificial red failure.
 
-- [ ] **Step 3: Fix only the owning Task 4 or Task 5 artifact**
+- [ ] **Step 3: Correct only the owner of a verified gate failure**
 
-  If a regression exposes a defect, change only the Raca/Variedade service, repository, controller, or model/migration artifact responsible for it. Do not redesign NA-01/NA-02, introduce a generic classification model, or modify the old migrations.
+  If the gate exposes a defect, change only the Raca/Variedade service, repository, controller, or model/migration artifact owned by Task 4 or Task 5, then return to the focused owner tests and this gate. Do not redesign NA-01/NA-02, introduce a generic classification model, modify the old migrations, or manufacture a red failure.
 
-- [ ] **Step 4: Run the regression tests green**
+- [ ] **Step 4: Re-run the NA-01/NA-02 regression gate**
 
   Run the commands from Step 2. Expected: legacy behavior and new 409 protection both pass.
 
@@ -1030,7 +1056,7 @@ export async function setAnimalAtivo(id: string, ativo: boolean): Promise<Animal
 
   Run git diff --check, git diff --stat, and git status --short. Expected: regression tests explain every NA-01/NA-02 touch; no commit and no push.
 
-### Task 16: Integrated gates, scope, and handoff
+### Task 16: Integrated final gate, scope, and handoff
 
 **Files:**
 
@@ -1041,7 +1067,7 @@ export async function setAnimalAtivo(id: string, ativo: boolean): Promise<Animal
 **Interfaces:**
 
 - Consumes: all Tasks 1 through 15.
-- Produces: one auditable implementation commit only after every gate passes, then a human-review PR workflow.
+- Produces: one auditable implementation commit only after every gate passes, then a human-review PR workflow. This is an integrated final gate, not an implementation task with an artificial red phase; a failure returns only to its owning task.
 
 - [ ] **Step 1: Run complete backend checks**
 
@@ -1076,11 +1102,11 @@ export async function setAnimalAtivo(id: string, ativo: boolean): Promise<Animal
   $base = git merge-base main HEAD
   git diff --check "$base...HEAD"
   git diff --name-only "$base...HEAD"
-  git diff -- "$base...HEAD" -- src/Backend/GenSW.Infrastructure/Persistence/Migrations
+  git diff "$base...HEAD" -- src/Backend/GenSW.Infrastructure/Persistence/Migrations
   git status --short
   ~~~
 
-  Verify manually from the output: no changed historical migration; exactly one new Animal migration pair and snapshot update; no DELETE Animal; no IRepository<T>; no ClassificacaoAnimal; no MediatR/CQRS; no dependency addition; no .gensw/ or .env.local; no secret; and no source/test implementation of #296 through #299.
+  Verify manually from the output: no changed historical migration; exactly one new EF-generated <MigrationId>_AddAnimalBase.cs and <MigrationId>_AddAnimalBase.Designer.cs pair, with the snapshot altered; no DELETE Animal; no IRepository<T>; no ClassificacaoAnimal; no MediatR/CQRS; no dependency addition; no .gensw/ or .env.local; no secret; and no source/test implementation of #296 through #299.
 
 - [ ] **Step 4: Create the only implementation commit after every gate**
 
@@ -1098,6 +1124,8 @@ export async function setAnimalAtivo(id: string, ativo: boolean): Promise<Animal
   Push feature/295-animal-base, open a PR, wait for CI, record fresh validation evidence in Redmine #295, and move #295 to Em validação with human homologation pending. Do not merge or mark the issue Concluído.
 
 ## SPEC to Tasks matrix
+
+Tasks 8, 15, and 16 in this matrix are verification gates. They provide integration, regression, and final evidence after owner tasks; they never require an artificial red result.
 
 | SPEC section | Requirement carried into the plan | Plan task(s) |
 | --- | --- | --- |
@@ -1128,7 +1156,7 @@ The developer, not Codex, performs this after the implementation PR is available
 4. Exercise Macho, Femea, Indeterminado, Operacional, Referencia, and optional DataNascimento.
 5. Create with Species alone, with Breed alone, with Variety alone, and with both classifications.
 6. Attempt incompatible Breed/Variety combinations and observe field-oriented validation.
-7. Edit historical inactive Species/Breed/Variety links; confirm they remain visible but another inactive item cannot be selected.
+7. Edit historical inactive Species/Breed/Variety links; confirm they remain visible but another inactive item cannot be selected. While retaining an inactive current Species, select an active matching Breed and independently an active matching Variety; confirm a different inactive Species and an inactive or incompatible new classification remain unavailable.
 8. Change Species with a retained incompatible classification; confirm the UI requires an explicit clear/replacement and does not erase it silently.
 9. Inactivate/reactivate an Animal and verify it remains editable and listable by filters.
 10. Check case-insensitive search by code/name, all filters, sorting, page sizes, and pagination.
@@ -1141,7 +1169,8 @@ Concurrency is accepted primarily from the automated real-PostgreSQL suite, not 
 ## Plan self-review record
 
 - SPEC coverage: every section maps to one or more concrete tasks in the matrix above.
-- Interface consistency: the Cross-task contracts define names/signatures consumed by subsequent tasks; the transaction attempt explicitly owns begin, allocation, commit, rollback, detach, and disposal.
-- Retry boundary: defined as exactly five total attempts and uses a new PostgreSQL transaction after every qualifying collision; no decision remains for the executor.
-- Paths: every source/test path is concrete; the migration uses the fixed AddAnimalBase.cs and AddAnimalBase.Designer.cs paths while preserving EF Core's generated MigrationAttribute.
+- Interface consistency: the Cross-task contracts define names/signatures consumed by subsequent tasks; AnimalDuplicateException carries CodigoInterno and structured source provenance, and the transaction attempt explicitly owns begin, allocation, commit, rollback, detach, and disposal.
+- Retry boundary: defined as exactly five total attempts and uses a new PostgreSQL transaction after every qualifying persisted named-constraint collision for the matching automatic candidate; no retry decision depends on exception text.
+- Gate classification: Tasks 8, 15, and 16 are PostgreSQL integration, NA-01/NA-02 regression, and integrated final gates; each accepts already-passing new coverage and sends a real failure only to its owner.
+- Paths: every source/test path is concrete; the migration uses the exact EF-generated <MigrationId>_AddAnimalBase.cs and <MigrationId>_AddAnimalBase.Designer.cs pair and preserves normal generated MigrationAttribute conventions without manual renaming.
 - Scope: this plan contains no implementation of #296, #297, #298, or #299 and authorizes no implementation before human plan review.
