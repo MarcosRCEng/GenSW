@@ -27,7 +27,7 @@
 
 ## Execution dependency order
 
-The task numbers preserve the requested audit grouping. The executable topological order is 1, 2, 3, 5, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16. Tasks 1 through 7 and 9 through 14 are implementation tasks; Tasks 8, 15, and 16 are verification gates. Task 5 precedes Task 4 because IsReferencedByAnimalAsync and the API regression must run against the mapped Animal table and composite foreign keys; this is the minimum ordering change needed to keep Task 4 independently green.
+The task numbers preserve the requested audit grouping. The executable topological order is 1, 2, 3, 5, 4, 6, 7, 9, 10, 8, 11, 12, 13, 14, 15, 16. Tasks 1 through 7 and 9 through 14 are implementation tasks; Tasks 8, 15, and 16 are verification gates. Task 5 precedes Task 4 because IsReferencedByAnimalAsync and the API regression must run against the mapped Animal table and composite foreign keys; this is the minimum ordering change needed to keep Task 4 independently green. Task 8 follows Tasks 9 and 10 because its authenticated HTTP concurrency scenarios require AnimalService and the Animais API surface; purely Infrastructure PostgreSQL checks may run earlier, but the Task 8 gate is complete only after both its HTTP and PostgreSQL scenarios run.
 
 ## File Map
 
@@ -593,7 +593,7 @@ internal sealed class AnimalAutomaticCreator(
 
 **Interfaces:**
 
-- Consumes: Tasks 4 through 7 and the existing EphemeralPostgreSql harness.
+- Consumes: Tasks 4 through 7, Tasks 9 and 10 for the authenticated HTTP scenarios, and the existing EphemeralPostgreSql harness.
 - Produces: real PostgreSQL evidence for the sequence, retry boundary, constraints, and classification update protection. This is a verification gate, not an implementation task with an artificial red phase.
 
 - [ ] **Step 1: Add or complete PostgreSQL-only integration scenarios after Tasks 4 through 7 are green**
