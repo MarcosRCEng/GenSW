@@ -205,6 +205,26 @@ public sealed class RacaServiceTests
         await Assert.ThrowsAsync<RacaNotFoundException>(() => service.SetActiveAsync(Guid.NewGuid(), false));
     }
 
+    [Fact]
+    public async Task Update_rejects_only_a_species_change_when_the_breed_is_referenced_by_an_animal()
+    {
+        var current = Especie.Criar("Cão", null, Now);
+        var destination = Especie.Criar("Gato", null, Now);
+        var breed = Raca.Criar(current.Id, "Pastor", Now);
+        var repository = new FakeRacaRepository { ReferencedByAnimal = true };
+        repository.Items.Add(breed);
+        repository.ReadModels[breed.Id] = ReadModel(breed, current);
+        var service = CreateService(repository, current, destination);
+
+        await Assert.ThrowsAsync<RacaInUseByAnimalException>(() =>
+            service.UpdateAsync(breed.Id, new UpdateRacaCommand(destination.Id, "Pastor")));
+
+        var renamed = await service.UpdateAsync(breed.Id, new UpdateRacaCommand(current.Id, "Pastor Alemão"));
+        Assert.Equal("Pastor Alemão", renamed.Nome);
+        Assert.False((await service.SetActiveAsync(breed.Id, false)).Ativo);
+        Assert.True((await service.SetActiveAsync(breed.Id, true)).Ativo);
+    }
+
     private static RacaService CreateService(FakeRacaRepository racaRepository, params Especie[] species)
         => new(racaRepository, new FakeEspecieRepository(species), new FixedTimeProvider(Now));
 
@@ -246,6 +266,7 @@ public sealed class RacaServiceTests
         public RacaListQuery? LastListQuery { get; private set; }
         public RacaListPage? ListPage { get; set; }
         public int ListCalls { get; private set; }
+        public bool ReferencedByAnimal { get; set; }
         public Task AddAsync(Raca raca, CancellationToken cancellationToken = default) { Items.Add(raca); return Task.CompletedTask; }
         public Task<RacaReadModel?> GetByIdReadOnlyAsync(Guid id, CancellationToken cancellationToken = default)
         {
@@ -264,6 +285,7 @@ public sealed class RacaServiceTests
         public Task<Raca?> GetByIdForUpdateAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult(Items.SingleOrDefault(item => item.Id == id));
         public Task<RacaListPage> ListAsync(RacaListQuery query, CancellationToken cancellationToken = default) { ListCalls++; LastListQuery = query; return Task.FromResult(ListPage ?? new RacaListPage([], 0)); }
         public Task<bool> HasNomeConflictAsync(Guid especieId, string nome, Guid? excludingId = null, CancellationToken cancellationToken = default) { LastSpeciesIdChecked = especieId; LastNameChecked = nome; LastExcludedId = excludingId; return Task.FromResult(NameConflict || ConflictingSpeciesId == especieId); }
+        public Task<bool> IsReferencedByAnimalAsync(Guid racaId, CancellationToken cancellationToken = default) => Task.FromResult(ReferencedByAnimal);
         public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

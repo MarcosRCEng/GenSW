@@ -20,6 +20,7 @@ public sealed class VariedadesController(IVariedadeService variedades) : Control
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, ToResponse(result));
         }
         catch (VariedadeDuplicateException exception) { return Conflict(ToDuplicateProblem(exception)); }
+        catch (VariedadeInUseByAnimalException exception) { return Conflict(ToInUseProblem(exception)); }
         catch (EspecieNotFoundException) { return NotFound(); }
         catch (ArgumentException exception) { return BadRequest(ToInvalidDataProblem(exception)); }
     }
@@ -72,6 +73,7 @@ public sealed class VariedadesController(IVariedadeService variedades) : Control
         catch (VariedadeNotFoundException) { return NotFound(); }
         catch (EspecieNotFoundException) { return NotFound(); }
         catch (VariedadeDuplicateException exception) { return Conflict(ToDuplicateProblem(exception)); }
+        catch (VariedadeInUseByAnimalException exception) { return Conflict(ToInUseProblem(exception)); }
         catch (ArgumentException exception) { return BadRequest(ToInvalidDataProblem(exception)); }
     }
 
@@ -87,6 +89,13 @@ public sealed class VariedadesController(IVariedadeService variedades) : Control
         Title = "Invalid variety data",
         Detail = exception.Message,
         Status = StatusCodes.Status400BadRequest,
+    };
+
+    private static ProblemDetails ToInUseProblem(VariedadeInUseByAnimalException exception) => new()
+    {
+        Title = "Variety is referenced by an animal",
+        Detail = exception.Message,
+        Status = StatusCodes.Status409Conflict,
     };
 
     private static bool TryParseSort(string value, out VariedadeSortField sort) => value switch

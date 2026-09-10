@@ -9,6 +9,7 @@ public interface IVariedadeRepository
     Task<Variedade?> GetByIdForUpdateAsync(Guid id, CancellationToken cancellationToken = default);
     Task<VariedadeListPage> ListAsync(VariedadeListQuery query, CancellationToken cancellationToken = default);
     Task<bool> HasNomeConflictAsync(Guid especieId, string nome, Guid? excludingId = null, CancellationToken cancellationToken = default);
+    Task<bool> IsReferencedByAnimalAsync(Guid variedadeId, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }
 

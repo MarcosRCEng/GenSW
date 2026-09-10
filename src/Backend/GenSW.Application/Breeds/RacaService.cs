@@ -41,6 +41,10 @@ public sealed class RacaService(IRacaRepository repository, IEspecieRepository e
         if (command.EspecieId != raca.EspecieId)
         {
             especieResumo = ToResumo(await GetActiveEspecieAsync(command.EspecieId, cancellationToken));
+            if (await repository.IsReferencedByAnimalAsync(raca.Id, cancellationToken))
+            {
+                throw new RacaInUseByAnimalException(raca.Id);
+            }
         }
 
         raca.AlterarCadastro(command.EspecieId, command.Nome, timeProvider.GetUtcNow());

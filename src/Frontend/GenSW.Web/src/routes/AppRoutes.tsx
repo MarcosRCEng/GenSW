@@ -1,5 +1,7 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { AuthenticatedHomePage } from '../features/auth/pages/AuthenticatedHomePage'
+import { AnimalFormPage } from '../features/animals/pages/AnimalFormPage'
+import { AnimalsListPage } from '../features/animals/pages/AnimalsListPage'
 import { LoginPage } from '../features/auth/pages/LoginPage'
 import { useAuth } from '../features/auth/hooks/useAuth'
 import { BreedFormPage } from '../features/breeds/pages/BreedFormPage'
@@ -57,6 +59,9 @@ export function AppRoutes() {
         <Route element={<VarietiesListPage />} path="/variedades" />
         <Route element={<VarietyFormPage />} path="/variedades/nova" />
         <Route element={<VarietyFormPage />} path="/variedades/:id/editar" />
+        <Route element={<AnimalsListPage />} path="/animais" />
+        <Route element={<AnimalFormPage />} path="/animais/nova" />
+        <Route element={<AnimalFormPage />} path="/animais/:id/editar" />
       </Route>
       <Route element={<Navigate replace to="/" />} path="*" />
     </Routes>

@@ -9,6 +9,7 @@ public interface IRacaRepository
     Task<Raca?> GetByIdForUpdateAsync(Guid id, CancellationToken cancellationToken = default);
     Task<RacaListPage> ListAsync(RacaListQuery query, CancellationToken cancellationToken = default);
     Task<bool> HasNomeConflictAsync(Guid especieId, string nome, Guid? excludingId = null, CancellationToken cancellationToken = default);
+    Task<bool> IsReferencedByAnimalAsync(Guid racaId, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }
 

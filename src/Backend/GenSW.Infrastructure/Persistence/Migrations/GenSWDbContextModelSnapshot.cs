@@ -22,6 +22,74 @@ namespace GenSW.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("GenSW.Domain.Animals.Animal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Ativo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("CodigoInterno")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly?>("DataNascimento")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Escopo")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("EspecieId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Nome")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid?>("RacaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Sexo")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("VariedadeId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CodigoInterno")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Animais_CodigoInterno_CaseInsensitive");
+
+                    b.HasIndex("EspecieId");
+
+                    b.HasIndex("RacaId", "EspecieId");
+
+                    b.HasIndex("VariedadeId", "EspecieId");
+
+                    b.ToTable("Animais", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Animais_CodigoInterno_Canonical", "\"CodigoInterno\" <> '' AND \"CodigoInterno\" !~ U&'[\\0009-\\000D\\0085\\00A0\\1680\\2000-\\200A\\2028\\2029\\202F\\205F\\3000]' AND \"CodigoInterno\" !~ '(^ | $|  )'");
+
+                            t.HasCheckConstraint("CK_Animais_Escopo", "\"Escopo\" IN (1, 2)");
+
+                            t.HasCheckConstraint("CK_Animais_Nome_Canonical", "\"Nome\" IS NULL OR (\"Nome\" <> '' AND \"Nome\" !~ U&'[\\0009-\\000D\\0085\\00A0\\1680\\2000-\\200A\\2028\\2029\\202F\\205F\\3000]' AND \"Nome\" !~ '(^ | $|  )')");
+
+                            t.HasCheckConstraint("CK_Animais_Sexo", "\"Sexo\" IN (1, 2, 3)");
+                        });
+                });
+
             modelBuilder.Entity("GenSW.Domain.Breeds.Raca", b =>
                 {
                     b.Property<Guid>("Id")
@@ -48,6 +116,9 @@ namespace GenSW.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasAlternateKey("Id", "EspecieId")
+                        .HasName("AK_Racas_Id_EspecieId");
 
                     b.HasIndex("EspecieId");
 
@@ -154,6 +225,9 @@ namespace GenSW.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasAlternateKey("Id", "EspecieId")
+                        .HasName("AK_Variedades_Id_EspecieId");
 
                     b.HasIndex("EspecieId");
 
@@ -413,6 +487,29 @@ namespace GenSW.Infrastructure.Persistence.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("GenSW.Domain.Animals.Animal", b =>
+                {
+                    b.HasOne("GenSW.Domain.Species.Especie", null)
+                        .WithMany()
+                        .HasForeignKey("EspecieId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.Breeds.Raca", null)
+                        .WithMany()
+                        .HasForeignKey("RacaId", "EspecieId")
+                        .HasPrincipalKey("Id", "EspecieId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_Animais_Racas_RacaId_EspecieId");
+
+                    b.HasOne("GenSW.Domain.Varieties.Variedade", null)
+                        .WithMany()
+                        .HasForeignKey("VariedadeId", "EspecieId")
+                        .HasPrincipalKey("Id", "EspecieId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_Animais_Variedades_VariedadeId_EspecieId");
                 });
 
             modelBuilder.Entity("GenSW.Domain.Breeds.Raca", b =>

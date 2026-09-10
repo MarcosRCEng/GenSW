@@ -76,6 +76,41 @@ public sealed class RacaRepositoryTests : IAsyncLifetime
         await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
     }
 
+    [Fact]
+    public async Task IsReferencedByAnimal_detects_only_animals_linked_to_the_breed()
+    {
+        await using var context = CreateContext();
+        await context.Database.MigrateAsync();
+        var species = await AddSpeciesAsync(context, "Cão");
+        var referenced = Create(species.Id, "Pastor", 0);
+        var unused = Create(species.Id, "Poodle", 1);
+        context.Racas.AddRange(referenced, unused);
+        context.Animais.Add(GenSW.Domain.Animals.Animal.Criar("AN-000001", null, species.Id, referenced.Id, null, GenSW.Domain.Animals.SexoAnimal.Macho, null, GenSW.Domain.Animals.EscopoAnimal.Operacional, new DateOnly(2026, 9, 8), DateTimeOffset.UtcNow));
+        await context.SaveChangesAsync();
+        var repository = new RacaRepository(context);
+
+        Assert.True(await repository.IsReferencedByAnimalAsync(referenced.Id));
+        Assert.False(await repository.IsReferencedByAnimalAsync(unused.Id));
+    }
+
+    [Fact]
+    public async Task SaveChanges_translates_only_the_named_composite_animal_foreign_key_for_a_referenced_breed_move()
+    {
+        await using var context = CreateContext();
+        await context.Database.MigrateAsync();
+        var currentSpecies = await AddSpeciesAsync(context, "Cão");
+        var destinationSpecies = await AddSpeciesAsync(context, "Gato");
+        var breed = Create(currentSpecies.Id, "Pastor", 0);
+        context.Racas.Add(breed);
+        context.Animais.Add(GenSW.Domain.Animals.Animal.Criar("AN-000001", null, currentSpecies.Id, breed.Id, null, GenSW.Domain.Animals.SexoAnimal.Macho, null, GenSW.Domain.Animals.EscopoAnimal.Operacional, new DateOnly(2026, 9, 8), DateTimeOffset.UtcNow));
+        await context.SaveChangesAsync();
+        var repository = new RacaRepository(context);
+
+        breed.AlterarCadastro(destinationSpecies.Id, breed.Nome, DateTimeOffset.UtcNow);
+
+        await Assert.ThrowsAsync<RacaInUseByAnimalException>(() => repository.SaveChangesAsync());
+    }
+
     private GenSWDbContext CreateContext() => new(new DbContextOptionsBuilder<GenSWDbContext>().UseNpgsql(postgreSql.ConnectionString).Options);
     private static Raca Create(Guid speciesId, string name, int days) => Raca.Criar(speciesId, name, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero).AddDays(days));
     private static async Task<Especie> AddSpeciesAsync(GenSWDbContext context, string name)

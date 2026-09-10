@@ -100,6 +100,27 @@ public sealed class VariedadesApiTests(AuthWebApplicationFactory factory)
     }
 
     [Fact]
+    public async Task Referenced_variedade_rejects_species_change_but_allows_name_and_lifecycle_mutations()
+    {
+        var species = await SeedSpeciesAsync(factory);
+        var variedadeId = await CreateVariedadeDirectlyAsync(factory, species.Active.Id, "Variedade referenciada");
+        await CreateAnimalDirectlyAsync(factory, species.Active.Id, null, variedadeId);
+        var client = await CreateAuthenticatedClientAsync(factory, "variedades_referenced");
+        using (client)
+        {
+            using var move = await PutAsync(client, variedadeId, species.Historical.Id, "Variedade referenciada");
+            Assert.Equal(HttpStatusCode.Conflict, move.StatusCode);
+
+            using var rename = await PutAsync(client, variedadeId, species.Active.Id, "Variedade renomeada");
+            using var deactivate = await PatchAsync(client, variedadeId, false);
+            using var reactivate = await PatchAsync(client, variedadeId, true);
+            Assert.Equal(HttpStatusCode.OK, rename.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, deactivate.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, reactivate.StatusCode);
+        }
+    }
+
+    [Fact]
     public async Task Delete_is_not_an_allowed_variedade_operation()
     {
         var client = await CreateAuthenticatedClientAsync(factory, "variedades_delete");
@@ -142,6 +163,16 @@ public sealed class VariedadesApiTests(AuthWebApplicationFactory factory)
         });
         return variedade.Id;
     }
+
+    private static Task CreateAnimalDirectlyAsync(AuthWebApplicationFactory webFactory, Guid especieId, Guid? racaId, Guid? variedadeId)
+        => webFactory.ExecuteDbContextAsync(async context =>
+        {
+            context.Animais.Add(GenSW.Domain.Animals.Animal.Criar(
+                "AN-" + Guid.NewGuid().ToString("N"), null, especieId, racaId, variedadeId,
+                GenSW.Domain.Animals.SexoAnimal.Indeterminado, null, GenSW.Domain.Animals.EscopoAnimal.Operacional,
+                DateOnly.FromDateTime(DateTime.UtcNow), DateTimeOffset.UtcNow));
+            await context.SaveChangesAsync();
+        });
 
     private static async Task<HttpClient> CreateAuthenticatedClientAsync(AuthWebApplicationFactory webFactory, string prefix)
     {

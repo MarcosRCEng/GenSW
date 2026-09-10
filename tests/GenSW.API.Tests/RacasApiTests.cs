@@ -103,6 +103,27 @@ public sealed class RacasApiTests(AuthWebApplicationFactory factory)
     }
 
     [Fact]
+    public async Task Referenced_raca_rejects_species_change_but_allows_name_and_lifecycle_mutations()
+    {
+        var species = await SeedSpeciesAsync(factory);
+        var racaId = await CreateRacaDirectlyAsync(factory, species.Active.Id, "Raça referenciada");
+        await CreateAnimalDirectlyAsync(factory, species.Active.Id, racaId, null);
+        var client = await CreateAuthenticatedClientAsync(factory, "racas_referenced");
+        using (client)
+        {
+            using var move = await PutAsync(client, racaId, species.Historical.Id, "Raça referenciada");
+            Assert.Equal(HttpStatusCode.Conflict, move.StatusCode);
+
+            using var rename = await PutAsync(client, racaId, species.Active.Id, "Raça renomeada");
+            using var deactivate = await PatchAsync(client, racaId, false);
+            using var reactivate = await PatchAsync(client, racaId, true);
+            Assert.Equal(HttpStatusCode.OK, rename.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, deactivate.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, reactivate.StatusCode);
+        }
+    }
+
+    [Fact]
     public async Task Delete_is_not_an_allowed_raca_operation()
     {
         var client = await CreateAuthenticatedClientAsync(factory, "racas_delete");
@@ -145,6 +166,16 @@ public sealed class RacasApiTests(AuthWebApplicationFactory factory)
         });
         return raca.Id;
     }
+
+    private static Task CreateAnimalDirectlyAsync(AuthWebApplicationFactory webFactory, Guid especieId, Guid? racaId, Guid? variedadeId)
+        => webFactory.ExecuteDbContextAsync(async context =>
+        {
+            context.Animais.Add(GenSW.Domain.Animals.Animal.Criar(
+                "AN-" + Guid.NewGuid().ToString("N"), null, especieId, racaId, variedadeId,
+                GenSW.Domain.Animals.SexoAnimal.Indeterminado, null, GenSW.Domain.Animals.EscopoAnimal.Operacional,
+                DateOnly.FromDateTime(DateTime.UtcNow), DateTimeOffset.UtcNow));
+            await context.SaveChangesAsync();
+        });
 
     private static async Task<HttpClient> CreateAuthenticatedClientAsync(AuthWebApplicationFactory webFactory, string prefix)
     {

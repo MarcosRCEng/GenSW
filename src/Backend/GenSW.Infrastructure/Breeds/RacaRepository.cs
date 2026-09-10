@@ -9,6 +9,7 @@ namespace GenSW.Infrastructure.Breeds;
 public sealed class RacaRepository(GenSWDbContext context) : IRacaRepository
 {
     private const string NameIndex = "UX_Racas_EspecieId_Nome_CaseInsensitive";
+    private const string AnimalForeignKey = "FK_Animais_Racas_RacaId_EspecieId";
 
     public Task AddAsync(Raca raca, CancellationToken cancellationToken = default) => context.Racas.AddAsync(raca, cancellationToken).AsTask();
 
@@ -28,11 +29,50 @@ public sealed class RacaRepository(GenSWDbContext context) : IRacaRepository
     public Task<bool> HasNomeConflictAsync(Guid especieId, string nome, Guid? excludingId = null, CancellationToken cancellationToken = default) =>
         context.Racas.AsNoTracking().AnyAsync(raca => raca.EspecieId == especieId && (excludingId == null || raca.Id != excludingId) && raca.Nome.ToLower() == nome.ToLower(), cancellationToken);
 
+    public Task<bool> IsReferencedByAnimalAsync(Guid racaId, CancellationToken cancellationToken = default) =>
+        context.Animais.AsNoTracking().AnyAsync(animal => animal.RacaId == racaId, cancellationToken);
+
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        try { await context.SaveChangesAsync(cancellationToken); }
+        try
+        {
+            var moved = GetMovedRacas();
+            foreach (var entry in moved)
+            {
+                await context.Racas.Where(raca => raca.Id == entry.Entity.Id).ExecuteUpdateAsync(setters => setters
+                    .SetProperty(raca => raca.EspecieId, entry.Entity.EspecieId)
+                    .SetProperty(raca => raca.Nome, entry.Entity.Nome)
+                    .SetProperty(raca => raca.UpdatedAtUtc, entry.Entity.UpdatedAtUtc), cancellationToken);
+                entry.State = EntityState.Detached;
+            }
+
+            await context.SaveChangesAsync(cancellationToken);
+        }
         catch (DbUpdateException exception) when (exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: NameIndex })
         { throw new RacaDuplicateException(exception); }
+        catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.UniqueViolation && exception.ConstraintName == NameIndex)
+        { throw new RacaDuplicateException(exception); }
+        catch (DbUpdateException exception) when (exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.ForeignKeyViolation, ConstraintName: AnimalForeignKey })
+        { throw new RacaInUseByAnimalException(Guid.Empty); }
+        catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.ForeignKeyViolation && exception.ConstraintName == AnimalForeignKey)
+        { throw new RacaInUseByAnimalException(Guid.Empty); }
+    }
+
+    private IReadOnlyList<Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<Raca>> GetMovedRacas()
+    {
+        var autoDetectChanges = context.ChangeTracker.AutoDetectChangesEnabled;
+        context.ChangeTracker.AutoDetectChangesEnabled = false;
+        try
+        {
+            return context.ChangeTracker.Entries<Raca>()
+                .Where(entry => entry.State != EntityState.Added &&
+                    entry.OriginalValues.GetValue<Guid>(nameof(Raca.EspecieId)) != entry.Entity.EspecieId)
+                .ToArray();
+        }
+        finally
+        {
+            context.ChangeTracker.AutoDetectChangesEnabled = autoDetectChanges;
+        }
     }
 
     private IQueryable<RacaReadModel> ReadModels(IQueryable<Raca>? racas = null) =>

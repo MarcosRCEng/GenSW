@@ -68,6 +68,41 @@ public sealed class VariedadeRepositoryTests : IAsyncLifetime
         Assert.Contains("UX_Variedades_EspecieId_Nome_CaseInsensitive", indexes);
     }
 
+    [Fact]
+    public async Task IsReferencedByAnimal_detects_only_animals_linked_to_the_variety()
+    {
+        await using var context = CreateContext();
+        await context.Database.MigrateAsync();
+        var species = await AddSpeciesAsync(context, "Cão");
+        var referenced = Create(species.Id, "Curto", 0);
+        var unused = Create(species.Id, "Longo", 1);
+        context.Variedades.AddRange(referenced, unused);
+        context.Animais.Add(GenSW.Domain.Animals.Animal.Criar("AN-000001", null, species.Id, null, referenced.Id, GenSW.Domain.Animals.SexoAnimal.Macho, null, GenSW.Domain.Animals.EscopoAnimal.Operacional, new DateOnly(2026, 9, 8), DateTimeOffset.UtcNow));
+        await context.SaveChangesAsync();
+        var repository = new VariedadeRepository(context);
+
+        Assert.True(await repository.IsReferencedByAnimalAsync(referenced.Id));
+        Assert.False(await repository.IsReferencedByAnimalAsync(unused.Id));
+    }
+
+    [Fact]
+    public async Task SaveChanges_translates_only_the_named_composite_animal_foreign_key_for_a_referenced_variety_move()
+    {
+        await using var context = CreateContext();
+        await context.Database.MigrateAsync();
+        var currentSpecies = await AddSpeciesAsync(context, "Cão");
+        var destinationSpecies = await AddSpeciesAsync(context, "Gato");
+        var variety = Create(currentSpecies.Id, "Curto", 0);
+        context.Variedades.Add(variety);
+        context.Animais.Add(GenSW.Domain.Animals.Animal.Criar("AN-000001", null, currentSpecies.Id, null, variety.Id, GenSW.Domain.Animals.SexoAnimal.Macho, null, GenSW.Domain.Animals.EscopoAnimal.Operacional, new DateOnly(2026, 9, 8), DateTimeOffset.UtcNow));
+        await context.SaveChangesAsync();
+        var repository = new VariedadeRepository(context);
+
+        variety.AlterarCadastro(destinationSpecies.Id, variety.Nome, DateTimeOffset.UtcNow);
+
+        await Assert.ThrowsAsync<VariedadeInUseByAnimalException>(() => repository.SaveChangesAsync());
+    }
+
     private GenSWDbContext CreateContext() => new(new DbContextOptionsBuilder<GenSWDbContext>().UseNpgsql(postgreSql.ConnectionString).Options);
     private static Variedade Create(Guid speciesId, string name, int days) => Variedade.Criar(speciesId, name, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero).AddDays(days));
     private static async Task<Especie> AddSpeciesAsync(GenSWDbContext context, string name)

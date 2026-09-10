@@ -10,4 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\GenSW.Domain\GenSW.Domain.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="GenSW.Application.Tests" />
+  </ItemGroup>
 </Project>
