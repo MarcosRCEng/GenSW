@@ -9,6 +9,7 @@ namespace GenSW.Infrastructure.Varieties;
 public sealed class VariedadeRepository(GenSWDbContext context) : IVariedadeRepository
 {
     private const string NameIndex = "UX_Variedades_EspecieId_Nome_CaseInsensitive";
+    private const string AnimalForeignKey = "FK_Animais_Variedades_VariedadeId_EspecieId";
     public Task AddAsync(Variedade variedade, CancellationToken cancellationToken = default) => context.Variedades.AddAsync(variedade, cancellationToken).AsTask();
     public Task<Variedade?> GetByIdForUpdateAsync(Guid id, CancellationToken cancellationToken = default) => context.Variedades.SingleOrDefaultAsync(variedade => variedade.Id == id, cancellationToken);
     public Task<VariedadeReadModel?> GetByIdReadOnlyAsync(Guid id, CancellationToken cancellationToken = default) => ReadModels(context.Variedades.AsNoTracking().Where(variedade => variedade.Id == id)).SingleOrDefaultAsync(cancellationToken);
@@ -23,11 +24,50 @@ public sealed class VariedadeRepository(GenSWDbContext context) : IVariedadeRepo
 
     public Task<bool> HasNomeConflictAsync(Guid especieId, string nome, Guid? excludingId = null, CancellationToken cancellationToken = default) => context.Variedades.AsNoTracking().AnyAsync(variedade => variedade.EspecieId == especieId && (excludingId == null || variedade.Id != excludingId) && variedade.Nome.ToLower() == nome.ToLower(), cancellationToken);
 
+    public Task<bool> IsReferencedByAnimalAsync(Guid variedadeId, CancellationToken cancellationToken = default) =>
+        context.Animais.AsNoTracking().AnyAsync(animal => animal.VariedadeId == variedadeId, cancellationToken);
+
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        try { await context.SaveChangesAsync(cancellationToken); }
+        try
+        {
+            var moved = GetMovedVariedades();
+            foreach (var entry in moved)
+            {
+                await context.Variedades.Where(variedade => variedade.Id == entry.Entity.Id).ExecuteUpdateAsync(setters => setters
+                    .SetProperty(variedade => variedade.EspecieId, entry.Entity.EspecieId)
+                    .SetProperty(variedade => variedade.Nome, entry.Entity.Nome)
+                    .SetProperty(variedade => variedade.UpdatedAtUtc, entry.Entity.UpdatedAtUtc), cancellationToken);
+                entry.State = EntityState.Detached;
+            }
+
+            await context.SaveChangesAsync(cancellationToken);
+        }
         catch (DbUpdateException exception) when (exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: NameIndex })
         { throw new VariedadeDuplicateException(exception); }
+        catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.UniqueViolation && exception.ConstraintName == NameIndex)
+        { throw new VariedadeDuplicateException(exception); }
+        catch (DbUpdateException exception) when (exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.ForeignKeyViolation, ConstraintName: AnimalForeignKey })
+        { throw new VariedadeInUseByAnimalException(Guid.Empty); }
+        catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.ForeignKeyViolation && exception.ConstraintName == AnimalForeignKey)
+        { throw new VariedadeInUseByAnimalException(Guid.Empty); }
+    }
+
+    private IReadOnlyList<Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<Variedade>> GetMovedVariedades()
+    {
+        var autoDetectChanges = context.ChangeTracker.AutoDetectChangesEnabled;
+        context.ChangeTracker.AutoDetectChangesEnabled = false;
+        try
+        {
+            return context.ChangeTracker.Entries<Variedade>()
+                .Where(entry => entry.State != EntityState.Added &&
+                    entry.OriginalValues.GetValue<Guid>(nameof(Variedade.EspecieId)) != entry.Entity.EspecieId)
+                .ToArray();
+        }
+        finally
+        {
+            context.ChangeTracker.AutoDetectChangesEnabled = autoDetectChanges;
+        }
     }
 
     private IQueryable<VariedadeReadModel> ReadModels(IQueryable<Variedade>? variedades = null) =>

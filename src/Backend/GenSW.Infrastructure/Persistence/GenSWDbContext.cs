@@ -2,6 +2,7 @@ using GenSW.Domain.People;
 using GenSW.Domain.Species;
 using GenSW.Domain.Breeds;
 using GenSW.Domain.Varieties;
+using GenSW.Domain.Animals;
 using GenSW.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -20,6 +21,8 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
 
     public DbSet<Variedade> Variedades => Set<Variedade>();
 
+    public DbSet<Animal> Animais => Set<Animal>();
+
     public DbSet<RefreshSession> RefreshSessions => Set<RefreshSession>();
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -35,6 +38,9 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
         var nameCanonicalConstraint = usesNpgsql
             ? "\"Nome\" <> '' AND \"Nome\" !~ U&'[\\0009-\\000D\\0085\\00A0\\1680\\2000-\\200A\\2028\\2029\\202F\\205F\\3000]' AND \"Nome\" !~ '(^ | $|  )'"
             : "\"Nome\" <> '' AND \"Nome\" = trim(\"Nome\") AND \"Nome\" NOT LIKE '%  %'";
+        var optionalNameCanonicalConstraint = usesNpgsql
+            ? "\"Nome\" IS NULL OR (\"Nome\" <> '' AND \"Nome\" !~ U&'[\\0009-\\000D\\0085\\00A0\\1680\\2000-\\200A\\2028\\2029\\202F\\205F\\3000]' AND \"Nome\" !~ '(^ | $|  )')"
+            : "\"Nome\" IS NULL OR (\"Nome\" <> '' AND \"Nome\" = trim(\"Nome\") AND \"Nome\" NOT LIKE '%  %')";
 
         builder.Entity<Pessoa>(pessoa =>
         {
@@ -79,6 +85,7 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
             raca.Property(entity => entity.CreatedAtUtc).IsRequired();
             raca.Property(entity => entity.UpdatedAtUtc).IsRequired();
             raca.HasOne<Especie>().WithMany().HasForeignKey(entity => entity.EspecieId).IsRequired().OnDelete(DeleteBehavior.Restrict);
+            raca.HasAlternateKey(entity => new { entity.Id, entity.EspecieId }).HasName("AK_Racas_Id_EspecieId");
         });
 
         builder.Entity<Variedade>(variedade =>
@@ -92,6 +99,45 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
             variedade.Property(entity => entity.CreatedAtUtc).IsRequired();
             variedade.Property(entity => entity.UpdatedAtUtc).IsRequired();
             variedade.HasOne<Especie>().WithMany().HasForeignKey(entity => entity.EspecieId).IsRequired().OnDelete(DeleteBehavior.Restrict);
+            variedade.HasAlternateKey(entity => new { entity.Id, entity.EspecieId }).HasName("AK_Variedades_Id_EspecieId");
+        });
+
+        builder.Entity<Animal>(animal =>
+        {
+            animal.ToTable("Animais", table =>
+            {
+                table.HasCheckConstraint("CK_Animais_CodigoInterno_Canonical", nameCanonicalConstraint.Replace("\"Nome\"", "\"CodigoInterno\""));
+                table.HasCheckConstraint("CK_Animais_Nome_Canonical", optionalNameCanonicalConstraint);
+                table.HasCheckConstraint("CK_Animais_Sexo", "\"Sexo\" IN (1, 2, 3)");
+                table.HasCheckConstraint("CK_Animais_Escopo", "\"Escopo\" IN (1, 2)");
+            });
+            animal.HasKey(entity => entity.Id);
+            animal.Property(entity => entity.CodigoInterno).IsRequired().HasMaxLength(64);
+            animal.Property(entity => entity.Nome).HasMaxLength(200);
+            animal.Property(entity => entity.EspecieId).IsRequired();
+            animal.Property(entity => entity.Sexo).HasConversion<int>().IsRequired();
+            animal.Property(entity => entity.DataNascimento).HasColumnType("date");
+            animal.Property(entity => entity.Escopo).HasConversion<int>().IsRequired();
+            animal.Property(entity => entity.Ativo).IsRequired().HasDefaultValue(true);
+            animal.Property(entity => entity.CreatedAtUtc).IsRequired();
+            animal.Property(entity => entity.UpdatedAtUtc).IsRequired();
+
+            animal.HasIndex(entity => entity.CodigoInterno).IsUnique().HasDatabaseName("UX_Animais_CodigoInterno_CaseInsensitive");
+            animal.HasIndex(entity => entity.EspecieId);
+            animal.HasIndex(entity => new { entity.RacaId, entity.EspecieId });
+            animal.HasIndex(entity => new { entity.VariedadeId, entity.EspecieId });
+
+            animal.HasOne<Especie>().WithMany().HasForeignKey(entity => entity.EspecieId).IsRequired().OnDelete(DeleteBehavior.Restrict);
+            animal.HasOne<Raca>().WithMany()
+                .HasForeignKey(entity => new { entity.RacaId, entity.EspecieId })
+                .HasPrincipalKey(entity => new { entity.Id, entity.EspecieId })
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_Animais_Racas_RacaId_EspecieId");
+            animal.HasOne<Variedade>().WithMany()
+                .HasForeignKey(entity => new { entity.VariedadeId, entity.EspecieId })
+                .HasPrincipalKey(entity => new { entity.Id, entity.EspecieId })
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_Animais_Variedades_VariedadeId_EspecieId");
         });
 
         builder.Entity<ApplicationUser>(user =>

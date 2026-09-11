@@ -142,6 +142,26 @@ public sealed class VariedadeServiceTests
         await Assert.ThrowsAsync<VariedadeNotFoundException>(() => service.SetActiveAsync(Guid.NewGuid(), false));
     }
 
+    [Fact]
+    public async Task Update_rejects_only_a_species_change_when_the_variety_is_referenced_by_an_animal()
+    {
+        var current = Especie.Criar("Cão", null, Now);
+        var destination = Especie.Criar("Gato", null, Now);
+        var variety = Variedade.Criar(current.Id, "Curto", Now);
+        var repository = new FakeVariedadeRepository { ReferencedByAnimal = true };
+        repository.Items.Add(variety);
+        repository.ReadModels[variety.Id] = ReadModel(variety, current);
+        var service = CreateService(repository, current, destination);
+
+        await Assert.ThrowsAsync<VariedadeInUseByAnimalException>(() =>
+            service.UpdateAsync(variety.Id, new UpdateVariedadeCommand(destination.Id, "Curto")));
+
+        var renamed = await service.UpdateAsync(variety.Id, new UpdateVariedadeCommand(current.Id, "Longo"));
+        Assert.Equal("Longo", renamed.Nome);
+        Assert.False((await service.SetActiveAsync(variety.Id, false)).Ativo);
+        Assert.True((await service.SetActiveAsync(variety.Id, true)).Ativo);
+    }
+
     private static VariedadeService CreateService(FakeVariedadeRepository repository, params Especie[] species) => new(repository, new FakeEspecieRepository(species), new FixedTimeProvider(Now));
     private static Especie InactiveSpecies(string name) { var especie = Especie.Criar(name, null, Now); especie.Inativar(Now); return especie; }
     private static VariedadeReadModel ReadModel(Variedade variedade, Especie especie) => new(variedade.Id, variedade.EspecieId, variedade.Nome, variedade.Ativo, variedade.CreatedAtUtc, variedade.UpdatedAtUtc, new VariedadeEspecieResumo(especie.Id, especie.NomeComum, especie.Ativo));
@@ -160,12 +180,13 @@ public sealed class VariedadeServiceTests
     private sealed class FakeVariedadeRepository : IVariedadeRepository
     {
         public List<Variedade> Items { get; } = []; public Dictionary<Guid, VariedadeReadModel> ReadModels { get; } = []; public bool NameConflict { get; set; } public Guid? ConflictingSpeciesId { get; set; }
-        public Guid? LastSpeciesIdChecked { get; private set; } public string? LastNameChecked { get; private set; } public VariedadeListQuery? LastListQuery { get; private set; } public VariedadeListPage? ListPage { get; set; } public int ListCalls { get; private set; }
+        public Guid? LastSpeciesIdChecked { get; private set; } public string? LastNameChecked { get; private set; } public VariedadeListQuery? LastListQuery { get; private set; } public VariedadeListPage? ListPage { get; set; } public int ListCalls { get; private set; } public bool ReferencedByAnimal { get; set; }
         public Task AddAsync(Variedade variedade, CancellationToken cancellationToken = default) { Items.Add(variedade); return Task.CompletedTask; }
         public Task<VariedadeReadModel?> GetByIdReadOnlyAsync(Guid id, CancellationToken cancellationToken = default) { var item = Items.SingleOrDefault(x => x.Id == id); if (item is null) return Task.FromResult<VariedadeReadModel?>(null); return Task.FromResult<VariedadeReadModel?>(ReadModels.TryGetValue(id, out var model) ? model with { EspecieId = item.EspecieId, Nome = item.Nome, Ativo = item.Ativo, CreatedAtUtc = item.CreatedAtUtc, UpdatedAtUtc = item.UpdatedAtUtc } : new VariedadeReadModel(item.Id, item.EspecieId, item.Nome, item.Ativo, item.CreatedAtUtc, item.UpdatedAtUtc, new VariedadeEspecieResumo(item.EspecieId, string.Empty, true))); }
         public Task<Variedade?> GetByIdForUpdateAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult(Items.SingleOrDefault(x => x.Id == id));
         public Task<VariedadeListPage> ListAsync(VariedadeListQuery query, CancellationToken cancellationToken = default) { ListCalls++; LastListQuery = query; return Task.FromResult(ListPage ?? new VariedadeListPage([], 0)); }
         public Task<bool> HasNomeConflictAsync(Guid especieId, string nome, Guid? excludingId = null, CancellationToken cancellationToken = default) { LastSpeciesIdChecked = especieId; LastNameChecked = nome; return Task.FromResult(NameConflict || ConflictingSpeciesId == especieId); }
+        public Task<bool> IsReferencedByAnimalAsync(Guid variedadeId, CancellationToken cancellationToken = default) => Task.FromResult(ReferencedByAnimal);
         public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

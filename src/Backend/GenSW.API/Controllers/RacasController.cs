@@ -24,6 +24,7 @@ public sealed class RacasController(IRacaService racas) : ControllerBase
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, ToResponse(result));
         }
         catch (RacaDuplicateException exception) { return Conflict(ToDuplicateProblem(exception)); }
+        catch (RacaInUseByAnimalException exception) { return Conflict(ToInUseProblem(exception)); }
         catch (EspecieNotFoundException) { return NotFound(); }
         catch (ArgumentException exception) { return BadRequest(ToInvalidDataProblem(exception)); }
     }
@@ -76,6 +77,7 @@ public sealed class RacasController(IRacaService racas) : ControllerBase
         catch (RacaNotFoundException) { return NotFound(); }
         catch (EspecieNotFoundException) { return NotFound(); }
         catch (RacaDuplicateException exception) { return Conflict(ToDuplicateProblem(exception)); }
+        catch (RacaInUseByAnimalException exception) { return Conflict(ToInUseProblem(exception)); }
         catch (ArgumentException exception) { return BadRequest(ToInvalidDataProblem(exception)); }
     }
 
@@ -91,6 +93,13 @@ public sealed class RacasController(IRacaService racas) : ControllerBase
         Title = "Invalid breed data",
         Detail = exception.Message,
         Status = StatusCodes.Status400BadRequest,
+    };
+
+    private static ProblemDetails ToInUseProblem(RacaInUseByAnimalException exception) => new()
+    {
+        Title = "Breed is referenced by an animal",
+        Detail = exception.Message,
+        Status = StatusCodes.Status409Conflict,
     };
 
     private static bool TryParseSort(string value, out RacaSortField sort) => value switch

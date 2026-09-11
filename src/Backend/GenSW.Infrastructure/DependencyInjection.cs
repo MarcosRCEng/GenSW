@@ -3,6 +3,8 @@ using GenSW.Application.People;
 using GenSW.Application.Species;
 using GenSW.Application.Breeds;
 using GenSW.Application.Varieties;
+using GenSW.Application.Animals;
+using GenSW.Infrastructure.Animals;
 using GenSW.Infrastructure.Authentication;
 using GenSW.Infrastructure.Identity;
 using GenSW.Infrastructure.Persistence;
@@ -52,6 +54,8 @@ public static class DependencyInjection
         services.AddScoped<IEspecieRepository, EspecieRepository>();
         services.AddScoped<IRacaRepository, RacaRepository>();
         services.AddScoped<IVariedadeRepository, VariedadeRepository>();
+        services.AddScoped<IAnimalRepository, AnimalRepository>();
+        services.AddScoped<IAnimalCodeAllocator, PostgreSqlAnimalCodeAllocator>();
 
         return services;
     }

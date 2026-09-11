@@ -11,6 +11,8 @@ import type { CurrentUser } from '../features/auth/types/auth'
 import { AuthProvider } from '../features/auth/providers/AuthProvider'
 import { createRaca, getRacaById, listRacas, setRacaAtivo, updateRaca } from '../features/breeds/services/breedsService'
 import type { Raca } from '../features/breeds/types/breeds'
+import { createAnimal, getAnimalById, listAnimals, setAnimalAtivo, updateAnimal } from '../features/animals/services/animalsService'
+import type { Animal } from '../features/animals/types/animals'
 import {
   createPessoa,
   getPessoaById,
@@ -46,6 +48,10 @@ vi.mock('../features/species/services/speciesService', () => ({
 
 vi.mock('../features/breeds/services/breedsService', () => ({
   createRaca: vi.fn(), getRacaById: vi.fn(), listRacas: vi.fn(), setRacaAtivo: vi.fn(), updateRaca: vi.fn(),
+}))
+
+vi.mock('../features/animals/services/animalsService', () => ({
+  createAnimal: vi.fn(), getAnimalById: vi.fn(), listAnimals: vi.fn(), setAnimalAtivo: vi.fn(), updateAnimal: vi.fn(),
 }))
 
 vi.mock('../features/varieties/services/varietiesService', () => ({
@@ -85,6 +91,12 @@ const activeVariety: Variedade = {
   id: 'variety-1', especieId: activeSpecies.id, nome: 'Variedade padrão', ativo: true,
   createdAtUtc: '2026-09-01T12:00:00Z', updatedAtUtc: '2026-09-01T12:00:00Z',
   especie: { id: activeSpecies.id, nomeComum: activeSpecies.nomeComum, ativo: true },
+}
+
+const activeAnimal: Animal = {
+  id: 'animal-1', codigoInterno: 'AN-000001', nome: 'Bela', especieId: activeSpecies.id, racaId: activeBreed.id, variedadeId: activeVariety.id,
+  sexo: 2, dataNascimento: null, escopo: 1, ativo: true, createdAtUtc: '2026-09-08T12:00:00Z', updatedAtUtc: '2026-09-08T12:00:00Z',
+  especie: { id: activeSpecies.id, nomeComum: activeSpecies.nomeComum, ativo: true }, raca: { id: activeBreed.id, nome: activeBreed.nome, ativo: true }, variedade: { id: activeVariety.id, nome: activeVariety.nome, ativo: true },
 }
 
 function renderApplication(initialPath: string) {
@@ -128,6 +140,11 @@ describe('AppRoutes', () => {
     vi.mocked(setVariedadeAtivo).mockResolvedValue(activeVariety)
     vi.mocked(updateVariedade).mockResolvedValue(activeVariety)
     vi.mocked(listVariedades).mockResolvedValue({ items: [], page: 1, pageSize: 25, totalItems: 0, totalPages: 0 })
+    vi.mocked(createAnimal).mockResolvedValue(activeAnimal)
+    vi.mocked(getAnimalById).mockResolvedValue(activeAnimal)
+    vi.mocked(setAnimalAtivo).mockResolvedValue(activeAnimal)
+    vi.mocked(updateAnimal).mockResolvedValue(activeAnimal)
+    vi.mocked(listAnimals).mockResolvedValue({ items: [], page: 1, pageSize: 25, totalItems: 0, totalPages: 0 })
   })
 
   it('mostra loading e não renderiza a rota protegida durante o bootstrap', () => {
@@ -325,5 +342,37 @@ describe('AppRoutes', () => {
     fireEvent.click(await screen.findByRole('link', { name: 'Variedades' }))
     expect(await screen.findByRole('heading', { name: 'Variedades' })).toBeInTheDocument()
     varieties.unmount()
+  })
+
+  it('protege as três rotas de animais para usuário anônimo', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(null)
+    for (const path of ['/animais', '/animais/nova', '/animais/animal-1/editar']) {
+      const view = renderApplication(path)
+      expect(await screen.findByRole('heading', { name: 'Acessar o sistema' })).toBeInTheDocument()
+      view.unmount()
+    }
+  })
+
+  it('renderiza as rotas de lista, criação e edição de animais para usuário autenticado', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
+    const list = renderApplication('/animais')
+    expect(await screen.findByRole('heading', { name: 'Animais' })).toBeInTheDocument()
+    list.unmount()
+    const create = renderApplication('/animais/nova')
+    expect(await screen.findByRole('heading', { name: 'Novo animal' })).toBeInTheDocument()
+    create.unmount()
+    renderApplication('/animais/animal-1/editar')
+    expect(await screen.findByRole('heading', { name: 'Editar animal' })).toBeInTheDocument()
+    expect(getAnimalById).toHaveBeenCalledWith('animal-1')
+  })
+
+  it('expõe Animais em Cadastros e navega para a lista a partir da home autenticada', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
+    renderApplication('/')
+    const cadastros = await screen.findByRole('navigation', { name: 'Cadastros' })
+    const animalsLink = cadastros.querySelector('a[href="/animais"]')
+    expect(animalsLink).toHaveTextContent('Animais')
+    fireEvent.click(animalsLink!)
+    expect(await screen.findByRole('heading', { name: 'Animais' })).toBeInTheDocument()
   })
 })

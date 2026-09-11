@@ -41,6 +41,10 @@ public sealed class VariedadeService(IVariedadeRepository repository, IEspecieRe
         if (command.EspecieId != variedade.EspecieId)
         {
             especieResumo = ToResumo(await GetActiveEspecieAsync(command.EspecieId, cancellationToken));
+            if (await repository.IsReferencedByAnimalAsync(variedade.Id, cancellationToken))
+            {
+                throw new VariedadeInUseByAnimalException(variedade.Id);
+            }
         }
 
         variedade.AlterarCadastro(command.EspecieId, command.Nome, timeProvider.GetUtcNow());
