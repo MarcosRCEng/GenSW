@@ -10,7 +10,7 @@ Permitir que um `Animal` tenha zero ou mais identificações físicas de manejo,
 
 ## Decisão
 
-Será criado um agregado subordinado `IdentificacaoAnimal`, persistido em tabela própria e acessado por endpoints aninhados no contexto do animal. A entidade não será incorporada ao cadastro-base nem representará registros institucionais.
+Será criado um agregado subordinado `IdentificacaoAnimal`, persistido em tabela própria. As mutações e as consultas no contexto de um animal conhecido serão acessadas por endpoints aninhados; uma consulta global somente leitura permitirá descobrir o animal a partir de sua identificação física. A entidade não será incorporada ao cadastro-base nem representará registros institucionais.
 
 O domínio preserva a identidade histórica de cada marcador: depois da criação, `Tipo`, `DescricaoTipo` e `Valor` não poderão ser alterados. Trocas físicas serão feitas inativando o registro anterior e criando outro. Os únicos campos editáveis são `Principal`, `DataAplicacao`, `Observacao` e `Ativo`, por operações que reforçam suas invariantes.
 
@@ -53,6 +53,7 @@ O enum inicial será `Anilha`, `Brinco`, `Microchip`, `Tatuagem`, `Marca` e `Out
 - Há no máximo uma identificação simultaneamente `Ativo == true` e `Principal == true` por animal. A primeira identificação nunca é promovida automaticamente.
 - Inativar uma principal também a torna não principal; nenhuma sucessora é promovida automaticamente.
 - Reativar só é permitido no mesmo `AnimalId`, no próprio registro; não o torna principal automaticamente.
+- Definir uma identificação como principal exige que ela já esteja ativa e não altera `Ativo`. Uma identificação inativa deve ser reativada explicitamente antes dessa operação.
 - Não haverá `DELETE` exposto pela API.
 
 ## Persistência e concorrência
@@ -68,11 +69,11 @@ A migração criará `IdentificacoesAnimal` com chave primária `Id`, FK obrigat
 
 Esses índices preservam a unicidade mesmo depois de inativação e impedem a duplicidade histórica entre animais diferentes. A camada de aplicação fará pré-verificação para mensagens de domínio; a infraestrutura converterá violações dos índices nomeados em conflitos determinísticos, sem vazar exceções do PostgreSQL.
 
-Operações que possam alterar `Principal` ou inativar uma principal executarão em transação e bloquearão a linha do `Animal` pai durante a decisão. Definir principal limpará a principal ativa anterior e ativará a escolhida na mesma transação. O bloqueio serializa concorrentes da mesma chave de animal; o índice parcial permanece como defesa final de persistência.
+Operações que possam alterar `Principal` ou inativar uma principal executarão em transação e bloquearão a linha do `Animal` pai durante a decisão. Para definir principal, a operação exige que a identificação escolhida já esteja ativa; na mesma transação, limpa `Principal` da principal ativa anterior, se existir, e define `Principal=true` na identificação ativa escolhida, sem alterar `Ativo`. A reativação é uma operação distinta e não promove automaticamente a identificação a principal. O bloqueio serializa concorrentes da mesma chave de animal; o índice parcial permanece como defesa final de persistência.
 
 ## Aplicação e API
 
-Será criado um módulo paralelo aos módulos existentes de Animal, com contratos de criação, atualização de metadados, resultados, filtros, paginação, serviço, repositório e exceções de domínio. O resultado incluirá o resumo do animal necessário para consulta por identificação, sem transformar a identificação em substituta do cadastro de Animal.
+Será criado um módulo paralelo aos módulos existentes de Animal, com contratos de criação, atualização de metadados, resultados, filtros, paginação, serviço, repositório e exceções de domínio. O resultado da consulta global incluirá o resumo mínimo do animal associado, sem transformar a identificação em substituta do cadastro de Animal.
 
 Os endpoints autenticados ficarão sob `/api/v1/animais/{animalId}/identificacoes`:
 
@@ -85,7 +86,11 @@ Os endpoints autenticados ficarão sob `/api/v1/animais/{animalId}/identificacoe
 | Ativar/inativar | `PATCH /{identificacaoId}/ativo` | Inativar limpa `Principal`; reativar não a promove. |
 | Definir/remover principal | `PATCH /{identificacaoId}/principal` | Exige identificação ativa para definir como principal e faz a troca atômica. |
 
-Entradas inválidas recebem `400`, animal ou identificação inexistentes (ou identificação fora do animal da rota) recebem `404`, e violações de unicidade ou concorrência recebem `409` com `ProblemDetails` estáveis e sem detalhes internos. A listagem de animais existente não ganhará uma busca universal; a descoberta por identificação ocorrerá pela consulta do novo recurso, que devolve a associação com seu animal.
+Para `PATCH /{identificacaoId}`, a semântica individual de `DataAplicacao` e `Observacao` será: propriedade ausente não altera o valor persistido; propriedade presente com valor o substitui; propriedade presente com `null` limpa o valor persistido. O futuro plano técnico escolherá uma representação de contrato que preserve esses três estados sem ambiguidade. `Tipo`, `DescricaoTipo` e `Valor` permanecem imutáveis após a criação.
+
+Haverá também a rota global autenticada e somente leitura `GET /api/v1/identificacoes-animal?tipo&valor&ativo&principal&page&pageSize`. Ela pesquisa exclusivamente o recurso `IdentificacaoAnimal`, independentemente de `AnimalId`, com comparação case-insensitive coerente com a normalização de `Valor`, paginação conforme os padrões do projeto e o resumo mínimo do animal associado em cada resultado. Ela permite descobrir o animal a partir de anilha, brinco ou microchip conhecidos, preservando `ProblemDetails` e os demais padrões de resposta já estabelecidos. Não haverá `POST`, `PATCH`, `PUT` ou `DELETE` globais: todas as mutações permanecem exclusivamente em `/api/v1/animais/{animalId}/identificacoes`. A consulta aninhada continua sendo o contexto de um animal conhecido; a rota global não transforma a listagem de animais em busca universal do ERP. `Animal.CodigoInterno`, `IdentificacaoAnimal` e o registro institucional futuro #297 permanecem conceitos separados.
+
+Entradas inválidas recebem `400`, animal ou identificação inexistentes (ou identificação fora do animal da rota) recebem `404`, e violações de unicidade ou concorrência recebem `409` com `ProblemDetails` estáveis e sem detalhes internos.
 
 ## Interface
 
@@ -105,12 +110,13 @@ Registros inativos continuarão acessíveis, mas receberão rótulo visual de hi
 O plano de implementação cobrirá, antes do código de produção:
 
 1. Regras de domínio para criação, `Outro`, imutabilidade, ativação/inativação e principal.
-2. Serviço para animal inexistente, pré-conflitos, escopo por `AnimalId` e escolha explícita de principal.
+2. Serviço para animal inexistente, pré-conflitos, escopo por `AnimalId`, escolha explícita de principal sem reativação implícita e reativação sem promoção automática.
 3. Repositório/migração PostgreSQL para FK, índices parciais, unicidade normalizada e conversão de conflitos persistidos.
 4. Testes de concorrência PostgreSQL para duas tentativas de definir principal e para duplicidade de identificador.
-5. API para todos os status, filtros e ausência de `DELETE`.
-6. Frontend para contratos, painel, criação, edição de metadados, histórico e mensagens de erro sem vazamento técnico.
-7. Gates completos: `dotnet test GenSW.sln`, `npm test`, `npm run lint` e `npm run build`.
+5. API para todos os status, filtros, consulta global autenticada por identificação com resumo do animal, inexistência de mutações globais e ausência de `DELETE`.
+6. Contrato e API de edição de metadados para os três estados individuais de `DataAplicacao` e `Observacao`: ausente, valor e `null` explícito.
+7. Frontend para contratos, painel, criação, edição de metadados, histórico e mensagens de erro sem vazamento técnico.
+8. Gates completos: `dotnet test GenSW.sln`, `npm test`, `npm run lint` e `npm run build`.
 
 ## Fora do escopo
 
@@ -118,4 +124,4 @@ Não serão implementados registros institucionais (#297), pedigree/filiação, 
 
 ## Critérios de aceite
 
-O resultado será aceito quando um animal puder manter, por exemplo, uma anilha ativa principal, um microchip ativo e uma anilha inativa histórica; quando identificações iguais normalizadas não puderem pertencer a animais distintos; quando não houver duas principais ativas; e quando a UI, API, migração e testes preservarem essa separação sem exclusão física.
+O resultado será aceito quando um animal puder manter, por exemplo, uma anilha ativa principal, um microchip ativo e uma anilha inativa histórica; quando identificações iguais normalizadas não puderem pertencer a animais distintos; quando uma identificação inativa não puder ser definida como principal sem reativação explícita e essa reativação não a promover automaticamente; quando não houver duas principais ativas; quando uma identificação física puder localizar seu animal pela consulta global somente leitura; quando a edição de `DataAplicacao` e `Observacao` distinguir propriedade ausente, valor e `null` explícito; e quando a UI, API, migração e testes preservarem essa separação sem exclusão física.
