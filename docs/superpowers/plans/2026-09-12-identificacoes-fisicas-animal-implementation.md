@@ -21,7 +21,7 @@
 - `DescricaoTipo` is required only for `Outro` and is persisted as `NULL` for all other types. `Principal` requires an already active row; setting principal never activates a row; reactivation never promotes; inactivating a principal clears it and never promotes another row.
 - All nested routes validate the pair `(animalId, identificacaoId)` and return 404 when the row belongs to another Animal, without revealing its existence. All routes in this feature use `[Authorize]`.
 - PostgreSQL named violations are translated only by `SqlState` plus `ConstraintName`, never exception text, `Detail`, or substring parsing. Known duplicate and principal conflicts map to 409; missing Animal or nested row map to 404; invalid request/domain input maps to 400; other database failures remain unmasked by a false 409 mapping.
-- Principal-changing work uses one Npgsql transaction, `SELECT ... FOR UPDATE` over the parent `Animais` row, then the named partial unique index as final persistence defense. It serializes only requests for the same Animal.
+- Principal-changing work uses one Npgsql transaction and `SELECT ... FOR UPDATE` over the parent `Animais` row. A replacement never relies on EF's command ordering: it persists removal of the previous principal in one `SaveChangesAsync`, then persists promotion/insertion of the new principal in a second `SaveChangesAsync`, before commit. The named partial unique index remains final persistence defense, and the lock serializes only requests for the same Animal.
 - PATCH metadata uses explicit presence flags for each nullable field. A missing property leaves a field unchanged; a supplied value replaces it; a supplied JSON `null` clears it. Do not add a package or generic optional-value framework.
 - Every functional task follows red test, minimal implementation, green test, and review checkpoint. Do not create production commits per task. Only Task 17 creates the integrated implementation commit, then pushes and opens a PR after every gate passes.
 
@@ -113,6 +113,19 @@ public interface IIdentificacaoAnimalRepository
 
 `BeginMutationAsync` must call `Database.BeginTransactionAsync`; `LockAnimalAsync` must run `context.Animais.FromSqlInterpolated($"SELECT * FROM \"Animais\" WHERE \"Id\" = {animalId} FOR UPDATE")` while that transaction is active. `IIdentificacaoAnimalMutationScope.CommitAsync` commits the same scoped `GenSWDbContext` transaction; disposing an uncommitted scope rolls it back. This local concrete scope avoids a generic unit-of-work abstraction.
 
+### Layering and principal-persistence protocol
+
+`IIdentificacaoAnimalService`, `IdentificacaoAnimalService`, `IIdentificacaoAnimalRepository`, all commands/results, and the local mutation-scope contract belong to `GenSW.Application`. `IdentificacaoAnimalRepository` belongs only to `GenSW.Infrastructure`. `GenSW.Application/DependencyInjection.cs` registers only `IIdentificacaoAnimalService -> IdentificacaoAnimalService` and may retain its existing `TimeProvider.System` registration; it never imports, references, constructs, or registers `IdentificacaoAnimalRepository`. `GenSW.Infrastructure/DependencyInjection.cs` exclusively registers `IIdentificacaoAnimalRepository -> IdentificacaoAnimalRepository`. The service receives its repository and `TimeProvider` by constructor injection; no service locator, generic repository, or new architectural abstraction is introduced.
+
+All operations below execute the stated `SaveChangesAsync` calls against the single transaction opened by `BeginMutationAsync`; commit happens only after the final successful flush. Any exception from a later flush leaves the scope uncommitted, so disposal rolls back every earlier flush in that operation.
+
+| Operation | Required transaction protocol |
+| --- | --- |
+| `SetPrincipalAsync(..., Principal: true)` | Begin; lock the Animal; load the target constrained by both IDs; reject an inactive target; locate the current active principal. If it is a different row, call `RemoverPrincipal()` and `SaveChangesAsync()`, then call `DefinirPrincipal()` on the target and `SaveChangesAsync()`. Commit. If the target is already the active principal, return idempotently without a new flush or invalid intermediate state. |
+| `SetPrincipalAsync(..., Principal: false)` | Begin; lock the Animal; load the target constrained by both IDs; call `RemoverPrincipal()` and `SaveChangesAsync()`; commit. |
+| `CreateAsync(..., Principal: true)` | Begin; lock the Animal; validate normalized duplicate and domain rules while locked; locate the current active principal. If one exists, call `RemoverPrincipal()` and `SaveChangesAsync()`. Create/add the new active principal, call `SaveChangesAsync()` separately, then commit. The new row must not share the flush that clears the old principal. |
+| `SetAtivoAsync(..., Ativo: false)` for a principal | Begin; lock the Animal; load the target constrained by both IDs; call `Inativar()` (which clears principal); `SaveChangesAsync()`; commit. Do not promote another row. |
+
 ### Task 1: Domain identifier aggregate and invariant tests
 
 **Files:**
@@ -159,11 +172,11 @@ public interface IIdentificacaoAnimalRepository
 
 **Interfaces:**
 - Consumes: Task 1 entity and enum; existing `AnimalNotFoundException`.
-- Produces: exact cross-task contract names and scoped `IIdentificacaoAnimalService` registration for Tasks 3–10.
+- Produces: exact cross-task contract names and the Application-only scoped `IIdentificacaoAnimalService` registration for Tasks 3–10. The concrete repository binding is exclusively Task 5.
 
 - [ ] **Step 1: Write failing contract tests**
 
-  Construct every command, result, global result, page, and query. Assert defaults `page=1`, `pageSize=25`; each enum is distinct; metadata command preserves every absent/value/null combination through booleans; `IdentificacaoAnimalDuplicateException` carries `Tipo`, `DescricaoTipo`, `Valor`, and `IdentificacaoAnimalDuplicateConflictSource`; `IdentificacaoAnimalPrincipalConflictException` carries only structured persisted-constraint provenance.
+  Construct every command, result, global result, page, and query. Assert defaults `page=1`, `pageSize=25`; each enum is distinct; metadata command preserves every absent/value/null combination through booleans; `IdentificacaoAnimalDuplicateException` carries `Tipo`, `DescricaoTipo`, `Valor`, and `IdentificacaoAnimalDuplicateConflictSource`; `IdentificacaoAnimalPrincipalConflictException` carries only structured persisted-constraint provenance. Build a `ServiceCollection` through `AddApplication()` and assert that it registers `IIdentificacaoAnimalService -> IdentificacaoAnimalService` and `TimeProvider`, but registers neither `IIdentificacaoAnimalRepository` nor `IdentificacaoAnimalRepository`; also assert the Application project has no Infrastructure project reference.
 
 - [ ] **Step 2: Run the red test**
 
@@ -173,7 +186,7 @@ public interface IIdentificacaoAnimalRepository
 
 - [ ] **Step 3: Implement contracts and narrow exception taxonomy**
 
-  Define `IdentificacaoAnimalDuplicateConflictSource` as `PreCheck`, `PersistedNamedTipoValorUniqueConstraint`, and `PersistedNamedOutroDescricaoTipoValorUniqueConstraint`; define `IdentificacaoAnimalPrincipalConflictSource` as `PersistedNamedPrincipalAtivaUniqueConstraint`. Register `IIdentificacaoAnimalService` as scoped using the concrete repository and `TimeProvider`; do not register a generic repository.
+  Define `IdentificacaoAnimalDuplicateConflictSource` as `PreCheck`, `PersistedNamedTipoValorUniqueConstraint`, and `PersistedNamedOutroDescricaoTipoValorUniqueConstraint`; define `IdentificacaoAnimalPrincipalConflictSource` as `PersistedNamedPrincipalAtivaUniqueConstraint`. In `GenSW.Application/DependencyInjection.cs`, retain/register `TimeProvider.System` using the established Application convention and register exactly `services.AddScoped<IIdentificacaoAnimalService, IdentificacaoAnimalService>()`. `IdentificacaoAnimalService` takes `IIdentificacaoAnimalRepository` and `TimeProvider` by constructor injection. Do not import or name `IdentificacaoAnimalRepository`, do not register `IIdentificacaoAnimalRepository`, and do not register a generic repository or use a service locator.
 
 - [ ] **Step 4: Run the contract test green**
 
@@ -185,7 +198,7 @@ public interface IIdentificacaoAnimalRepository
 
   Run: `git diff --check; git diff --stat; git status --short`
 
-  Expected: only Task 2 contracts, exception classes, test, and DI registration are changed.
+  Expected: only Task 2 contracts, exception classes, test, and Application DI registration are changed; the Application project has no Infrastructure reference and no concrete repository binding.
 
 ### Task 3: Application service rules and nested scope
 
@@ -199,7 +212,7 @@ public interface IIdentificacaoAnimalRepository
 
 - [ ] **Step 1: Write failing service tests using a focused fake repository**
 
-  Cover missing Animal; missing row; row belonging to another Animal; duplicate non-Outro and Outro pre-checks; creation with and without principal; replacement of an active principal; removal of principal; refusal to make inactive row principal; inactivation clearing principal; reactivation without promotion; partial metadata update with absent/value/null per property; invalid page/size/enum; nested and global query delegation.
+  Cover missing Animal; missing row; row belonging to another Animal; duplicate non-Outro and Outro pre-checks; creation with and without principal; replacement of an active principal; removal of principal; refusal to make inactive row principal; inactivation clearing principal; reactivation without promotion; partial metadata update with absent/value/null per property; invalid page/size/enum; nested and global query delegation. Make the fake mutation scope record ordered durable snapshots and commit/rollback. Prove: (a) switching A principal to B invokes `RemoverPrincipal(A)`, first `SaveChangesAsync`, `DefinirPrincipal(B)`, second `SaveChangesAsync`, then commit; (b) the snapshot between those flushes contains no active principal but is still uncommitted; (c) an injected failure on the second flush leaves the scope uncommitted and restores A on rollback; (d) `CreateAsync(Principal: true)` follows the same clear-then-separate-insert order and rolls back A if the insert flush fails; and (e) idempotently setting the current active principal does not create an invalid intermediate state.
 
 - [ ] **Step 2: Run the red test**
 
@@ -209,7 +222,7 @@ public interface IIdentificacaoAnimalRepository
 
 - [ ] **Step 3: Implement ordered Application behavior**
 
-  For create, pre-check the normalized domain values then, if `Principal`, open mutation scope, lock parent, create, clear prior principal, save, commit. For set-principal and deactivate, open scope, lock parent first, locate by both IDs, mutate, save, commit. For reactivation and metadata, verify parent/row scope and do not set principal. `GetByAnimalAsync` and nested list first confirm Animal existence so an empty unknown Animal is 404; global list never requires AnimalId. Reject `HasDataAplicacao == false && HasObservacao == false` as 400 input. Do not translate generic database errors here.
+  Implement the exact cross-task transaction protocol. For `CreateAsync(Principal: true)`, open the scope, lock the parent before revalidating duplicate/domain rules, clear and flush any different current principal, then create/add the new active principal and flush it separately before commit. For `SetPrincipalAsync(Principal: true)`, lock, load target by both IDs, require `Ativo`, clear/flush a different current principal, then define/flush the target before commit; an already-current active target is idempotent. For `SetPrincipalAsync(Principal: false)`, lock, remove, flush, and commit. For `SetAtivoAsync(Ativo: false)` on a principal, lock, call `Inativar`, flush, and commit without promotion; the non-principal path may avoid the principal lock. For reactivation and metadata, verify parent/row scope and do not set principal. `GetByAnimalAsync` and nested list first confirm Animal existence so an empty unknown Animal is 404; global list never requires AnimalId. Reject `HasDataAplicacao == false && HasObservacao == false` as 400 input. Do not translate generic database errors here, and never combine clearing the old principal with promoting/inserting the new one in a single flush.
 
 - [ ] **Step 4: Run the service test green**
 
@@ -274,11 +287,11 @@ public interface IIdentificacaoAnimalRepository
 
 **Interfaces:**
 - Consumes: Tasks 2–4, `GenSWDbContext`, `Npgsql.PostgresException`, and existing `EF.Functions.ILike`/escaping pattern.
-- Produces: concrete repository, transaction scope, local/global projections, and structured constraint translation for Tasks 6–8.
+- Produces: the Infrastructure-owned concrete repository binding, transaction scope, local/global projections, and structured constraint translation for Tasks 6–8.
 
 - [ ] **Step 1: Write failing repository tests**
 
-  Against the repository's existing test database pattern, cover case-insensitive exact pre-check without wildcard leakage, local/global `Valor` filters with escaped `%`, boolean/type filters, deterministic pagination, animal summary projection, lookup by `(AnimalId, Id)`, `FOR UPDATE` parent lock, and conversions for precisely the three named indexes.
+  Against the repository's existing test database pattern, cover case-insensitive exact pre-check without wildcard leakage, local/global `Valor` filters with escaped `%`, boolean/type filters, deterministic pagination, animal summary projection, lookup by `(AnimalId, Id)`, `FOR UPDATE` parent lock, and conversions for precisely the three named indexes. Build an Infrastructure service collection and assert that it is the only DI module binding `IIdentificacaoAnimalRepository` to `IdentificacaoAnimalRepository`; pair that with Task 2's Application-only DI test so neither module permits an Application-to-Infrastructure dependency.
 
 - [ ] **Step 2: Run the red test**
 
@@ -288,19 +301,19 @@ public interface IIdentificacaoAnimalRepository
 
 - [ ] **Step 3: Implement only the concrete repository**
 
-  Use `ILike` plus the Animal repository's `EscapeLikePattern` algorithm for `Valor`; equality uniqueness checks use `ILike(value, escapedValue, "\\")`. Global reads join `Animais` and project `Id`, `CodigoInterno`, and `Nome` only. Order local/global pages by `CreatedAtUtc` descending then `Id` descending. `SaveChangesAsync` catches only `DbUpdateException` whose inner `PostgresException` is `UniqueViolation` and whose `ConstraintName` equals one of the three exact index constants; map duplicate indexes to `IdentificacaoAnimalDuplicateException`, principal index to `IdentificacaoAnimalPrincipalConflictException`; let all other exceptions escape.
+  Use `ILike` plus the Animal repository's `EscapeLikePattern` algorithm for `Valor`; equality uniqueness checks use `ILike(value, escapedValue, "\\")`. Global reads join `Animais` and project `Id`, `CodigoInterno`, and `Nome` only. Order local/global pages by `CreatedAtUtc` descending then `Id` descending. Implement `BeginMutationAsync`, `LockAnimalAsync`, and the local scope exactly as declared in the cross-task contract: both application flushes share one Npgsql transaction, and disposal without `CommitAsync` rolls back earlier successful flushes. In `GenSW.Infrastructure/DependencyInjection.cs`, register exactly `services.AddScoped<IIdentificacaoAnimalRepository, IdentificacaoAnimalRepository>()`; this is the sole concrete repository binding. `SaveChangesAsync` catches only `DbUpdateException` whose inner `PostgresException` is `UniqueViolation` and whose `ConstraintName` equals one of the three exact index constants; map duplicate indexes to `IdentificacaoAnimalDuplicateException`, principal index to `IdentificacaoAnimalPrincipalConflictException`; let all other exceptions escape.
 
 - [ ] **Step 4: Run the repository test green**
 
   Run the Step 2 command.
 
-  Expected: PASS; projections are read-only and unknown database errors are not reclassified.
+  Expected: PASS; projections are read-only, the repository binding is Infrastructure-only, transaction disposal rolls back uncommitted earlier flushes, and unknown database errors are not reclassified.
 
 - [ ] **Step 5: Review checkpoint**
 
   Run: `git diff --check; git diff --stat; git status --short`
 
-  Expected: only repository/DI/test files changed beyond the mapping artifacts.
+  Expected: only repository/Infrastructure-DI/test files changed beyond the mapping artifacts; no Application file names or concrete repository type appear in Application DI.
 
 ### Task 6: API contracts and explicit PATCH presence tracking
 
@@ -380,18 +393,18 @@ public interface IIdentificacaoAnimalRepository
 
   Expected: Up/Down contain only additive identification artifacts.
 
-### Task 8: PostgreSQL concurrency gate A–D
+### Task 8: PostgreSQL concurrency and rollback gate A–G
 
 **Files:**
 - Create: `tests/GenSW.API.Tests/PostgreSqlIdentificacoesAnimalConcurrencyTests.cs`
 
 **Interfaces:**
 - Consumes: Tasks 3–5 and existing `EphemeralPostgreSql`/`AnimalApiPostgreSqlFixture` support.
-- Produces: real-database evidence of serialized per-Animal principal decisions and deterministic conflicts.
+- Produces: real-database evidence of explicit two-flush principal replacement, rollback safety, and serialized per-Animal principal decisions.
 
 - [ ] **Step 1: Write failing concurrent tests**
 
-  Coordinate independent service scopes with barriers: A, concurrent `SetPrincipalAsync` for different rows of one Animal ends with exactly one active principal; B, concurrent creation of the same normalized marker produces one success and one structured duplicate conflict; C, hold a lock for Animal A and prove Animal B principal mutation completes before A is released; D, concurrent deactivate/reactivate/define-principal sequences never persist `Ativo=false && Principal=true` and defining a still-inactive row returns invalid input.
+  Use independent PostgreSQL service scopes, barriers, and a test-only failure hook/trigger that raises after the first flush but before the operation can commit. Prove explicitly: A, switching existing active principal A to active B completes without a false `UX_IdentificacoesAnimal_Animal_PrincipalAtiva` conflict and leaves only B principal; B, after the first flush removes A and before B is promoted, the transaction remains uncommitted (an independent observer still sees A) and the same scope records no active principal; C, a forced failure promoting B after A was cleared rolls back and restores A as principal; D, `CreateAsync(Principal: true)` with another principal clears/flushed the old row then successfully inserts/promotes the new row; E, a forced new-principal insert failure rolls back and restores the previous principal; F, concurrent principal switches for one Animal serialize and end with exactly one active principal; G, hold the lock for Animal A and prove Animal B principal mutation completes before A is released. Retain the normalized-marker duplicate conflict and inactive-row invariant as focused supporting cases, but do not treat a database unique-violation during a valid replacement as expected behavior.
 
 - [ ] **Step 2: Run the red test**
 
@@ -401,13 +414,13 @@ public interface IIdentificacaoAnimalRepository
 
 - [ ] **Step 3: Implement only verified concurrency gaps**
 
-  Use the Task 5 transaction scope and exact parent-row `FOR UPDATE` lock. Never replace this with a pre-check, process lock, SQLite test, or broad global advisory lock. Let `UX_IdentificacoesAnimal_Animal_PrincipalAtiva` defend an unforeseen interleaving.
+  Use the Task 5 transaction scope, two explicit `SaveChangesAsync` calls where a principal is replaced, and exact parent-row `FOR UPDATE` locking. Never replace this with a pre-check, process lock, SQLite test, single-flush EF ordering assumption, or broad global advisory lock. Let `UX_IdentificacoesAnimal_Animal_PrincipalAtiva` defend an unforeseen interleaving only; a valid normal replacement must not intentionally violate it.
 
 - [ ] **Step 4: Run the concurrency test green**
 
   Run the Step 2 command.
 
-  Expected: PASS on real PostgreSQL; unavailable binaries yield the pre-existing explicit skip only.
+  Expected: PASS on real PostgreSQL, including the rollback and cross-animal non-serialization evidence; unavailable binaries yield the pre-existing explicit skip only.
 
 - [ ] **Step 5: Review checkpoint**
 
@@ -803,4 +816,6 @@ The developer, not Codex, performs these checks after the implementation PR is a
 - **Placeholder scan:** PASS. No unresolved marker, vague validation instruction, or delegated technical decision remains in task steps.
 - **Interface consistency:** PASS. Tasks 2 and 6 declare the C# and JSON contracts consumed by all later tasks; named constraints and error classes retain one spelling throughout.
 - **Scope:** PASS. #297, #298, and #299 are not implemented by this plan; no institutional registration or deferred marker technology is introduced.
+- **Application/Infrastructure DI boundary:** PASS. Task 2 owns only the service and `TimeProvider` registration in Application; Task 5 exclusively binds `IIdentificacaoAnimalRepository` to `IdentificacaoAnimalRepository` in Infrastructure, with no Application-to-Infrastructure reference, service locator, or generic repository.
+- **Principal replacement persistence:** PASS. The cross-task protocol and Tasks 3, 5, and 8 require an explicit old-principal flush before the separate promotion/insert flush, inside one transaction; they verify normal replacement, intermediate transactional visibility, rollback restoring the old principal, same-Animal serialization, and independent-Animal progress.
 - **Commit policy:** PASS. Task checkpoints produce no production commits; Task 17 creates exactly one implementation commit after integrated gates, then push/PR/CI/human validation.
