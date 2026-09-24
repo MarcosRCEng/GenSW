@@ -330,6 +330,49 @@ public sealed class PostgreSqlIdentificacoesAnimalConcurrencyTests(AnimalApiPost
     }
 
     [Fact]
+    public async Task Concurrent_creates_of_the_same_normalized_identification_are_rejected_by_the_persisted_unique_index()
+    {
+        var firstAnimal = await SeedAsync();
+        var secondAnimal = await SeedAsync();
+        var preCheckBarrier = new DuplicatePreCheckBarrier();
+
+        async Task<IdentificacaoAnimalDuplicateException?> CreateAsync(Guid animalId, string value) =>
+            await factory.ExecuteScopeAsync(async services =>
+            {
+                var repository = services.GetRequiredService<IIdentificacaoAnimalRepository>();
+                var service = new IdentificacaoAnimalService(
+                    new DuplicatePreCheckBarrierRepository(repository, preCheckBarrier), TimeProvider.System);
+                try
+                {
+                    await service.CreateAsync(animalId, CreateCommand(value, principal: false));
+                    return null;
+                }
+                catch (IdentificacaoAnimalDuplicateException exception)
+                {
+                    return exception;
+                }
+            });
+
+        var firstCreate = CreateAsync(firstAnimal.AnimalId, "BR-A001");
+        var secondCreate = CreateAsync(secondAnimal.AnimalId, "br-a001");
+        var outcomes = await Task.WhenAll(firstCreate, secondCreate);
+        var persistedRows = await CountIdentificationsAsync("br-a001");
+        var conflicts = outcomes.Where(outcome => outcome is not null).ToArray();
+        var successCount = outcomes.Count(outcome => outcome is null);
+
+        Assert.Equal([false, false], preCheckBarrier.Results.Order().ToArray());
+        Assert.Equal(1, persistedRows);
+        Assert.Equal(1, successCount);
+        var conflict = Assert.IsType<IdentificacaoAnimalDuplicateException>(Assert.Single(conflicts));
+        Assert.Equal(IdentificacaoAnimalDuplicateConflictSource.PersistedNamedTipoValorUniqueConstraint,
+            conflict.ConflictSource);
+        var updateException = Assert.IsType<DbUpdateException>(conflict.InnerException);
+        var postgres = Assert.IsType<PostgresException>(updateException.InnerException);
+        Assert.Equal(PostgresErrorCodes.UniqueViolation, postgres.SqlState);
+        Assert.Equal("UX_IdentificacoesAnimal_Tipo_Valor_CaseInsensitive", postgres.ConstraintName);
+    }
+
+    [Fact]
     public async Task Inactive_identification_cannot_be_promoted_and_keeps_the_existing_principal()
     {
         var seeded = await SeedAsync(("ACTIVE-PRINCIPAL", true, true), ("INACTIVE-TARGET", false, false));
@@ -533,7 +576,7 @@ public sealed class PostgreSqlIdentificacoesAnimalConcurrencyTests(AnimalApiPost
             CancellationToken cancellationToken = default) => Inner.ListByAnimalAsync(animalId, query, cancellationToken);
         public Task<PagedIdentificacaoAnimalGlobalResult> ListGlobalAsync(IdentificacaoAnimalListQuery query,
             CancellationToken cancellationToken = default) => Inner.ListGlobalAsync(query, cancellationToken);
-        public Task<bool> HasDuplicateAsync(TipoIdentificacaoAnimal tipo, string? descricaoTipo, string valor,
+        public virtual Task<bool> HasDuplicateAsync(TipoIdentificacaoAnimal tipo, string? descricaoTipo, string valor,
             CancellationToken cancellationToken = default) => Inner.HasDuplicateAsync(tipo, descricaoTipo, valor, cancellationToken);
         public Task<IdentificacaoAnimal?> GetCurrentPrincipalForUpdateAsync(Guid animalId,
             CancellationToken cancellationToken = default) => Inner.GetCurrentPrincipalForUpdateAsync(animalId, cancellationToken);
@@ -566,6 +609,36 @@ public sealed class PostgreSqlIdentificacoesAnimalConcurrencyTests(AnimalApiPost
             var animal = await Inner.LockAnimalAsync(animalId, cancellationToken);
             await afterLock();
             return animal;
+        }
+    }
+
+    private sealed class DuplicatePreCheckBarrier
+    {
+        private readonly TaskCompletionSource release =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly System.Collections.Concurrent.ConcurrentQueue<bool> results = new();
+        private int arrived;
+
+        public bool[] Results => results.ToArray();
+
+        public async Task<bool> WaitForBothPreChecksAsync(bool hasDuplicate, CancellationToken cancellationToken)
+        {
+            results.Enqueue(hasDuplicate);
+            if (Interlocked.Increment(ref arrived) == 2) release.TrySetResult();
+            await release.Task.WaitAsync(cancellationToken);
+            return hasDuplicate;
+        }
+    }
+
+    private sealed class DuplicatePreCheckBarrierRepository(
+        IIdentificacaoAnimalRepository inner,
+        DuplicatePreCheckBarrier barrier) : DelegatingRepository(inner)
+    {
+        public override async Task<bool> HasDuplicateAsync(TipoIdentificacaoAnimal tipo, string? descricaoTipo,
+            string valor, CancellationToken cancellationToken = default)
+        {
+            var hasDuplicate = await Inner.HasDuplicateAsync(tipo, descricaoTipo, valor, cancellationToken);
+            return await barrier.WaitForBothPreChecksAsync(hasDuplicate, cancellationToken);
         }
     }
 }
