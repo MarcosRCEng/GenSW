@@ -1,17 +1,25 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '../../../shared/http/httpErrors'
 import { listRacas } from '../../breeds/services/breedsService'
 import { listEspecies } from '../../species/services/speciesService'
 import { listVariedades } from '../../varieties/services/varietiesService'
 import { createAnimal, getAnimalById, updateAnimal } from '../services/animalsService'
+import { listAnimalIdentifications } from '../identifications/services/identificationsService'
 import { AnimalFormPage } from './AnimalFormPage'
 
 vi.mock('../../species/services/speciesService', () => ({ listEspecies: vi.fn() }))
 vi.mock('../../breeds/services/breedsService', () => ({ listRacas: vi.fn() }))
 vi.mock('../../varieties/services/varietiesService', () => ({ listVariedades: vi.fn() }))
 vi.mock('../services/animalsService', () => ({ createAnimal: vi.fn(), getAnimalById: vi.fn(), updateAnimal: vi.fn() }))
+vi.mock('../identifications/services/identificationsService', () => ({
+  createAnimalIdentification: vi.fn(),
+  listAnimalIdentifications: vi.fn(),
+  setAnimalIdentificationAtivo: vi.fn(),
+  setAnimalIdentificationPrincipal: vi.fn(),
+  updateAnimalIdentificationMetadata: vi.fn(),
+}))
 
 const speciesA = { id: 'species-a', nomeComum: 'Canina', nomeCientifico: null, ativo: true, createdAtUtc: '2026-09-08T12:00:00Z', updatedAtUtc: '2026-09-08T12:00:00Z' }
 const speciesB = { ...speciesA, id: 'species-b', nomeComum: 'Felina' }
@@ -25,6 +33,11 @@ function renderPage(path = '/animais/nova') {
   return render(<MemoryRouter initialEntries={[path]}><Routes><Route element={<AnimalFormPage />} path="/animais/nova" /><Route element={<AnimalFormPage />} path="/animais/:id/editar" /><Route element={<p>Lista de animais</p>} path="/animais" /></Routes></MemoryRouter>)
 }
 
+function SwitchToSecondAnimal() {
+  const navigate = useNavigate()
+  return <button onClick={() => navigate('/animais/animal-2/editar')} type="button">Trocar animal</button>
+}
+
 beforeEach(() => {
   vi.resetAllMocks()
   vi.mocked(listEspecies).mockImplementation(({ page = 1 } = {}) => Promise.resolve(page === 1 ? { items: [speciesA], page: 1, pageSize: 100, totalItems: 2, totalPages: 2 } : { items: [speciesB], page: 2, pageSize: 100, totalItems: 2, totalPages: 2 }))
@@ -33,9 +46,43 @@ beforeEach(() => {
   vi.mocked(createAnimal).mockResolvedValue(savedAnimal)
   vi.mocked(getAnimalById).mockResolvedValue(savedAnimal)
   vi.mocked(updateAnimal).mockResolvedValue(savedAnimal)
+  vi.mocked(listAnimalIdentifications).mockResolvedValue({ items: [], page: 1, pageSize: 10, totalItems: 0, totalPages: 0 })
 })
 
 describe('AnimalFormPage', () => {
+  it('keeps identifiers out of creation and renders a separate edit-only panel after the animal loads', async () => {
+    const creationPage = renderPage()
+    await screen.findByRole('heading', { name: 'Novo animal' })
+    expect(screen.queryByRole('heading', { name: 'Identificações físicas' })).not.toBeInTheDocument()
+    expect(listAnimalIdentifications).not.toHaveBeenCalled()
+    creationPage.unmount()
+
+    renderPage('/animais/animal-1/editar')
+    expect(await screen.findByRole('heading', { name: 'Identificações físicas' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Código interno')).toHaveValue(savedAnimal.codigoInterno)
+    expect(listAnimalIdentifications).toHaveBeenCalledWith(savedAnimal.id, { page: 1, pageSize: 10 })
+  })
+
+  it('does not keep the previous animal panel while switching edit routes', async () => {
+    let finishSecondLoad!: (animal: typeof savedAnimal) => void
+    vi.mocked(getAnimalById)
+      .mockResolvedValueOnce(savedAnimal)
+      .mockImplementationOnce(() => new Promise((resolve) => { finishSecondLoad = resolve }))
+
+    render(<MemoryRouter initialEntries={['/animais/animal-1/editar']}><SwitchToSecondAnimal /><Routes>
+      <Route element={<AnimalFormPage />} path="/animais/:id/editar" />
+    </Routes></MemoryRouter>)
+    expect(await screen.findByRole('heading', { name: 'Identificações físicas' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Trocar animal' }))
+    expect(screen.queryByRole('heading', { name: 'Identificações físicas' })).not.toBeInTheDocument()
+    expect(listAnimalIdentifications).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Identificações físicas' })).not.toBeInTheDocument())
+    finishSecondLoad({ ...savedAnimal, id: 'animal-2', codigoInterno: 'AN-000002' })
+    expect(await screen.findByRole('heading', { name: 'Identificações físicas' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Código interno')).toHaveValue('AN-000002')
+  })
+
   it('shows automatic-code help and omits untouched empty code, but rejects a touched empty value locally', async () => {
     renderPage()
     expect(await screen.findByText('O código será gerado automaticamente se permanecer vazio.')).toBeInTheDocument()

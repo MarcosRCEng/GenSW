@@ -69,6 +69,49 @@ public sealed class AnimaisApiTests(AnimalApiPostgreSqlFixture fixture) : IClass
     }
 
     [Fact]
+    public async Task Animal_base_lifecycle_remains_independent_when_no_identifiers_exist()
+    {
+        var classifications = await SeedClassificationsAsync(factory);
+        using var client = await CreateAuthenticatedClientAsync(factory, "animais_without_identifications");
+
+        using var create = await client.PostAsJsonAsync("/api/v1/animais", new
+        {
+            codigoInterno = "AN-NO-IDENTIFICATION",
+            nome = "Animal sem identificação",
+            especieId = classifications.Especie.Id,
+            racaId = (Guid?)null,
+            variedadeId = (Guid?)null,
+            sexo = 1,
+            dataNascimento = "2020-01-02",
+            escopo = 1,
+        });
+        var created = await ReadJsonAsync(create);
+        Assert.Equal(HttpStatusCode.Created, create.StatusCode);
+        var animalId = created.GetProperty("id").GetGuid();
+        Assert.Equal(JsonValueKind.Null, created.GetProperty("raca").ValueKind);
+        Assert.Equal(JsonValueKind.Null, created.GetProperty("variedade").ValueKind);
+
+        using var update = await client.PutAsJsonAsync($"/api/v1/animais/{animalId}", new
+        {
+            codigoInterno = "AN-NO-IDENTIFICATION-EDITED",
+            nome = "Animal editado",
+            especieId = classifications.Especie.Id,
+            racaId = (Guid?)null,
+            variedadeId = (Guid?)null,
+            sexo = 2,
+            dataNascimento = "2021-02-03",
+            escopo = 2,
+        });
+        Assert.Equal(HttpStatusCode.OK, update.StatusCode);
+
+        using var deactivate = await client.PatchAsJsonAsync($"/api/v1/animais/{animalId}/ativo", new { ativo = false });
+        using var activate = await client.PatchAsJsonAsync($"/api/v1/animais/{animalId}/ativo", new { ativo = true });
+        Assert.False((await ReadJsonAsync(deactivate)).GetProperty("ativo").GetBoolean());
+        Assert.True((await ReadJsonAsync(activate)).GetProperty("ativo").GetBoolean());
+        Assert.Equal("Animal editado", (await ReadJsonAsync(activate)).GetProperty("nome").GetString());
+    }
+
+    [Fact]
     public async Task Animais_list_applies_defaults_filters_case_insensitive_search_sorting_and_offset_pages()
     {
         var classifications = await SeedClassificationsAsync(factory);

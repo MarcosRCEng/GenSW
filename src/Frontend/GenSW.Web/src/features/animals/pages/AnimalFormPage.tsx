@@ -9,6 +9,7 @@ import { listVariedades } from '../../varieties/services/varietiesService'
 import type { Variedade } from '../../varieties/types/varieties'
 import { createAnimal, getAnimalById, updateAnimal } from '../services/animalsService'
 import type { Animal, EscopoAnimal, SexoAnimal } from '../types/animals'
+import { AnimalIdentificationsPanel } from '../identifications/components/AnimalIdentificationsPanel'
 
 type LoadState = 'loading' | 'ready' | 'not-found' | 'error'
 const CATALOG_PAGE_SIZE = 100
@@ -60,7 +61,7 @@ export function AnimalFormPage() {
   useEffect(() => {
     let current = true
     const load = async () => {
-      setLoadState('loading'); setSaveError(null)
+      setLoadState('loading'); setSaveError(null); setCurrentAnimal(null)
       let animal: Animal | null = null
       if (id) {
         try { animal = await getAnimalById(id) }
@@ -131,5 +132,5 @@ export function AnimalFormPage() {
     <div><label className="text-sm font-medium text-slate-700" htmlFor="animal-scope">Escopo</label><select className={control} id="animal-scope" onChange={(event) => setEscopo(Number(event.target.value) as EscopoAnimal)} value={escopo}><option value="1">Operacional</option><option value="2">Referência</option></select></div>
     <div><label className="text-sm font-medium text-slate-700" htmlFor="animal-birth-date">Data de nascimento</label><input className={control} id="animal-birth-date" onChange={(event) => setDataNascimento(event.target.value)} type="date" value={dataNascimento} /></div>
     {saveError ? <p className="text-sm font-medium text-red-700" role="alert">{saveError}</p> : null}<div className="flex flex-wrap gap-3"><button className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60" disabled={isSaving} type="submit">{isSaving ? 'Salvando…' : 'Salvar'}</button>{backLink}</div>
-  </form></div></main>
+  </form>{id && currentAnimal && currentAnimal.id === id ? <AnimalIdentificationsPanel animalId={currentAnimal.id} /> : null}</div></main>
 }

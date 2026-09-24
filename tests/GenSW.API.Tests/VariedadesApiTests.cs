@@ -32,7 +32,10 @@ public sealed class VariedadesApiTests(AuthWebApplicationFactory factory)
 
             using var list = await client.GetAsync($"/api/v1/variedades?page=1&pageSize=25&search=CURTO&especieId={species.Active.Id}&ativo=true&sortBy=ativo&sortDirection=asc");
             Assert.Equal(HttpStatusCode.OK, list.StatusCode);
-            Assert.Contains(created.Id, (await ReadJsonAsync(list)).GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid()));
+            var listBody = await ReadJsonAsync(list);
+            Assert.Equal(1, listBody.GetProperty("page").GetInt32());
+            Assert.Equal(25, listBody.GetProperty("pageSize").GetInt32());
+            Assert.Contains(created.Id, listBody.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid()));
 
             using var invalidMove = await PutAsync(client, created.Id, species.Inactive.Id, "Variedade inválida");
             Assert.Equal(HttpStatusCode.BadRequest, invalidMove.StatusCode);
