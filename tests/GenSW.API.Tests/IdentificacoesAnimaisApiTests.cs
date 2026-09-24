@@ -18,6 +18,146 @@ public sealed class IdentificacoesAnimaisApiTests(AnimalApiPostgreSqlFixture fix
     private readonly AuthWebApplicationFactory factory = fixture.Factory;
 
     [Fact]
+    public async Task Minimal_anilha_creation_persists_defaults_when_all_optional_fields_are_omitted()
+    {
+        var animalId = await SeedAnimalAsync(factory);
+        using var client = await CreateAuthenticatedClientAsync(factory, "minimal_anilha");
+        using var create = await client.PostAsJsonAsync($"/api/v1/animais/{animalId}/identificacoes",
+            new { tipo = 1, valor = "HOM-MINIMAL" });
+        Assert.Equal(HttpStatusCode.Created, create.StatusCode);
+        var id = (await ReadJsonAsync(create)).GetProperty("id").GetGuid();
+
+        var persisted = await GetIdentificationAsync(client, animalId, id);
+        Assert.Equal(1, persisted.GetProperty("tipo").GetInt32());
+        Assert.Equal("HOM-MINIMAL", persisted.GetProperty("valor").GetString());
+        Assert.True(persisted.GetProperty("ativo").GetBoolean());
+        Assert.False(persisted.GetProperty("principal").GetBoolean());
+        foreach (var field in new[] { "descricaoTipo", "dataAplicacao", "observacao" })
+            Assert.Equal(JsonValueKind.Null, persisted.GetProperty(field).ValueKind);
+    }
+
+    [Fact]
+    public async Task Creating_a_microchip_keeps_the_existing_anilha_active_without_requiring_a_principal()
+    {
+        var animalId = await SeedAnimalAsync(factory);
+        using var client = await CreateAuthenticatedClientAsync(factory, "simultaneous_markers");
+        var anilha = await CreateIdentificationAsync(client, animalId, TipoIdentificacaoAnimal.Anilha, "HOM-SIMULTANEOUS");
+        var microchip = await CreateIdentificationAsync(client, animalId, TipoIdentificacaoAnimal.Microchip, "985141000000002");
+
+        using var list = await client.GetAsync($"/api/v1/animais/{animalId}/identificacoes");
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+        var items = (await ReadJsonAsync(list)).GetProperty("items").EnumerateArray().ToArray();
+        Assert.Equal(new[] { anilha, microchip }.OrderBy(id => id), items.Select(item => item.GetProperty("id").GetGuid()).OrderBy(id => id));
+        Assert.All(items, item =>
+        {
+            Assert.True(item.GetProperty("ativo").GetBoolean());
+            Assert.False(item.GetProperty("principal").GetBoolean());
+        });
+    }
+
+    [Fact]
+    public async Task Case_insensitive_anilha_duplicate_between_animals_returns_a_safe_409()
+    {
+        var animalId = await SeedAnimalAsync(factory);
+        var otherAnimalId = await SeedAnimalAsync(factory);
+        using var client = await CreateAuthenticatedClientAsync(factory, "case_duplicate");
+        await CreateIdentificationAsync(client, animalId, TipoIdentificacaoAnimal.Anilha, "HOM-A001");
+        using var duplicate = await client.PostAsJsonAsync($"/api/v1/animais/{otherAnimalId}/identificacoes",
+            new { tipo = 1, valor = "hom-a001" });
+
+        Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+        AssertSafeProblem(await ReadJsonAsync(duplicate), HttpStatusCode.Conflict);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Removing_or_inactivating_the_principal_never_promotes_another_active_marker(bool inactivate)
+    {
+        var animalId = await SeedAnimalAsync(factory);
+        using var client = await CreateAuthenticatedClientAsync(factory, "no_promotion");
+        var first = await CreateIdentificationAsync(client, animalId, TipoIdentificacaoAnimal.Anilha, $"HOM-A-{inactivate}", principal: true);
+        var second = await CreateIdentificationAsync(client, animalId, TipoIdentificacaoAnimal.Microchip, $"HOM-B-{inactivate}");
+        var beforeFirst = await GetIdentificationAsync(client, animalId, first);
+        var beforeSecond = await GetIdentificationAsync(client, animalId, second);
+        Assert.True(beforeFirst.GetProperty("ativo").GetBoolean());
+        Assert.True(beforeFirst.GetProperty("principal").GetBoolean());
+        Assert.True(beforeSecond.GetProperty("ativo").GetBoolean());
+        Assert.False(beforeSecond.GetProperty("principal").GetBoolean());
+
+        var operation = inactivate ? "ativo" : "principal";
+        using var response = await client.PatchAsJsonAsync($"/api/v1/animais/{animalId}/identificacoes/{first}/{operation}",
+            new Dictionary<string, bool> { [operation] = false });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var afterFirst = await GetIdentificationAsync(client, animalId, first);
+        var afterSecond = await GetIdentificationAsync(client, animalId, second);
+        Assert.Equal(!inactivate, afterFirst.GetProperty("ativo").GetBoolean());
+        Assert.False(afterFirst.GetProperty("principal").GetBoolean());
+        Assert.True(afterSecond.GetProperty("ativo").GetBoolean());
+        Assert.False(afterSecond.GetProperty("principal").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Metadata_value_absence_and_explicit_null_survive_new_requests()
+    {
+        var animalId = await SeedAnimalAsync(factory);
+        using var client = await CreateAuthenticatedClientAsync(factory, "metadata_readback");
+        var id = await CreateIdentificationAsync(client, animalId, TipoIdentificacaoAnimal.Anilha, "HOM-METADATA");
+        var route = $"/api/v1/animais/{animalId}/identificacoes/{id}";
+        using var setValues = await client.PatchAsJsonAsync(route, new { dataAplicacao = "2026-09-11", observacao = "Conferida" });
+        Assert.Equal(HttpStatusCode.OK, setValues.StatusCode);
+        var withValues = await GetIdentificationAsync(client, animalId, id);
+        Assert.Equal("2026-09-11", withValues.GetProperty("dataAplicacao").GetString());
+        Assert.Equal("Conferida", withValues.GetProperty("observacao").GetString());
+
+        using var clearObservation = await client.PatchAsJsonAsync(route, new { observacao = (string?)null });
+        Assert.Equal(HttpStatusCode.OK, clearObservation.StatusCode);
+        var withoutObservation = await GetIdentificationAsync(client, animalId, id);
+        Assert.Equal(JsonValueKind.Null, withoutObservation.GetProperty("observacao").ValueKind);
+        Assert.Equal("2026-09-11", withoutObservation.GetProperty("dataAplicacao").GetString());
+
+        using var clearDate = await client.PatchAsJsonAsync(route, new { dataAplicacao = (string?)null });
+        Assert.Equal(HttpStatusCode.OK, clearDate.StatusCode);
+        var withoutDate = await GetIdentificationAsync(client, animalId, id);
+        Assert.Equal(JsonValueKind.Null, withoutDate.GetProperty("dataAplicacao").ValueKind);
+        Assert.Equal(JsonValueKind.Null, withoutDate.GetProperty("observacao").ValueKind);
+    }
+
+    [Fact]
+    public async Task Each_nested_filter_selects_only_matching_markers_in_the_animal_scope()
+    {
+        var animalId = await SeedAnimalAsync(factory);
+        var otherAnimalId = await SeedAnimalAsync(factory);
+        using var client = await CreateAuthenticatedClientAsync(factory, "independent_filters");
+        var anilha = await CreateIdentificationAsync(client, animalId, TipoIdentificacaoAnimal.Anilha, "HOM-FILTER-RING");
+        var principal = await CreateIdentificationAsync(client, animalId, TipoIdentificacaoAnimal.Microchip, "HOM-FILTER-CHIP", principal: true);
+        var historical = await CreateIdentificationAsync(client, animalId, TipoIdentificacaoAnimal.Anilha, "HOM-FILTER-OLD");
+        await CreateIdentificationAsync(client, otherAnimalId, TipoIdentificacaoAnimal.Anilha, "HOM-FILTER-OTHER");
+        using var inactivate = await client.PatchAsJsonAsync($"/api/v1/animais/{animalId}/identificacoes/{historical}/ativo", new { ativo = false });
+        Assert.Equal(HttpStatusCode.OK, inactivate.StatusCode);
+
+        var cases = new (string Query, Guid[] Expected)[]
+        {
+            ("tipo=1", [anilha, historical]),
+            ("valor=filter-ring", [anilha]),
+            ("ativo=true", [anilha, principal]),
+            ("ativo=false", [historical]),
+            ("principal=true", [principal]),
+            ("principal=false", [anilha, historical]),
+        };
+        foreach (var (query, expected) in cases)
+        {
+            using var response = await client.GetAsync($"/api/v1/animais/{animalId}/identificacoes?{query}");
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var body = await ReadJsonAsync(response);
+            Assert.Equal(expected.Length, body.GetProperty("totalItems").GetInt32());
+            Assert.Equal(expected.OrderBy(id => id), body.GetProperty("items").EnumerateArray()
+                .Select(item => item.GetProperty("id").GetGuid()).OrderBy(id => id));
+        }
+    }
+
+    [Fact]
     public async Task Nested_identifications_require_authentication_and_support_the_full_lifecycle()
     {
         var animalId = await SeedAnimalAsync(factory);
@@ -62,6 +202,8 @@ public sealed class IdentificacoesAnimaisApiTests(AnimalApiPostgreSqlFixture fix
         using var emptyValue = await client.PostAsJsonAsync($"/api/v1/animais/{animalId}/identificacoes", new { tipo = 1, valor = " ", principal = false });
         Assert.Equal(HttpStatusCode.BadRequest, invalidEnum.StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, emptyValue.StatusCode);
+        AssertSafeProblem(await ReadJsonAsync(invalidEnum), HttpStatusCode.BadRequest);
+        AssertSafeProblem(await ReadJsonAsync(emptyValue), HttpStatusCode.BadRequest);
 
         var id = await CreateIdentificationAsync(client, animalId, TipoIdentificacaoAnimal.Brinco, "B-API-1");
         using var noMetadata = await client.PatchAsJsonAsync($"/api/v1/animais/{animalId}/identificacoes/{id}", new { });
@@ -71,6 +213,8 @@ public sealed class IdentificacoesAnimaisApiTests(AnimalApiPostgreSqlFixture fix
         Assert.Equal(HttpStatusCode.BadRequest, noMetadata.StatusCode);
         Assert.Equal(HttpStatusCode.OK, inactivate.StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, inactivePrincipal.StatusCode);
+        AssertSafeProblem(await ReadJsonAsync(noMetadata), HttpStatusCode.BadRequest);
+        AssertSafeProblem(await ReadJsonAsync(inactivePrincipal), HttpStatusCode.BadRequest);
         Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
         AssertSafeProblem(await ReadJsonAsync(duplicate));
     }
@@ -94,6 +238,9 @@ public sealed class IdentificacoesAnimaisApiTests(AnimalApiPostgreSqlFixture fix
         Assert.Equal(HttpStatusCode.NotFound, missingAnimal.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, missingRow.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, mismatchedRow.StatusCode);
+        AssertSafeProblem(await ReadJsonAsync(missingAnimal), HttpStatusCode.NotFound);
+        AssertSafeProblem(await ReadJsonAsync(missingRow), HttpStatusCode.NotFound);
+        AssertSafeProblem(await ReadJsonAsync(mismatchedRow), HttpStatusCode.NotFound);
         Assert.Equal(HttpStatusCode.OK, filtered.StatusCode);
         var body = await ReadJsonAsync(filtered);
         Assert.Equal(1, body.GetProperty("page").GetInt32());
@@ -131,7 +278,10 @@ public sealed class IdentificacoesAnimaisApiTests(AnimalApiPostgreSqlFixture fix
         Assert.Equal(HttpStatusCode.BadRequest, invalidPage.StatusCode);
 
         var first = await CreateIdentificationAsync(client, animalId, TipoIdentificacaoAnimal.Anilha, "Global-A");
-        await CreateIdentificationAsync(client, animalId, TipoIdentificacaoAnimal.Brinco, "Global-B", principal: true);
+        var principal = await CreateIdentificationAsync(client, animalId, TipoIdentificacaoAnimal.Brinco, "Global-B", principal: true);
+        var historical = await CreateIdentificationAsync(client, animalId, TipoIdentificacaoAnimal.Anilha, "Global-Old");
+        using var inactivate = await client.PatchAsJsonAsync($"/api/v1/animais/{animalId}/identificacoes/{historical}/ativo", new { ativo = false });
+        Assert.Equal(HttpStatusCode.OK, inactivate.StatusCode);
 
         using var response = await client.GetAsync("/api/v1/identificacoes-animal?valor=global-a&tipo=1&ativo=true&principal=false&page=1&pageSize=1");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -144,6 +294,23 @@ public sealed class IdentificacoesAnimaisApiTests(AnimalApiPostgreSqlFixture fix
         Assert.True(animal.TryGetProperty("codigoInterno", out _));
         Assert.True(animal.TryGetProperty("nome", out _));
         Assert.Equal(3, animal.EnumerateObject().Count());
+        var filterCases = new (string Query, Guid[] Expected)[]
+        {
+            ("tipo=1", [first, historical]),
+            ("ativo=true", [first, principal]),
+            ("ativo=false", [historical]),
+            ("principal=true", [principal]),
+            ("principal=false", [first, historical]),
+        };
+        foreach (var (query, expected) in filterCases)
+        {
+            using var filtered = await client.GetAsync($"/api/v1/identificacoes-animal?valor=global&{query}");
+            Assert.Equal(HttpStatusCode.OK, filtered.StatusCode);
+            var filteredBody = await ReadJsonAsync(filtered);
+            Assert.Equal(expected.Length, filteredBody.GetProperty("totalItems").GetInt32());
+            Assert.Equal(expected.OrderBy(id => id), filteredBody.GetProperty("items").EnumerateArray()
+                .Select(row => row.GetProperty("identificacao").GetProperty("id").GetGuid()).OrderBy(id => id));
+        }
         foreach (var method in new[] { HttpMethod.Post, HttpMethod.Patch, HttpMethod.Put, HttpMethod.Delete })
         {
             using var request = new HttpRequestMessage(method, "/api/v1/identificacoes-animal");
@@ -168,6 +335,13 @@ public sealed class IdentificacoesAnimaisApiTests(AnimalApiPostgreSqlFixture fix
         var problem = await ReadJsonAsync(response);
         Assert.Equal("The principal physical identification could not be updated.", problem.GetProperty("detail").GetString());
         AssertSafeProblem(problem);
+    }
+
+    private static async Task<JsonElement> GetIdentificationAsync(HttpClient client, Guid animalId, Guid id)
+    {
+        using var response = await client.GetAsync($"/api/v1/animais/{animalId}/identificacoes/{id}");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return await ReadJsonAsync(response);
     }
 
     private static async Task<Guid> CreateIdentificationAsync(HttpClient client, Guid animalId, TipoIdentificacaoAnimal tipo, string valor, bool principal = false)
@@ -213,11 +387,24 @@ public sealed class IdentificacoesAnimaisApiTests(AnimalApiPostgreSqlFixture fix
         return document.RootElement.Clone();
     }
 
-    private static void AssertSafeProblem(JsonElement problem)
+    private static void AssertSafeProblem(JsonElement problem, HttpStatusCode expectedStatus = HttpStatusCode.Conflict)
     {
-        var serialized = problem.GetRawText();
-        foreach (var forbidden in new[] { "SQLSTATE", "PostgreSQL", "constraint", "stack trace" })
-            Assert.DoesNotContain(forbidden, serialized, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(JsonValueKind.Object, problem.ValueKind);
+        Assert.Equal((int)expectedStatus, problem.GetProperty("status").GetInt32());
+        Assert.False(string.IsNullOrWhiteSpace(problem.GetProperty("title").GetString()));
+        foreach (var property in problem.EnumerateObject())
+        {
+            // ASP.NET's correlation ID is not a diagnostic stack trace. Its value is still checked.
+            if (property.Name == "traceId")
+                Assert.Matches("^00-[0-9a-f]{32}-[0-9a-f]{16}-0[01]$", property.Value.GetString()!);
+
+            foreach (var forbidden in new[] { "Postgres", "PostgresException", "Npgsql", "SQL", "constraint", "stack", "trace", "DbUpdateException", "GenSWDbContext", "UX_IdentificacoesAnimal", "CK_IdentificacoesAnimal" })
+            {
+                if (property.Name != "traceId")
+                    Assert.DoesNotContain(forbidden, property.Name, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain(forbidden, property.Value.GetRawText(), StringComparison.OrdinalIgnoreCase);
+            }
+        }
     }
 }
 

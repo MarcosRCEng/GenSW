@@ -70,6 +70,9 @@ describe('AnimalIdentificationsPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Próxima página' }))
     await waitFor(() => expect(listAnimalIdentifications).toHaveBeenLastCalledWith('animal-1', { page: 2, pageSize: 10 }))
     expect(screen.getByText('Página 2 de 2')).toBeInTheDocument()
+    const secondPageRow = (await screen.findByText(inactive.valor)).closest('tr')!
+    expect(within(secondPageRow).getByText('Histórico (inativa)')).toBeInTheDocument()
+    expect(screen.queryByText(active.valor)).not.toBeInTheDocument()
   })
 
   it.each([
@@ -105,7 +108,9 @@ describe('AnimalIdentificationsPanel', () => {
     expect(screen.queryByText('response-only')).not.toBeInTheDocument()
     const listed = { ...active, id: `listed-${tipo}`, tipo, descricaoTipo: needsDescription ? 'Sensor óptico' : null, valor: 'NOVO-01' } as AnimalIdentification
     finishRefresh(page([listed]))
-    expect(await screen.findByText('NOVO-01')).toBeInTheDocument()
+    const createdRow = (await screen.findByText('NOVO-01')).closest('tr')!
+    expect(within(createdRow).getByText(typeName)).toBeInTheDocument()
+    if (needsDescription) expect(within(createdRow).getByText('Sensor óptico')).toBeInTheDocument()
   })
 
   it('edits metadata only and refreshes the list after success', async () => {
