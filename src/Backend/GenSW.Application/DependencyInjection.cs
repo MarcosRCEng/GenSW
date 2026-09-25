@@ -3,6 +3,7 @@ using GenSW.Application.Species;
 using GenSW.Application.Breeds;
 using GenSW.Application.Varieties;
 using GenSW.Application.Animals;
+using GenSW.Application.Animals.Identificacoes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -24,6 +25,7 @@ public static class DependencyInjection
             serviceProvider.GetRequiredService<AnimalClassificationValidator>(),
             serviceProvider.GetRequiredService<AnimalAutomaticCreator>(),
             serviceProvider.GetRequiredService<TimeProvider>()));
+        services.AddScoped<IIdentificacaoAnimalService, IdentificacaoAnimalService>();
 
         return services;
     }

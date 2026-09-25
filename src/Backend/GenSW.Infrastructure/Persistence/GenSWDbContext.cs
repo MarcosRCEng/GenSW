@@ -23,6 +23,8 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
 
     public DbSet<Animal> Animais => Set<Animal>();
 
+    public DbSet<IdentificacaoAnimal> IdentificacoesAnimal => Set<IdentificacaoAnimal>();
+
     public DbSet<RefreshSession> RefreshSessions => Set<RefreshSession>();
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -138,6 +140,36 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
                 .HasPrincipalKey(entity => new { entity.Id, entity.EspecieId })
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("FK_Animais_Variedades_VariedadeId_EspecieId");
+        });
+
+        var identificacaoValorCanonicalConstraint = usesNpgsql
+            ? "\"Valor\" <> '' AND \"Valor\" = btrim(\"Valor\")"
+            : "\"Valor\" <> '' AND \"Valor\" = trim(\"Valor\")";
+        var identificacaoDescricaoTipoSemanticsConstraint = usesNpgsql
+            ? "(\"Tipo\" IN (1, 2, 3, 4, 5) AND \"DescricaoTipo\" IS NULL) OR (\"Tipo\" = 6 AND \"DescricaoTipo\" IS NOT NULL AND \"DescricaoTipo\" <> '' AND \"DescricaoTipo\" = btrim(\"DescricaoTipo\"))"
+            : "(\"Tipo\" IN (1, 2, 3, 4, 5) AND \"DescricaoTipo\" IS NULL) OR (\"Tipo\" = 6 AND \"DescricaoTipo\" IS NOT NULL AND \"DescricaoTipo\" <> '' AND \"DescricaoTipo\" = trim(\"DescricaoTipo\"))";
+
+        builder.Entity<IdentificacaoAnimal>(identificacao =>
+        {
+            identificacao.ToTable("IdentificacoesAnimal", table =>
+            {
+                table.HasCheckConstraint("CK_IdentificacoesAnimal_Tipo", "\"Tipo\" IN (1, 2, 3, 4, 5, 6)");
+                table.HasCheckConstraint("CK_IdentificacoesAnimal_Valor_Canonical", identificacaoValorCanonicalConstraint);
+                table.HasCheckConstraint("CK_IdentificacoesAnimal_DescricaoTipo_Semantics", identificacaoDescricaoTipoSemanticsConstraint);
+            });
+            identificacao.HasKey(entity => entity.Id);
+            identificacao.Property(entity => entity.AnimalId).IsRequired();
+            identificacao.Property(entity => entity.Tipo).HasConversion<int>().IsRequired();
+            identificacao.Property(entity => entity.DescricaoTipo).HasMaxLength(100);
+            identificacao.Property(entity => entity.Valor).IsRequired().HasMaxLength(128);
+            identificacao.Property(entity => entity.Principal).IsRequired();
+            identificacao.Property(entity => entity.DataAplicacao).HasColumnType("date");
+            identificacao.Property(entity => entity.Observacao).HasMaxLength(1000);
+            identificacao.Property(entity => entity.Ativo).IsRequired().HasDefaultValue(true);
+            identificacao.Property(entity => entity.CreatedAtUtc).IsRequired();
+            identificacao.Property(entity => entity.UpdatedAtUtc).IsRequired();
+            identificacao.HasOne<Animal>().WithMany().HasForeignKey(entity => entity.AnimalId).IsRequired()
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         builder.Entity<ApplicationUser>(user =>
