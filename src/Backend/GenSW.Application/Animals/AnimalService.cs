@@ -75,6 +75,10 @@ public sealed class AnimalService : IAnimalService
         ValidateClassificationIds(command.EspecieId, command.RacaId, command.VariedadeId);
         var animal = await GetTrackedAsync(animalId, cancellationToken);
         await classificationValidator.ValidateUpdateAsync(animal, command.EspecieId, command.RacaId, command.VariedadeId, cancellationToken);
+        if (animal.Sexo != command.Sexo && await repository.HasActiveFiliacaoSexConflictAsync(animalId, command.Sexo, cancellationToken))
+        {
+            throw new InvalidOperationException("Animal sex is incompatible with an active filiation.");
+        }
 
         var nowUtc = timeProvider.GetUtcNow();
         animal.AlterarCadastro(

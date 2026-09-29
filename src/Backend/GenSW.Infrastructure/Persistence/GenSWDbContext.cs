@@ -26,6 +26,7 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
     public DbSet<IdentificacaoAnimal> IdentificacoesAnimal => Set<IdentificacaoAnimal>();
 
     public DbSet<RegistroAnimal> RegistrosAnimal => Set<RegistroAnimal>();
+    public DbSet<FiliacaoAnimal> FiliacoesAnimal => Set<FiliacaoAnimal>();
 
     public DbSet<RefreshSession> RefreshSessions => Set<RefreshSession>();
 
@@ -196,6 +197,13 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
             registro.Property(entity => entity.CreatedAtUtc).IsRequired();
             registro.Property(entity => entity.UpdatedAtUtc).IsRequired();
             registro.HasOne<Animal>().WithMany().HasForeignKey(entity => entity.AnimalId).IsRequired().OnDelete(DeleteBehavior.Restrict);
+        });
+        builder.Entity<FiliacaoAnimal>(filiacao =>
+        {
+            filiacao.ToTable("FiliacoesAnimal", table => { table.HasCheckConstraint("CK_FiliacoesAnimal_Tipo", "\"TipoFiliacao\" IN (1, 2)"); table.HasCheckConstraint("CK_FiliacoesAnimal_Ativa_DataFim", "(\"Ativa\" AND \"DataFim\" IS NULL) OR (NOT \"Ativa\")"); });
+            filiacao.HasKey(x => x.Id); filiacao.Property(x => x.AnimalId).IsRequired(); filiacao.Property(x => x.ProgenitorId).IsRequired(); filiacao.Property(x => x.TipoFiliacao).HasConversion<int>().IsRequired(); filiacao.Property(x => x.Ativa).IsRequired().HasDefaultValue(true); filiacao.Property(x => x.DataRegistro).HasColumnType("date"); filiacao.Property(x => x.DataFim).HasColumnType("date"); filiacao.Property(x => x.CreatedAtUtc).IsRequired(); filiacao.Property(x => x.UpdatedAtUtc).IsRequired();
+            filiacao.HasOne<Animal>().WithMany().HasForeignKey(x=>x.AnimalId).OnDelete(DeleteBehavior.Restrict); filiacao.HasOne<Animal>().WithMany().HasForeignKey(x=>x.ProgenitorId).OnDelete(DeleteBehavior.Restrict);
+            filiacao.HasIndex(x=>new {x.AnimalId,x.TipoFiliacao}).HasFilter("\"Ativa\" = TRUE").IsUnique().HasDatabaseName("UX_FiliacoesAnimal_Animal_Tipo_Ativa");
         });
 
         builder.Entity<ApplicationUser>(user =>
