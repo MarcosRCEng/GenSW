@@ -25,6 +25,8 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
 
     public DbSet<IdentificacaoAnimal> IdentificacoesAnimal => Set<IdentificacaoAnimal>();
 
+    public DbSet<RegistroAnimal> RegistrosAnimal => Set<RegistroAnimal>();
+
     public DbSet<RefreshSession> RefreshSessions => Set<RefreshSession>();
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -170,6 +172,30 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
             identificacao.Property(entity => entity.UpdatedAtUtc).IsRequired();
             identificacao.HasOne<Animal>().WithMany().HasForeignKey(entity => entity.AnimalId).IsRequired()
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        var registroNumeroCanonicalConstraint = usesNpgsql
+            ? "\"NumeroRegistro\" <> '' AND \"NumeroRegistro\" = btrim(\"NumeroRegistro\")"
+            : "\"NumeroRegistro\" <> '' AND \"NumeroRegistro\" = trim(\"NumeroRegistro\")";
+        builder.Entity<RegistroAnimal>(registro =>
+        {
+            registro.ToTable("RegistrosAnimal", table =>
+            {
+                table.HasCheckConstraint("CK_RegistrosAnimal_TipoRegistro", "\"TipoRegistro\" IN (1, 2)");
+                table.HasCheckConstraint("CK_RegistrosAnimal_NumeroRegistro_Canonical", registroNumeroCanonicalConstraint);
+                table.HasCheckConstraint("CK_RegistrosAnimal_DataFim", "\"DataFim\" IS NULL OR \"DataFim\" >= \"DataInicio\"");
+                table.HasCheckConstraint("CK_RegistrosAnimal_Ativo_DataFim", "(\"Ativo\" AND \"DataFim\" IS NULL) OR (NOT \"Ativo\" AND \"DataFim\" IS NOT NULL)");
+            });
+            registro.HasKey(entity => entity.Id);
+            registro.Property(entity => entity.AnimalId).IsRequired();
+            registro.Property(entity => entity.TipoRegistro).HasConversion<int>().IsRequired();
+            registro.Property(entity => entity.NumeroRegistro).HasMaxLength(128).IsRequired();
+            registro.Property(entity => entity.Ativo).HasDefaultValue(true).IsRequired();
+            registro.Property(entity => entity.DataInicio).HasColumnType("date").IsRequired();
+            registro.Property(entity => entity.DataFim).HasColumnType("date");
+            registro.Property(entity => entity.CreatedAtUtc).IsRequired();
+            registro.Property(entity => entity.UpdatedAtUtc).IsRequired();
+            registro.HasOne<Animal>().WithMany().HasForeignKey(entity => entity.AnimalId).IsRequired().OnDelete(DeleteBehavior.Restrict);
         });
 
         builder.Entity<ApplicationUser>(user =>
