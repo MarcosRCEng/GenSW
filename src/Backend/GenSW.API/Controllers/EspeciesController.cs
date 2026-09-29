@@ -19,7 +19,7 @@ public sealed class EspeciesController(IEspecieService especies) : ControllerBas
     {
         try
         {
-            var result = await especies.CreateAsync(new CreateEspecieCommand(request.NomeComum, request.NomeCientifico), cancellationToken);
+            var result = await especies.CreateAsync(new CreateEspecieCommand(request.NomeComum, request.NomeCientifico, request.Ovipara, request.PesoPadraoOvoGramas), cancellationToken);
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, ToResponse(result));
         }
         catch (EspecieDuplicateException exception) { return Conflict(ToDuplicateProblem(exception)); }
@@ -72,7 +72,7 @@ public sealed class EspeciesController(IEspecieService especies) : ControllerBas
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public Task<ActionResult<EspecieResponse>> Update(Guid id, UpdateEspecieRequest request, CancellationToken cancellationToken)
-        => ExecuteMutation(() => especies.UpdateAsync(id, new UpdateEspecieCommand(request.NomeComum, request.NomeCientifico), cancellationToken));
+        => ExecuteMutation(() => especies.UpdateAsync(id, new UpdateEspecieCommand(request.NomeComum, request.NomeCientifico, request.Ovipara, request.PesoPadraoOvoGramas), cancellationToken));
 
     [HttpPatch("{id:guid}/ativo")]
     [ProducesResponseType(typeof(EspecieResponse), StatusCodes.Status200OK)]
@@ -133,6 +133,8 @@ public sealed class EspeciesController(IEspecieService especies) : ControllerBas
         result.Id,
         result.NomeComum,
         result.NomeCientifico,
+        result.Ovipara,
+        result.PesoPadraoOvoGramas,
         result.Ativo,
         result.CreatedAtUtc,
         result.UpdatedAtUtc);

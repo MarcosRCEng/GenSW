@@ -13,6 +13,8 @@ export function SpeciesFormPage() {
   const [retryKey, setRetryKey] = useState(0)
   const [nomeComum, setNomeComum] = useState('')
   const [nomeCientifico, setNomeCientifico] = useState('')
+  const [ovipara, setOvipara] = useState(false)
+  const [pesoPadraoOvoGramas, setPesoPadraoOvoGramas] = useState('')
   const [nomeComumError, setNomeComumError] = useState(false)
   const [nomeCientificoError, setNomeCientificoError] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -27,6 +29,8 @@ export function SpeciesFormPage() {
       if (!isCurrent) return
       setNomeComum(especie.nomeComum)
       setNomeCientifico(especie.nomeCientifico ?? '')
+      setOvipara(especie.ovipara ?? false)
+      setPesoPadraoOvoGramas(especie.pesoPadraoOvoGramas?.toString() ?? '')
       setLoadState('ready')
     }).catch((error: unknown) => {
       if (isCurrent) setLoadState(isHttpError(error) && error.status === 404 ? 'not-found' : 'error')
@@ -46,7 +50,9 @@ export function SpeciesFormPage() {
     setSaveError(null)
     if (hasCommonNameError || hasScientificNameError) return
 
-    const request = { nomeComum: normalizedCommonName, nomeCientifico: normalizedScientificName || null }
+    const weight = pesoPadraoOvoGramas === '' ? null : Number(pesoPadraoOvoGramas)
+    if (ovipara && (weight !== null && (!Number.isFinite(weight) || weight <= 0))) { setSaveError('Informe um peso padrão positivo ou deixe-o em branco.'); return }
+    const request = { nomeComum: normalizedCommonName, nomeCientifico: normalizedScientificName || null, ...(ovipara ? { ovipara: true, pesoPadraoOvoGramas: weight } : {}) }
     setIsSaving(true)
     try {
       if (isEdit && id) await updateEspecie(id, request)
@@ -74,6 +80,8 @@ export function SpeciesFormPage() {
     <form className="mt-8 space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" noValidate onSubmit={handleSubmit}>
       <div><label className="text-sm font-medium text-slate-700" htmlFor="species-common-name">Nome comum</label><input aria-invalid={nomeComumError} className={controlClassName} id="species-common-name" maxLength={200} minLength={1} onChange={(event) => { setNomeComum(event.target.value); setNomeComumError(false) }} required type="text" value={nomeComum} />{nomeComumError ? <p className="mt-1 text-sm text-red-700">Informe um nome comum entre 1 e 200 caracteres.</p> : null}</div>
       <div><label className="text-sm font-medium text-slate-700" htmlFor="species-scientific-name">Nome científico</label><input aria-invalid={nomeCientificoError} className={controlClassName} id="species-scientific-name" maxLength={200} onChange={(event) => { setNomeCientifico(event.target.value); setNomeCientificoError(false) }} type="text" value={nomeCientifico} />{nomeCientificoError ? <p className="mt-1 text-sm text-red-700">Informe um nome científico com até 200 caracteres.</p> : null}</div>
+      <label className="flex items-center gap-2 text-sm font-medium text-slate-700"><input checked={ovipara} id="species-ovipara" onChange={(event) => setOvipara(event.target.checked)} type="checkbox" /> Espécie ovípara</label>
+      {ovipara ? <div><label className="text-sm font-medium text-slate-700" htmlFor="species-standard-egg-weight">Peso padrão do ovo (g)</label><input className={controlClassName} id="species-standard-egg-weight" min="0.01" onChange={(event) => setPesoPadraoOvoGramas(event.target.value)} step="0.01" type="number" value={pesoPadraoOvoGramas} /><p className="mt-1 text-sm text-slate-600">Opcional; usado para calcular o tempo até o peso padrão.</p></div> : null}
       {saveError ? <p className="text-sm font-medium text-red-700" role="alert">{saveError}</p> : null}
       <div className="flex flex-wrap gap-3"><button className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60" disabled={isSaving} type="submit">{isSaving ? 'Salvando…' : 'Salvar'}</button><Link className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2" to="/especies">Cancelar</Link></div>
     </form>

@@ -2,6 +2,8 @@ export interface Especie {
   id: string
   nomeComum: string
   nomeCientifico: string | null
+  ovipara?: boolean
+  pesoPadraoOvoGramas?: number | null
   ativo: boolean
   createdAtUtc: string
   updatedAtUtc: string
@@ -13,11 +15,15 @@ export type SortDirection = 'asc' | 'desc'
 export interface CreateEspecieRequest {
   nomeComum: string
   nomeCientifico?: string | null
+  ovipara?: boolean
+  pesoPadraoOvoGramas?: number | null
 }
 
 export interface UpdateEspecieRequest {
   nomeComum: string
   nomeCientifico?: string | null
+  ovipara?: boolean
+  pesoPadraoOvoGramas?: number | null
 }
 
 export interface UpdateEspecieStatusRequest {

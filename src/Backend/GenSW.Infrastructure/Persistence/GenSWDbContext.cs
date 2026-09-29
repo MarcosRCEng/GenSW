@@ -29,6 +29,7 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
     public DbSet<FiliacaoAnimal> FiliacoesAnimal => Set<FiliacaoAnimal>();
     public DbSet<Cruzamento> Cruzamentos => Set<Cruzamento>();
     public DbSet<CicloReprodutivo> CiclosReprodutivos => Set<CicloReprodutivo>();
+    public DbSet<ProducaoOvo> ProducoesOvos => Set<ProducaoOvo>();
 
     public DbSet<RefreshSession> RefreshSessions => Set<RefreshSession>();
 
@@ -76,6 +77,8 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
             especie.HasKey(entity => entity.Id);
             especie.Property(entity => entity.NomeComum).IsRequired().HasMaxLength(200);
             especie.Property(entity => entity.NomeCientifico).HasMaxLength(200);
+            especie.Property(entity => entity.Ovipara).IsRequired().HasDefaultValue(false);
+            especie.Property(entity => entity.PesoPadraoOvoGramas).HasPrecision(10, 2);
             especie.Property(entity => entity.Ativo).IsRequired().HasDefaultValue(true);
             especie.Property(entity => entity.CreatedAtUtc).IsRequired();
             especie.Property(entity => entity.UpdatedAtUtc).IsRequired();
@@ -231,6 +234,12 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
             ciclo.HasKey(x => x.Id); ciclo.Property(x => x.CruzamentoId).IsRequired(); ciclo.Property(x => x.Tipo).HasConversion<int>().IsRequired(); ciclo.Property(x => x.Status).HasConversion<int>().IsRequired();
             ciclo.Property(x => x.DataPostura).HasColumnType("date"); ciclo.Property(x => x.DataInicioIncubacao).HasColumnType("date"); ciclo.Property(x => x.DataEclosao).HasColumnType("date"); ciclo.Property(x => x.PesoMedioOvoGramas).HasPrecision(10, 2); ciclo.Property(x => x.DataInicioGestacao).HasColumnType("date"); ciclo.Property(x => x.DataPrevistaParto).HasColumnType("date"); ciclo.Property(x => x.DataParto).HasColumnType("date"); ciclo.Property(x => x.PesoAoNascerGramas).HasPrecision(10, 2); ciclo.Property(x => x.Observacao).HasMaxLength(2000); ciclo.Property(x => x.CreatedAtUtc).IsRequired(); ciclo.Property(x => x.UpdatedAtUtc).IsRequired();
             ciclo.HasOne<Cruzamento>().WithMany().HasForeignKey(x => x.CruzamentoId).IsRequired().OnDelete(DeleteBehavior.Restrict); ciclo.HasIndex(x => new { x.CruzamentoId, x.Status }); ciclo.HasIndex(x => x.Tipo);
+        });
+        builder.Entity<ProducaoOvo>(producao =>
+        {
+            producao.ToTable("ProducoesOvos", table => table.HasCheckConstraint("CK_ProducoesOvos_PesoGramas", "\"PesoGramas\" > 0"));
+            producao.HasKey(x => x.Id); producao.Property(x => x.AnimalId).IsRequired(); producao.Property(x => x.DataPostura).HasColumnType("date").IsRequired(); producao.Property(x => x.PesoGramas).HasPrecision(10, 2).IsRequired(); producao.Property(x => x.Observacao).HasMaxLength(2000); producao.Property(x => x.CreatedAtUtc).IsRequired(); producao.Property(x => x.UpdatedAtUtc).IsRequired();
+            producao.HasOne<Animal>().WithMany().HasForeignKey(x => x.AnimalId).IsRequired().OnDelete(DeleteBehavior.Restrict); producao.HasIndex(x => new { x.AnimalId, x.DataPostura });
         });
 
         builder.Entity<ApplicationUser>(user =>
