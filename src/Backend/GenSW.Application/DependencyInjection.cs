@@ -6,6 +6,7 @@ using GenSW.Application.Animals;
 using GenSW.Application.Animals.Identificacoes;
 using GenSW.Application.Animals.Registros;
 using GenSW.Application.Animals.Filiacoes;
+using GenSW.Application.Animals.Cruzamentos;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -30,6 +31,7 @@ public static class DependencyInjection
         services.AddScoped<IIdentificacaoAnimalService, IdentificacaoAnimalService>();
         services.AddScoped<IRegistroAnimalService, RegistroAnimalService>();
         services.AddScoped<IFiliacaoAnimalService, FiliacaoAnimalService>();
+        services.AddScoped<ICruzamentoService, CruzamentoService>();
 
         return services;
     }

@@ -12,6 +12,9 @@ import { SpeciesFormPage } from '../features/species/pages/SpeciesFormPage'
 import { SpeciesListPage } from '../features/species/pages/SpeciesListPage'
 import { VarietiesListPage } from '../features/varieties/pages/VarietiesListPage'
 import { VarietyFormPage } from '../features/varieties/pages/VarietyFormPage'
+import { BreedingListPage } from '../features/breedings/BreedingListPage'
+import { BreedingFormPage } from '../features/breedings/BreedingFormPage'
+import { BreedingDetailsPage } from '../features/breedings/BreedingDetailsPage'
 
 function ApplicationLoading() {
   return (
@@ -62,6 +65,10 @@ export function AppRoutes() {
         <Route element={<AnimalsListPage />} path="/animais" />
         <Route element={<AnimalFormPage />} path="/animais/nova" />
         <Route element={<AnimalFormPage />} path="/animais/:id/editar" />
+        <Route element={<BreedingListPage />} path="/cruzamentos" />
+        <Route element={<BreedingFormPage />} path="/cruzamentos/novo" />
+        <Route element={<BreedingDetailsPage />} path="/cruzamentos/:id" />
+        <Route element={<BreedingFormPage />} path="/cruzamentos/:id/editar" />
       </Route>
       <Route element={<Navigate replace to="/" />} path="*" />
     </Routes>

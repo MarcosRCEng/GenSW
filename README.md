@@ -70,6 +70,10 @@ npm run lint
 npm run build
 ```
 
+## Cruzamentos (NA-07)
+
+O módulo autenticado de cruzamentos está disponível em `/api/v1/cruzamentos` e na interface em `/cruzamentos`. Ele registra macho, fêmea, status, período, objetivo e observação; os participantes devem ter respectivamente sexo Macho e Fêmea, não podem ser o mesmo animal, e a data final não pode preceder a inicial. Cruzamentos entre espécies são permitidos. O registro não cria nem associa descendentes: Filiação permanece a fonte de verdade do pedigree.
+
 ## Roadmap macro
 
 Identity, People, Properties, AnimalProduction, Reproduction, Genetics, AgriculturalProduction, Inventory, Purchasing, Sales, Financial, Accounting, Fiscal, Reporting e BI evoluirão incrementalmente. O MVP inicial priorizará autenticação, pessoas, usuários, animais, espécie, raça, cruzamento e pedigree.

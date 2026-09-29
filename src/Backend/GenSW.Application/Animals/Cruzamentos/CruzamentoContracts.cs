@@ -1,0 +1,11 @@
+using GenSW.Domain.Animals;
+namespace GenSW.Application.Animals.Cruzamentos;
+public sealed record CreateCruzamentoCommand(Guid MachoId, Guid FemeaId, StatusCruzamento Status, DateOnly? DataInicio, DateOnly? DataFim, string? Objetivo, string? Observacao);
+public sealed record UpdateCruzamentoCommand(Guid MachoId, Guid FemeaId, StatusCruzamento Status, DateOnly? DataInicio, DateOnly? DataFim, string? Objetivo, string? Observacao);
+public sealed record CruzamentoStatusCommand(StatusCruzamento Status);
+public sealed record CruzamentoAnimalResumo(Guid Id, string CodigoInterno, string? Nome);
+public sealed record CruzamentoResult(Guid Id, Guid MachoId, Guid FemeaId, StatusCruzamento Status, DateOnly? DataInicio, DateOnly? DataFim, string? Objetivo, string? Observacao, DateTimeOffset CreatedAtUtc, DateTimeOffset UpdatedAtUtc, CruzamentoAnimalResumo Macho, CruzamentoAnimalResumo Femea);
+public sealed record CruzamentoListQuery(int Page = 1, int PageSize = 25, StatusCruzamento? Status = null, Guid? MachoId = null, Guid? FemeaId = null);
+public sealed record PagedCruzamentoResult(IReadOnlyList<CruzamentoResult> Items, int Page, int PageSize, int TotalItems, int TotalPages);
+public sealed class CruzamentoNotFoundException(Guid id) : KeyNotFoundException($"Breeding {id} was not found.");
+public sealed class CruzamentoConflictException(string message) : InvalidOperationException(message);
