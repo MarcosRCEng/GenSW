@@ -27,6 +27,7 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
 
     public DbSet<RegistroAnimal> RegistrosAnimal => Set<RegistroAnimal>();
     public DbSet<FiliacaoAnimal> FiliacoesAnimal => Set<FiliacaoAnimal>();
+    public DbSet<Cruzamento> Cruzamentos => Set<Cruzamento>();
 
     public DbSet<RefreshSession> RefreshSessions => Set<RefreshSession>();
 
@@ -204,6 +205,18 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
             filiacao.HasKey(x => x.Id); filiacao.Property(x => x.AnimalId).IsRequired(); filiacao.Property(x => x.ProgenitorId).IsRequired(); filiacao.Property(x => x.TipoFiliacao).HasConversion<int>().IsRequired(); filiacao.Property(x => x.Ativa).IsRequired().HasDefaultValue(true); filiacao.Property(x => x.DataRegistro).HasColumnType("date"); filiacao.Property(x => x.DataFim).HasColumnType("date"); filiacao.Property(x => x.CreatedAtUtc).IsRequired(); filiacao.Property(x => x.UpdatedAtUtc).IsRequired();
             filiacao.HasOne<Animal>().WithMany().HasForeignKey(x=>x.AnimalId).OnDelete(DeleteBehavior.Restrict); filiacao.HasOne<Animal>().WithMany().HasForeignKey(x=>x.ProgenitorId).OnDelete(DeleteBehavior.Restrict);
             filiacao.HasIndex(x=>new {x.AnimalId,x.TipoFiliacao}).HasFilter("\"Ativa\" = TRUE").IsUnique().HasDatabaseName("UX_FiliacoesAnimal_Animal_Tipo_Ativa");
+        });
+        builder.Entity<Cruzamento>(cruzamento =>
+        {
+            cruzamento.ToTable("Cruzamentos", table =>
+            {
+                table.HasCheckConstraint("CK_Cruzamentos_Status", "\"Status\" IN (1, 2, 3, 4)");
+                table.HasCheckConstraint("CK_Cruzamentos_Animais_Distintos", "\"MachoId\" <> \"FemeaId\"");
+                table.HasCheckConstraint("CK_Cruzamentos_DataFim", "\"DataFim\" IS NULL OR \"DataInicio\" IS NULL OR \"DataFim\" >= \"DataInicio\"");
+            });
+            cruzamento.HasKey(x => x.Id); cruzamento.Property(x => x.MachoId).IsRequired(); cruzamento.Property(x => x.FemeaId).IsRequired(); cruzamento.Property(x => x.Status).HasConversion<int>().IsRequired(); cruzamento.Property(x => x.DataInicio).HasColumnType("date"); cruzamento.Property(x => x.DataFim).HasColumnType("date"); cruzamento.Property(x => x.Objetivo).HasMaxLength(500); cruzamento.Property(x => x.Observacao).HasMaxLength(2000); cruzamento.Property(x => x.CreatedAtUtc).IsRequired(); cruzamento.Property(x => x.UpdatedAtUtc).IsRequired();
+            cruzamento.HasOne<Animal>().WithMany().HasForeignKey(x => x.MachoId).OnDelete(DeleteBehavior.Restrict); cruzamento.HasOne<Animal>().WithMany().HasForeignKey(x => x.FemeaId).OnDelete(DeleteBehavior.Restrict);
+            cruzamento.HasIndex(x => new { x.Status, x.DataInicio }); cruzamento.HasIndex(x => x.MachoId); cruzamento.HasIndex(x => x.FemeaId);
         });
 
         builder.Entity<ApplicationUser>(user =>
