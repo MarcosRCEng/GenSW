@@ -29,6 +29,7 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
     public DbSet<FiliacaoAnimal> FiliacoesAnimal => Set<FiliacaoAnimal>();
     public DbSet<Cruzamento> Cruzamentos => Set<Cruzamento>();
     public DbSet<CicloReprodutivo> CiclosReprodutivos => Set<CicloReprodutivo>();
+    public DbSet<Prole> Proles => Set<Prole>();
 
     public DbSet<RefreshSession> RefreshSessions => Set<RefreshSession>();
 
@@ -231,6 +232,20 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
             ciclo.HasKey(x => x.Id); ciclo.Property(x => x.CruzamentoId).IsRequired(); ciclo.Property(x => x.Tipo).HasConversion<int>().IsRequired(); ciclo.Property(x => x.Status).HasConversion<int>().IsRequired();
             ciclo.Property(x => x.DataPostura).HasColumnType("date"); ciclo.Property(x => x.DataInicioIncubacao).HasColumnType("date"); ciclo.Property(x => x.DataEclosao).HasColumnType("date"); ciclo.Property(x => x.PesoMedioOvoGramas).HasPrecision(10, 2); ciclo.Property(x => x.DataInicioGestacao).HasColumnType("date"); ciclo.Property(x => x.DataPrevistaParto).HasColumnType("date"); ciclo.Property(x => x.DataParto).HasColumnType("date"); ciclo.Property(x => x.PesoAoNascerGramas).HasPrecision(10, 2); ciclo.Property(x => x.Observacao).HasMaxLength(2000); ciclo.Property(x => x.CreatedAtUtc).IsRequired(); ciclo.Property(x => x.UpdatedAtUtc).IsRequired();
             ciclo.HasOne<Cruzamento>().WithMany().HasForeignKey(x => x.CruzamentoId).IsRequired().OnDelete(DeleteBehavior.Restrict); ciclo.HasIndex(x => new { x.CruzamentoId, x.Status }); ciclo.HasIndex(x => x.Tipo);
+        });
+        builder.Entity<Prole>(prole =>
+        {
+            prole.ToTable("Proles", table =>
+            {
+                table.HasCheckConstraint("CK_Proles_TipoRegistro", "\"TipoRegistro\" IN (1, 2)");
+                table.HasCheckConstraint("CK_Proles_Origem", "\"Origem\" IN (1, 2)");
+                table.HasCheckConstraint("CK_Proles_Sexo", "\"Sexo\" IN (1, 2, 3)");
+                table.HasCheckConstraint("CK_Proles_Quantidade", "\"Quantidade\" > 0 AND (\"TipoRegistro\" <> 1 OR \"Quantidade\" = 1) AND \"QuantidadeDesdobrada\" >= 0 AND \"QuantidadeDesdobrada\" <= \"Quantidade\"");
+                table.HasCheckConstraint("CK_Proles_Peso", "\"PesoGramas\" IS NULL OR \"PesoGramas\" > 0");
+            });
+            prole.HasKey(x => x.Id); prole.Property(x => x.CicloReprodutivoId).IsRequired(); prole.Property(x => x.TipoRegistro).HasConversion<int>().IsRequired(); prole.Property(x => x.Quantidade).IsRequired(); prole.Property(x => x.QuantidadeDesdobrada).IsRequired(); prole.Property(x => x.Origem).HasConversion<int>().IsRequired(); prole.Property(x => x.Data).HasColumnType("date").IsRequired(); prole.Property(x => x.PesoGramas).HasPrecision(10,2); prole.Property(x => x.Sexo).HasConversion<int>().IsRequired(); prole.Property(x => x.Condicao).HasMaxLength(200).IsRequired(); prole.Property(x => x.Observacao).HasMaxLength(2000); prole.Property(x => x.CreatedAtUtc).IsRequired(); prole.Property(x => x.UpdatedAtUtc).IsRequired();
+            prole.HasOne<CicloReprodutivo>().WithMany().HasForeignKey(x => x.CicloReprodutivoId).IsRequired().OnDelete(DeleteBehavior.Restrict); prole.HasOne<Prole>().WithMany().HasForeignKey(x => x.LoteOrigemId).OnDelete(DeleteBehavior.Restrict); prole.HasOne<Animal>().WithMany().HasForeignKey(x => x.AnimalId).OnDelete(DeleteBehavior.Restrict);
+            prole.HasIndex(x => new { x.CicloReprodutivoId, x.LoteOrigemId }); prole.HasIndex(x => x.AnimalId).IsUnique().HasFilter("\"AnimalId\" IS NOT NULL").HasDatabaseName("UX_Proles_AnimalId");
         });
 
         builder.Entity<ApplicationUser>(user =>
