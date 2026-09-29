@@ -9,6 +9,8 @@ using GenSW.Infrastructure.Animals.Identificacoes;
 using GenSW.Application.Animals.Identificacoes;
 using GenSW.Infrastructure.Animals.Registros;
 using GenSW.Application.Animals.Registros;
+using GenSW.Infrastructure.Animals.Filiacoes;
+using GenSW.Application.Animals.Filiacoes;
 using GenSW.Infrastructure.Authentication;
 using GenSW.Infrastructure.Identity;
 using GenSW.Infrastructure.Persistence;
@@ -61,6 +63,7 @@ public static class DependencyInjection
         services.AddScoped<IAnimalRepository, AnimalRepository>();
         services.AddScoped<IIdentificacaoAnimalRepository, IdentificacaoAnimalRepository>();
         services.AddScoped<IRegistroAnimalRepository, RegistroAnimalRepository>();
+        services.AddScoped<IFiliacaoAnimalRepository, FiliacaoAnimalRepository>();
         services.AddScoped<IAnimalCodeAllocator, PostgreSqlAnimalCodeAllocator>();
 
         return services;

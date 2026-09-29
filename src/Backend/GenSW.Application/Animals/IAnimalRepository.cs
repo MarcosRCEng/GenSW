@@ -9,5 +9,6 @@ public interface IAnimalRepository
     Task<Animal?> GetByIdForUpdateAsync(Guid id, CancellationToken cancellationToken = default);
     Task<AnimalListPage> ListAsync(AnimalListQuery query, CancellationToken cancellationToken = default);
     Task<bool> HasCodigoInternoConflictAsync(string codigoInterno, Guid? excludingId = null, CancellationToken cancellationToken = default);
+    Task<bool> HasActiveFiliacaoSexConflictAsync(Guid animalId, SexoAnimal sexo, CancellationToken cancellationToken = default) => Task.FromResult(false);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

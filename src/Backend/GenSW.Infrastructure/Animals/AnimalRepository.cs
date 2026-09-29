@@ -41,6 +41,11 @@ public sealed class AnimalRepository(GenSWDbContext context) : IAnimalRepository
             EF.Functions.ILike(animal.CodigoInterno, pattern, "\\"), cancellationToken);
     }
 
+    public Task<bool> HasActiveFiliacaoSexConflictAsync(Guid animalId, SexoAnimal sexo, CancellationToken cancellationToken = default) =>
+        context.FiliacoesAnimal.AsNoTracking().AnyAsync(f => f.ProgenitorId == animalId && f.Ativa &&
+            ((f.TipoFiliacao == TipoFiliacaoAnimal.Pai && sexo != SexoAnimal.Macho) ||
+             (f.TipoFiliacao == TipoFiliacaoAnimal.Mae && sexo != SexoAnimal.Femea)), cancellationToken);
+
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         try

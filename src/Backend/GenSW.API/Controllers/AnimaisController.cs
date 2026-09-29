@@ -46,6 +46,7 @@ public sealed class AnimaisController(IAnimalService animais) : ControllerBase
         catch (AnimalDuplicateException) { return Conflict(ToConflictProblem(DuplicateCodeConflictTitle, DuplicateCodeConflictDetail)); }
         catch (AnimalAutomaticCodeCollisionLimitExceededException) { return Conflict(ToConflictProblem(AutomaticCollisionConflictTitle, AutomaticCollisionConflictDetail)); }
         catch (AnimalCodeSequenceExhaustedException) { return Conflict(ToConflictProblem(AutomaticSequenceConflictTitle, AutomaticSequenceConflictDetail)); }
+        catch (InvalidOperationException) { return Conflict(ToConflictProblem("Incompatible animal sex", "The animal has an active filiation incompatible with this sex.")); }
         catch (ArgumentException) { return BadRequest(ToInvalidDataProblem()); }
     }
 
