@@ -28,6 +28,7 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
     public DbSet<RegistroAnimal> RegistrosAnimal => Set<RegistroAnimal>();
     public DbSet<FiliacaoAnimal> FiliacoesAnimal => Set<FiliacaoAnimal>();
     public DbSet<Cruzamento> Cruzamentos => Set<Cruzamento>();
+    public DbSet<CicloReprodutivo> CiclosReprodutivos => Set<CicloReprodutivo>();
 
     public DbSet<RefreshSession> RefreshSessions => Set<RefreshSession>();
 
@@ -217,6 +218,19 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
             cruzamento.HasKey(x => x.Id); cruzamento.Property(x => x.MachoId).IsRequired(); cruzamento.Property(x => x.FemeaId).IsRequired(); cruzamento.Property(x => x.Status).HasConversion<int>().IsRequired(); cruzamento.Property(x => x.DataInicio).HasColumnType("date"); cruzamento.Property(x => x.DataFim).HasColumnType("date"); cruzamento.Property(x => x.Objetivo).HasMaxLength(500); cruzamento.Property(x => x.Observacao).HasMaxLength(2000); cruzamento.Property(x => x.CreatedAtUtc).IsRequired(); cruzamento.Property(x => x.UpdatedAtUtc).IsRequired();
             cruzamento.HasOne<Animal>().WithMany().HasForeignKey(x => x.MachoId).OnDelete(DeleteBehavior.Restrict); cruzamento.HasOne<Animal>().WithMany().HasForeignKey(x => x.FemeaId).OnDelete(DeleteBehavior.Restrict);
             cruzamento.HasIndex(x => new { x.Status, x.DataInicio }); cruzamento.HasIndex(x => x.MachoId); cruzamento.HasIndex(x => x.FemeaId);
+        });
+        builder.Entity<CicloReprodutivo>(ciclo =>
+        {
+            ciclo.ToTable("CiclosReprodutivos", table =>
+            {
+                table.HasCheckConstraint("CK_CiclosReprodutivos_Tipo", "\"Tipo\" IN (1, 2)");
+                table.HasCheckConstraint("CK_CiclosReprodutivos_Status", "\"Status\" IN (1, 2, 3)");
+                table.HasCheckConstraint("CK_CiclosReprodutivos_Quantidades", "(\"OvosPostos\" IS NULL OR \"OvosPostos\" >= 0) AND (\"OvosFerteis\" IS NULL OR \"OvosFerteis\" >= 0) AND (\"OvosIncubados\" IS NULL OR \"OvosIncubados\" >= 0) AND (\"OvosEclodidos\" IS NULL OR \"OvosEclodidos\" >= 0) AND (\"OvosInviaveis\" IS NULL OR \"OvosInviaveis\" >= 0) AND (\"Nascidos\" IS NULL OR \"Nascidos\" >= 0) AND (\"NascidosVivos\" IS NULL OR \"NascidosVivos\" >= 0) AND (\"NascidosMortos\" IS NULL OR \"NascidosMortos\" >= 0)");
+                table.HasCheckConstraint("CK_CiclosReprodutivos_Pesos", "(\"PesoMedioOvoGramas\" IS NULL OR \"PesoMedioOvoGramas\" > 0) AND (\"PesoAoNascerGramas\" IS NULL OR \"PesoAoNascerGramas\" > 0)");
+            });
+            ciclo.HasKey(x => x.Id); ciclo.Property(x => x.CruzamentoId).IsRequired(); ciclo.Property(x => x.Tipo).HasConversion<int>().IsRequired(); ciclo.Property(x => x.Status).HasConversion<int>().IsRequired();
+            ciclo.Property(x => x.DataPostura).HasColumnType("date"); ciclo.Property(x => x.DataInicioIncubacao).HasColumnType("date"); ciclo.Property(x => x.DataEclosao).HasColumnType("date"); ciclo.Property(x => x.PesoMedioOvoGramas).HasPrecision(10, 2); ciclo.Property(x => x.DataInicioGestacao).HasColumnType("date"); ciclo.Property(x => x.DataPrevistaParto).HasColumnType("date"); ciclo.Property(x => x.DataParto).HasColumnType("date"); ciclo.Property(x => x.PesoAoNascerGramas).HasPrecision(10, 2); ciclo.Property(x => x.Observacao).HasMaxLength(2000); ciclo.Property(x => x.CreatedAtUtc).IsRequired(); ciclo.Property(x => x.UpdatedAtUtc).IsRequired();
+            ciclo.HasOne<Cruzamento>().WithMany().HasForeignKey(x => x.CruzamentoId).IsRequired().OnDelete(DeleteBehavior.Restrict); ciclo.HasIndex(x => new { x.CruzamentoId, x.Status }); ciclo.HasIndex(x => x.Tipo);
         });
 
         builder.Entity<ApplicationUser>(user =>

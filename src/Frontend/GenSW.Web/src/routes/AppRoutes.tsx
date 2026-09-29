@@ -15,6 +15,9 @@ import { VarietyFormPage } from '../features/varieties/pages/VarietyFormPage'
 import { BreedingListPage } from '../features/breedings/BreedingListPage'
 import { BreedingFormPage } from '../features/breedings/BreedingFormPage'
 import { BreedingDetailsPage } from '../features/breedings/BreedingDetailsPage'
+import { ReproductiveCycleListPage } from '../features/reproductive-cycles/ReproductiveCycleListPage'
+import { ReproductiveCycleFormPage } from '../features/reproductive-cycles/ReproductiveCycleFormPage'
+import { ReproductiveCycleDetailsPage } from '../features/reproductive-cycles/ReproductiveCycleDetailsPage'
 
 function ApplicationLoading() {
   return (
@@ -69,6 +72,10 @@ export function AppRoutes() {
         <Route element={<BreedingFormPage />} path="/cruzamentos/novo" />
         <Route element={<BreedingDetailsPage />} path="/cruzamentos/:id" />
         <Route element={<BreedingFormPage />} path="/cruzamentos/:id/editar" />
+        <Route element={<ReproductiveCycleListPage />} path="/ciclos-reprodutivos" />
+        <Route element={<ReproductiveCycleFormPage />} path="/ciclos-reprodutivos/novo" />
+        <Route element={<ReproductiveCycleDetailsPage />} path="/ciclos-reprodutivos/:id" />
+        <Route element={<ReproductiveCycleFormPage />} path="/ciclos-reprodutivos/:id/editar" />
       </Route>
       <Route element={<Navigate replace to="/" />} path="*" />
     </Routes>

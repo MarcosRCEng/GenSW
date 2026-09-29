@@ -1,0 +1,3 @@
+using GenSW.Domain.Animals;
+namespace GenSW.Application.Animals.CiclosReprodutivos;
+public interface ICicloReprodutivoRepository { Task AddAsync(CicloReprodutivo item, CancellationToken cancellationToken = default); Task<CicloReprodutivo?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken = default); Task<CicloReprodutivoResult?> GetAsync(Guid id, CancellationToken cancellationToken = default); Task<(IReadOnlyList<CicloReprodutivoResult> Items, int TotalItems)> ListAsync(CicloReprodutivoListQuery query, CancellationToken cancellationToken = default); Task<bool> CruzamentoExistsAsync(Guid id, CancellationToken cancellationToken = default); Task SaveChangesAsync(CancellationToken cancellationToken = default); }
