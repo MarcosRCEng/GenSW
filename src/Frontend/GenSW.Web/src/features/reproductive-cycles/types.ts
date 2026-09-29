@@ -1,0 +1,5 @@
+export type ReproductiveCycleType=1|2
+export type ReproductiveCycleStatus=1|2|3
+export interface ReproductiveCycle { id:string; cruzamentoId:string; tipo:ReproductiveCycleType; status:ReproductiveCycleStatus; dataPostura:string|null; dataInicioIncubacao:string|null; dataEclosao:string|null; ovosPostos:number|null; ovosFerteis:number|null; ovosIncubados:number|null; ovosEclodidos:number|null; ovosInviaveis:number|null; pesoMedioOvoGramas:number|null; dataInicioGestacao:string|null; dataPrevistaParto:string|null; dataParto:string|null; nascidos:number|null; nascidosVivos:number|null; nascidosMortos:number|null; pesoAoNascerGramas:number|null; observacao:string|null; duracaoIncubacaoDias:number|null; duracaoGestacaoDias:number|null; taxaFertilidade:number|null; taxaEclosao:number|null }
+export type ReproductiveCycleRequest=Omit<ReproductiveCycle,'id'|'cruzamentoId'|'duracaoIncubacaoDias'|'duracaoGestacaoDias'|'taxaFertilidade'|'taxaEclosao'>
+export interface ReproductiveCyclesPage {items:ReproductiveCycle[];page:number;pageSize:number;totalItems:number;totalPages:number}
