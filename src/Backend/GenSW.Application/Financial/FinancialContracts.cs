@@ -3,8 +3,8 @@ using GenSW.Domain.Financial;
 
 namespace GenSW.Application.Financial;
 
-public sealed record ConfiguracaoCommand(DateOnly DataInicio,
-    [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] decimal SaldoInicial, int? VersaoEsperada = null);
+public sealed record ConfiguracaoCommand([property: JsonRequired] DateOnly DataInicio,
+    [property: JsonRequired, JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] decimal SaldoInicial, int? VersaoEsperada = null);
 public sealed record CategoriaCommand(string Nome, NaturezaFinanceira Natureza);
 public sealed record CategoriaUpdateCommand(string Nome, bool Ativa, int VersaoEsperada);
 public sealed record LancamentoCommand(NaturezaFinanceira Tipo, DateOnly DataMovimento,

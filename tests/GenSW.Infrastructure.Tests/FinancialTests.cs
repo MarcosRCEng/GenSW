@@ -133,6 +133,46 @@ public sealed class FinancialTests : IAsyncLifetime
         await using var check=services.CreateAsyncScope(); var context=check.ServiceProvider.GetRequiredService<GenSWDbContext>(); Assert.Empty(await context.Set<LancamentoCaixa>().ToListAsync()); Assert.Empty(await context.Set<AuditoriaLancamento>().ToListAsync()); Assert.Empty(await context.Set<FechamentoCaixa>().ToListAsync()); Assert.Empty(await context.Set<IdempotenciaFinanceira>().ToListAsync());
     }
     [Fact]
+    public async Task Concurrent_closings_and_identical_adjustment_retries_publish_once()
+    {
+        await Configure(); var original=await Create(Entry()); var summary=await Summary(August);
+        async Task<bool> CloseOnce(){try{await Run(s=>s.CloseAsync(August,new(summary.Versao,"Concorrente"),autor,default));return true;}catch(CaixaConflictException){return false;}}
+        Assert.Single(await Task.WhenAll(CloseOnce(),CloseOnce()),x=>x);
+        var command=new AjusteCommand(1,"Compensar",false);
+        var results=await Task.WhenAll(Run(s=>s.AdjustAsync(original.Id,command,autor,"adjust-repeat",default)),Run(s=>s.AdjustAsync(original.Id,command,autor,"adjust-repeat",default)));
+        Assert.Equal(results[0].Reversao!.Id,results[1].Reversao!.Id);
+        Assert.Equal(2,(await Run(s=>s.ListAsync(new(),default))).TotalItems);
+    }
+    [Fact]
+    public async Task Failure_in_audit_or_snapshot_rolls_back_the_entire_operation()
+    {
+        await Configure();
+        await using(var scope=services.CreateAsyncScope())
+        {
+            var db=scope.ServiceProvider.GetRequiredService<GenSWDbContext>();
+            await db.Database.ExecuteSqlRawAsync("CREATE FUNCTION fin_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected financial failure'; END; $$; CREATE TRIGGER fin_fail_audit BEFORE INSERT ON \"AuditoriasLancamento\" FOR EACH ROW EXECUTE FUNCTION fin_fail();");
+        }
+        await Assert.ThrowsAsync<DbUpdateException>(()=>Create(Entry(),"failure"));
+        Assert.Equal(0,(await Run(s=>s.ListAsync(new(),default))).TotalItems);
+        await using(var scope=services.CreateAsyncScope())
+        {
+            var db=scope.ServiceProvider.GetRequiredService<GenSWDbContext>();
+            Assert.Empty(await db.Set<MesCaixa>().ToArrayAsync());Assert.Empty(await db.Set<IdempotenciaFinanceira>().ToArrayAsync());
+            await db.Database.ExecuteSqlRawAsync("DROP TRIGGER fin_fail_audit ON \"AuditoriasLancamento\"; CREATE TRIGGER fin_fail_snapshot BEFORE INSERT ON \"FechamentosCaixa\" FOR EACH ROW EXECUTE FUNCTION fin_fail();");
+        }
+        await Create(Entry()); await Assert.ThrowsAsync<DbUpdateException>(()=>Close(August)); Assert.False((await Summary(August)).Fechado);
+        await using var check=services.CreateAsyncScope(); Assert.Empty(await check.ServiceProvider.GetRequiredService<GenSWDbContext>().Set<FechamentoCaixa>().ToArrayAsync());
+    }
+    [Fact]
+    public async Task Bounded_lock_timeout_returns_conflict_without_writes()
+    {
+        await Configure();
+        await using var scope=services.CreateAsyncScope(); var db=scope.ServiceProvider.GetRequiredService<GenSWDbContext>(); await using var tx=await db.Database.BeginTransactionAsync();
+        await db.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(37620261002)");
+        await Assert.ThrowsAsync<CaixaConflictException>(()=>Create(Entry()));
+        Assert.Empty(await db.Set<LancamentoCaixa>().ToArrayAsync());
+    }
+    [Fact]
     public async Task Additive_migration_on_existing_base_does_not_backfill_or_change_people()
     {
         await using var scope=services.CreateAsyncScope(); var db=scope.ServiceProvider.GetRequiredService<GenSWDbContext>();

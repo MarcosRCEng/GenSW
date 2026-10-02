@@ -22,6 +22,8 @@ public sealed class FinancialApiTests
         const string root="/api/v1/financeiro";
         Assert.Equal(HttpStatusCode.Unauthorized,(await anonymous.GetAsync(root+"/categorias")).StatusCode);
         Assert.Equal("null",await admin.GetStringAsync(root+"/configuracao"));
+        Assert.Equal(HttpStatusCode.BadRequest,(await admin.PostAsJsonAsync(root+"/configuracao",new{dataInicio="2026-08-01"})).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest,(await admin.PostAsJsonAsync(root+"/configuracao",new{saldoInicial="0.00"})).StatusCode);
         var config=new{dataInicio="2026-08-01",saldoInicial="100.00"};
         Assert.Equal(HttpStatusCode.Forbidden,(await user.PostAsJsonAsync(root+"/configuracao",config)).StatusCode);
         var configured=await admin.PostAsJsonAsync(root+"/configuracao",config); Assert.True(configured.StatusCode==HttpStatusCode.OK,await configured.Content.ReadAsStringAsync());

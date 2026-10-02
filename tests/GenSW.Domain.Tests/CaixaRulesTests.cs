@@ -11,6 +11,7 @@ public sealed class CaixaRulesTests
     [InlineData("0")]
     [InlineData("-1")]
     [InlineData("0.001")]
+    [InlineData("1.000")]
     [InlineData("10000000000000000")]
     public void Invalid_money_is_not_rounded(string value) => Assert.Throws<ArgumentException>(()=>CaixaRules.Dinheiro(decimal.Parse(value,System.Globalization.CultureInfo.InvariantCulture),true));
     [Fact]

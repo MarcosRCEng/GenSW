@@ -11,7 +11,8 @@ public static class CaixaRules
     public const decimal Limite = 9999999999999999.99m;
     public static decimal Dinheiro(decimal valor, bool positivo = false)
     {
-        if (valor < -Limite || valor > Limite || decimal.Round(valor, 2) != valor || (positivo && valor <= 0))
+        var escala = (decimal.GetBits(valor)[3] >> 16) & 0xff;
+        if (valor < -Limite || valor > Limite || escala > 2 || (positivo && valor <= 0))
             throw new ArgumentException("Informe um valor com até duas casas decimais dentro do limite do caixa.");
         return valor;
     }
