@@ -1,3 +1,5 @@
+import { WeightsPanel } from '../evolution/WeightsPanel'
+import { ImageGallery } from '../evolution/ImageGallery'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { isHttpError } from '../../../shared/http/httpErrors'
@@ -112,7 +114,7 @@ export function AnimalFormPage() {
       else await createAnimal(request)
       navigate('/animais')
     } catch (error: unknown) {
-      if (isHttpError(error) && error.status === 409) setSaveError('Já existe um animal com esse código interno.')
+      if (isHttpError(error) && error.status === 409) setSaveError(error.code ? error.detail || 'Alteração incompatível com filiação/pesagens existentes.' : 'Já existe um animal com esse código interno.')
       else if (isHttpError(error) && error.status === 404) setSaveError('Animal ou classificação não encontrada.')
       else if (isHttpError(error) && error.status === 400) setSaveError('Os dados informados para o animal são inválidos.')
       else setSaveError('Não foi possível salvar o animal.')
@@ -135,5 +137,5 @@ export function AnimalFormPage() {
     <div><label className="text-sm font-medium text-slate-700" htmlFor="animal-scope">Escopo</label><select className={control} id="animal-scope" onChange={(event) => setEscopo(Number(event.target.value) as EscopoAnimal)} value={escopo}><option value="1">Operacional</option><option value="2">Referência</option></select></div>
     <div><label className="text-sm font-medium text-slate-700" htmlFor="animal-birth-date">Data de nascimento</label><input className={control} id="animal-birth-date" onChange={(event) => setDataNascimento(event.target.value)} type="date" value={dataNascimento} /></div>
     {saveError ? <p className="text-sm font-medium text-red-700" role="alert">{saveError}</p> : null}<div className="flex flex-wrap gap-3"><button className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60" disabled={isSaving} type="submit">{isSaving ? 'Salvando…' : 'Salvar'}</button>{backLink}</div>
-  </form>{id && currentAnimal && currentAnimal.id === id ? <><AnimalIdentificationsPanel animalId={currentAnimal.id} /><AnimalRegistrationsPanel animalId={currentAnimal.id} /><AnimalFiliationsPanel animalId={currentAnimal.id} />{sexo === 2 && species.find((item) => item.id === especieId)?.ovipara === true ? <AnimalEggProductionPanel animalId={currentAnimal.id} /> : null}</> : null}</div></main>
+  </form>{id && currentAnimal && currentAnimal.id === id ? <><AnimalIdentificationsPanel animalId={currentAnimal.id} /><AnimalRegistrationsPanel animalId={currentAnimal.id} /><WeightsPanel animalId={currentAnimal.id} birth={currentAnimal.dataNascimento} /><ImageGallery ownerId={currentAnimal.id} kind="animais" /><AnimalFiliationsPanel animalId={currentAnimal.id} pendingClassification={especieId !== currentAnimal.especieId || racaId !== (currentAnimal.racaId ?? '') || sexo !== currentAnimal.sexo} />{sexo === 2 && species.find((item) => item.id === especieId)?.ovipara === true ? <AnimalEggProductionPanel animalId={currentAnimal.id} /> : null}</> : null}</div></main>
 }

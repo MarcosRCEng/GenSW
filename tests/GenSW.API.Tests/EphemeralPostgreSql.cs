@@ -30,6 +30,12 @@ internal sealed class EphemeralPostgreSql : IAsyncDisposable
 
     public string ConnectionString { get; }
 
+    public Task BackupAsync(string destination) => RunAsync("pg_dump",
+        ["-h", "127.0.0.1", "-p", Port.ToString(), "-U", UserName, "-Fc", "-f", destination, DatabaseName], TimeSpan.FromSeconds(30));
+
+    public Task RestoreAsync(string source) => RunAsync("pg_restore",
+        ["-h", "127.0.0.1", "-p", Port.ToString(), "-U", UserName, "--clean", "--if-exists", "-d", DatabaseName, source], TimeSpan.FromSeconds(30));
+
     public static async Task<EphemeralPostgreSql> StartAsync()
     {
         var binDirectory = FindPostgreSqlBinDirectory();
@@ -37,7 +43,7 @@ internal sealed class EphemeralPostgreSql : IAsyncDisposable
         if (binDirectory is null)
         {
             throw SkipException.ForSkip(
-                "PostgreSQL integration skipped: initdb, pg_ctl and createdb were not found.");
+                "PostgreSQL integration skipped: initdb, pg_ctl, createdb, pg_dump and pg_restore were not found.");
         }
 
         var rootDirectory = Path.Combine(
@@ -251,7 +257,9 @@ internal sealed class EphemeralPostgreSql : IAsyncDisposable
         var extension = OperatingSystem.IsWindows() ? ".exe" : string.Empty;
         return File.Exists(Path.Combine(directory, $"initdb{extension}")) &&
             File.Exists(Path.Combine(directory, $"pg_ctl{extension}")) &&
-            File.Exists(Path.Combine(directory, $"createdb{extension}"));
+            File.Exists(Path.Combine(directory, $"createdb{extension}")) &&
+            File.Exists(Path.Combine(directory, $"pg_dump{extension}")) &&
+            File.Exists(Path.Combine(directory, $"pg_restore{extension}"));
     }
 
     private static int GetAvailablePort()

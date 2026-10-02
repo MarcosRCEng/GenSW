@@ -85,3 +85,9 @@ Identity, People, Properties, AnimalProduction, Reproduction, Genetics, Agricult
 ## Governança Git/Redmine
 
 Cada demanda executada pelo Codex deve possuir uma **Tarefa** no Redmine, vinculada a uma **Evolução**. A Tarefa registra objetivo, escopo, critérios de aceite, validações, branch, commit, push e pendências. Commits só são criados após as validações aplicáveis passarem.
+
+## Pesos, imagens e genealogia de Animal
+
+A edição de Animal inclui pesagens individuais, galeria privada e seleção pesquisável de progenitores. Cada pesagem mantém a data observada e separa a idade alvo da idade calculada. A árvore exibe ascendentes e descendentes com expansão explícita; o pedigree legado permanece disponível. Variedade possui galeria própria de catálogo, sem herdar ou fornecer foto de um indivíduo.
+
+As APIs autenticadas ficam em `/api/v1/animais/{id}/pesagens`, `/imagens`, `/progenitores-elegiveis` e `/arvore`; imagens de catálogo ficam em `/api/v1/variedades/{id}/imagens`. Conteúdo binário exige autenticação. Consulte [operação, migrações e backup](docs/operations/animal-evolution.md), [auditoria somente leitura](docs/operations/animal-genealogy-audit.sql) e [evidências da implementação](docs/validation/2026-10-02-animal-evolution-372.md).
