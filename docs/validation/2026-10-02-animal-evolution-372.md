@@ -23,6 +23,7 @@ Ambiente local Windows 10.0.26100, processo 64 bits, 28 CPUs lógicas, .NET 8, P
 | API após separar DTOs de resposta | 1 integração aprovada; `.test-output/372/evolution-api-final.trx` |
 | Frontend build e lint | Êxito, zero erro de TypeScript/ESLint |
 | `npm test` após ajustes finais | 322 aprovados em 30 arquivos; `.test-output/372/frontend-final.log` |
+| CI remoto Ubuntu | Backend e frontend aprovados: Domain100/Application124/API115/Infrastructure95, nenhum ignorado; frontend322, build/lint aprovados; [run37046646341](https://github.com/MarcosRCEng/GenSW/actions/runs/37046646341) |
 | EF `has-pending-model-changes` Release | Sem mudanças de modelo pendentes |
 | `git diff --check` | Sem erro de whitespace após normalizar EOF |
 
@@ -48,7 +49,7 @@ Capturas e relatórios brutos permanecem locais, fora dos commits. O console do 
 
 ## Pendências para aceite humano
 
-Revisar implementação e CI remoto; validar convenções de marcos e usabilidade com dados reais; provisionar volume/ACL e validar o processador no host de destino; executar auditoria somente leitura e revisar inconsistências legadas; ensaiar backup/restauração do ambiente alvo; planejar janela de atualização de todos os escritores. Não executados: auditoria em dados de produção, backup real de produção, deploy, teste de leitor de tela externo ou homologação com usuários finais. O teste local de PostgreSQL e o navegador não substituem essas etapas.
+Revisar implementação e resultados do CI remoto aprovado; validar convenções de marcos e usabilidade com dados reais; provisionar volume/ACL e validar o processador no host de destino; executar auditoria somente leitura e revisar inconsistências legadas; ensaiar backup/restauração do ambiente alvo; planejar janela de atualização de todos os escritores. Não executados: auditoria em dados de produção, backup real de produção, deploy, teste de leitor de tela externo ou homologação com usuários finais. O teste local de PostgreSQL e o navegador não substituem essas etapas.
 
 Tarefas devem permanecer Em validação enquanto revisão/aceite estiverem pendentes. Tarefa #363 não foi alterada nem ampliada. Não há reconhecimento visual, DNA, dispositivos, automações ou rastreamento.
 
@@ -56,6 +57,6 @@ Tarefas devem permanecer Em validação enquanto revisão/aceite estiverem pende
 
 - `be1007e`: backend, migrations, concorrência, segurança, projeção e testes (#366–#369/#371).
 - `2875271`: frontend e cliente HTTP/sessão (#370).
-- Documentação operacional e evidências em commit separado (#371/#372); o hash final e a publicação da branch são registrados no Redmine e na PR.
+- `52f1ff0`: documentação operacional e evidências (#371/#372). Resultado do CI remoto registrado em complemento documental; publicação da branch e hashes finais no Redmine/PR.
 
 O planejamento `f8d5195` permanece ancestral da implementação. Artefatos locais preexistentes foram preservados; AGENTS.md e .gensw não entram nos commits.
