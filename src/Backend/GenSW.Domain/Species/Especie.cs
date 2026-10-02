@@ -14,11 +14,13 @@ public sealed class Especie
         NomeComum = null!;
     }
 
-    private Especie(string nomeComum, string? nomeCientifico, DateTimeOffset nowUtc)
+    private Especie(string nomeComum, string? nomeCientifico, bool ovipara, decimal? pesoPadraoOvoGramas, DateTimeOffset nowUtc)
     {
         Id = Guid.NewGuid();
         NomeComum = nomeComum;
         NomeCientifico = nomeCientifico;
+        Ovipara = ovipara;
+        PesoPadraoOvoGramas = ValidatePesoPadrao(ovipara, pesoPadraoOvoGramas);
         Ativo = true;
         CreatedAtUtc = nowUtc;
         UpdatedAtUtc = nowUtc;
@@ -31,32 +33,43 @@ public sealed class Especie
     public string? NomeCientifico { get; private set; }
 
     public bool Ativo { get; private set; }
+    public bool Ovipara { get; private set; }
+    public decimal? PesoPadraoOvoGramas { get; private set; }
 
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
-    public static Especie Criar(string nomeComum, string? nomeCientifico, DateTimeOffset nowUtc)
+    public static Especie Criar(string nomeComum, string? nomeCientifico, bool ovipara, decimal? pesoPadraoOvoGramas, DateTimeOffset nowUtc)
     {
         var nomeComumNormalizado = NormalizeRequiredName(nomeComum, nameof(nomeComum));
         var nomeCientificoNormalizado = NormalizeOptionalName(nomeCientifico, nameof(nomeCientifico));
 
-        return new Especie(nomeComumNormalizado, nomeCientificoNormalizado, nowUtc);
+        return new Especie(nomeComumNormalizado, nomeCientificoNormalizado, ovipara, pesoPadraoOvoGramas, nowUtc);
     }
 
-    public void AlterarCadastro(string nomeComum, string? nomeCientifico, DateTimeOffset nowUtc)
+    public static Especie Criar(string nomeComum, string? nomeCientifico, DateTimeOffset nowUtc)
+        => Criar(nomeComum, nomeCientifico, false, null, nowUtc);
+
+    public void AlterarCadastro(string nomeComum, string? nomeCientifico, bool ovipara, decimal? pesoPadraoOvoGramas, DateTimeOffset nowUtc)
     {
         var nomeComumNormalizado = NormalizeRequiredName(nomeComum, nameof(nomeComum));
         var nomeCientificoNormalizado = NormalizeOptionalName(nomeCientifico, nameof(nomeCientifico));
-        if (NomeComum == nomeComumNormalizado && NomeCientifico == nomeCientificoNormalizado)
+        var pesoPadraoNormalizado = ValidatePesoPadrao(ovipara, pesoPadraoOvoGramas);
+        if (NomeComum == nomeComumNormalizado && NomeCientifico == nomeCientificoNormalizado && Ovipara == ovipara && PesoPadraoOvoGramas == pesoPadraoNormalizado)
         {
             return;
         }
 
         NomeComum = nomeComumNormalizado;
         NomeCientifico = nomeCientificoNormalizado;
+        Ovipara = ovipara;
+        PesoPadraoOvoGramas = pesoPadraoNormalizado;
         UpdatedAtUtc = nowUtc;
     }
+
+    public void AlterarCadastro(string nomeComum, string? nomeCientifico, DateTimeOffset nowUtc)
+        => AlterarCadastro(nomeComum, nomeCientifico, Ovipara, PesoPadraoOvoGramas, nowUtc);
 
     public void Inativar(DateTimeOffset nowUtc)
     {
@@ -110,5 +123,12 @@ public sealed class Especie
         }
 
         return normalized;
+    }
+
+    private static decimal? ValidatePesoPadrao(bool ovipara, decimal? value)
+    {
+        if (!ovipara && value is not null) throw new ArgumentException("Standard egg weight is allowed only for oviparous species.", nameof(value));
+        if (value is <= 0 or > 100000) throw new ArgumentException("Standard egg weight must be greater than zero and realistic.", nameof(value));
+        return value;
     }
 }

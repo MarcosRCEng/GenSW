@@ -7,7 +7,7 @@ public sealed class EspecieService(IEspecieRepository repository, TimeProvider t
     public async Task<EspecieResult> CreateAsync(CreateEspecieCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
-        var especie = Especie.Criar(command.NomeComum, command.NomeCientifico, timeProvider.GetUtcNow());
+        var especie = Especie.Criar(command.NomeComum, command.NomeCientifico, command.Ovipara, command.PesoPadraoOvoGramas, timeProvider.GetUtcNow());
         await EnsureUniqueAsync(especie, null, cancellationToken);
         await repository.AddAsync(especie, cancellationToken);
         await repository.SaveChangesAsync(cancellationToken);
@@ -40,7 +40,7 @@ public sealed class EspecieService(IEspecieRepository repository, TimeProvider t
     {
         ArgumentNullException.ThrowIfNull(command);
         var especie = await GetTrackedAsync(especieId, cancellationToken);
-        especie.AlterarCadastro(command.NomeComum, command.NomeCientifico, timeProvider.GetUtcNow());
+        especie.AlterarCadastro(command.NomeComum, command.NomeCientifico, command.Ovipara, command.PesoPadraoOvoGramas, timeProvider.GetUtcNow());
         await EnsureUniqueAsync(especie, especie.Id, cancellationToken);
         await repository.SaveChangesAsync(cancellationToken);
         return ToResult(especie);
@@ -104,6 +104,8 @@ public sealed class EspecieService(IEspecieRepository repository, TimeProvider t
         especie.Id,
         especie.NomeComum,
         especie.NomeCientifico,
+        especie.Ovipara,
+        especie.PesoPadraoOvoGramas,
         especie.Ativo,
         especie.CreatedAtUtc,
         especie.UpdatedAtUtc);

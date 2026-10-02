@@ -3,6 +3,7 @@ using System;
 using GenSW.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GenSW.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(GenSWDbContext))]
-    partial class GenSWDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260929225633_AddEggProduction")]
+    partial class AddEggProduction
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -374,83 +377,6 @@ namespace GenSW.Infrastructure.Persistence.Migrations
                     b.ToTable("ProducoesOvos", null, t =>
                         {
                             t.HasCheckConstraint("CK_ProducoesOvos_PesoGramas", "\"PesoGramas\" > 0");
-                        });
-                });
-
-            modelBuilder.Entity("GenSW.Domain.Animals.Prole", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("AnimalId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CicloReprodutivoId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Condicao")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateOnly>("Data")
-                        .HasColumnType("date");
-
-                    b.Property<Guid?>("LoteOrigemId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Observacao")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<int>("Origem")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal?>("PesoGramas")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("numeric(10,2)");
-
-                    b.Property<int>("Quantidade")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("QuantidadeDesdobrada")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Sexo")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TipoRegistro")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AnimalId")
-                        .IsUnique()
-                        .HasDatabaseName("UX_Proles_AnimalId")
-                        .HasFilter("\"AnimalId\" IS NOT NULL");
-
-                    b.HasIndex("LoteOrigemId");
-
-                    b.HasIndex("CicloReprodutivoId", "LoteOrigemId");
-
-                    b.ToTable("Proles", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_Proles_Origem", "\"Origem\" IN (1, 2)");
-
-                            t.HasCheckConstraint("CK_Proles_Peso", "\"PesoGramas\" IS NULL OR \"PesoGramas\" > 0");
-
-                            t.HasCheckConstraint("CK_Proles_Quantidade", "\"Quantidade\" > 0 AND (\"TipoRegistro\" <> 1 OR \"Quantidade\" = 1) AND \"QuantidadeDesdobrada\" >= 0 AND \"QuantidadeDesdobrada\" <= \"Quantidade\"");
-
-                            t.HasCheckConstraint("CK_Proles_Sexo", "\"Sexo\" IN (1, 2, 3)");
-
-                            t.HasCheckConstraint("CK_Proles_TipoRegistro", "\"TipoRegistro\" IN (1, 2)");
                         });
                 });
 
@@ -990,25 +916,6 @@ namespace GenSW.Infrastructure.Persistence.Migrations
                         .HasForeignKey("AnimalId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("GenSW.Domain.Animals.Prole", b =>
-                {
-                    b.HasOne("GenSW.Domain.Animals.Animal", null)
-                        .WithMany()
-                        .HasForeignKey("AnimalId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("GenSW.Domain.Animals.CicloReprodutivo", null)
-                        .WithMany()
-                        .HasForeignKey("CicloReprodutivoId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("GenSW.Domain.Animals.Prole", null)
-                        .WithMany()
-                        .HasForeignKey("LoteOrigemId")
-                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("GenSW.Domain.Animals.RegistroAnimal", b =>

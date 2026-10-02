@@ -23,6 +23,8 @@ export function parseEspecie(value: unknown): Especie {
     !isNonEmptyString(value.id) ||
     typeof value.nomeComum !== 'string' ||
     !(typeof value.nomeCientifico === 'string' || value.nomeCientifico === null) ||
+    !(typeof value.ovipara === 'boolean' || value.ovipara === undefined) ||
+    !(typeof value.pesoPadraoOvoGramas === 'number' || value.pesoPadraoOvoGramas === null || value.pesoPadraoOvoGramas === undefined) ||
     typeof value.ativo !== 'boolean' ||
     !isIsoDateString(value.createdAtUtc) ||
     !isIsoDateString(value.updatedAtUtc)
@@ -34,6 +36,8 @@ export function parseEspecie(value: unknown): Especie {
     id: value.id,
     nomeComum: value.nomeComum,
     nomeCientifico: value.nomeCientifico,
+    ...(value.ovipara === undefined ? {} : { ovipara: value.ovipara }),
+    ...(value.pesoPadraoOvoGramas === undefined ? {} : { pesoPadraoOvoGramas: value.pesoPadraoOvoGramas }),
     ativo: value.ativo,
     createdAtUtc: value.createdAtUtc,
     updatedAtUtc: value.updatedAtUtc,

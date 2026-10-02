@@ -17,6 +17,8 @@ using GenSW.Infrastructure.Animals.CiclosReprodutivos;
 using GenSW.Infrastructure.Animals.Proles;
 using GenSW.Application.Animals.Proles;
 using GenSW.Application.Animals.CiclosReprodutivos;
+using GenSW.Infrastructure.Animals.ProducaoOvos;
+using GenSW.Application.Animals.ProducaoOvos;
 using GenSW.Infrastructure.Authentication;
 using GenSW.Infrastructure.Identity;
 using GenSW.Infrastructure.Persistence;
@@ -73,6 +75,7 @@ public static class DependencyInjection
         services.AddScoped<ICruzamentoRepository, CruzamentoRepository>();
         services.AddScoped<ICicloReprodutivoRepository, CicloReprodutivoRepository>();
         services.AddScoped<IProleRepository, ProleRepository>();
+        services.AddScoped<IProducaoOvoRepository, ProducaoOvoRepository>();
         services.AddScoped<IAnimalCodeAllocator, PostgreSqlAnimalCodeAllocator>();
 
         return services;
