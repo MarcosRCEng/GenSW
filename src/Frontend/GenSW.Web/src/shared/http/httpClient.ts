@@ -22,6 +22,7 @@ export interface HttpRequestOptions {
   authenticated?: boolean
   retryOnUnauthorized?: boolean
   signal?: AbortSignal
+  responseType?: 'json' | 'blob'
 }
 
 function endpointPath(path: string): string {
@@ -39,9 +40,9 @@ function permitsAutomaticRefresh(path: string, options: HttpRequestOptions): boo
 
 function createHeaders(options: HttpRequestOptions, snapshot: SessionSnapshot): Headers {
   const headers = new Headers(options.headers)
-  headers.set('Accept', 'application/json')
+  headers.set('Accept', options.responseType === 'blob' ? 'image/*' : 'application/json')
 
-  if (options.body !== undefined && !headers.has('Content-Type')) {
+  if (options.body !== undefined && !(options.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }
 
@@ -61,7 +62,7 @@ async function sendRequest(
     return await fetch(buildApiUrl(path), {
       method: options.method ?? 'GET',
       headers: createHeaders(options, snapshot),
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: options.body === undefined ? undefined : options.body instanceof FormData ? options.body : JSON.stringify(options.body),
       credentials: 'include',
       signal: options.signal,
     })
@@ -155,10 +156,17 @@ async function executeRequest<T>(
   }
 
   if (!response.ok) {
-    throw new HttpError(response.status, response.statusText)
+    let detail: string | undefined
+    let code: string | undefined
+    try {
+      const problem = await response.json() as { title?: unknown; code?: unknown }
+      if (typeof problem.title === 'string') detail = problem.title
+      if (typeof problem.code === 'string') code = problem.code
+    } catch { /* Non-JSON errors retain HTTP status. */ }
+    throw new HttpError(response.status, response.statusText, detail, code)
   }
 
-  const result = await readSuccessfulResponse<T>(response)
+  const result = options.responseType === 'blob' ? await response.blob() as T : await readSuccessfulResponse<T>(response)
 
   if (
     options.authenticated === true &&

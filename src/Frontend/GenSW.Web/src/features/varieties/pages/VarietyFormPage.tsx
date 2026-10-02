@@ -1,3 +1,4 @@
+import { ImageGallery } from '../../animals/evolution/ImageGallery'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { isHttpError } from '../../../shared/http/httpErrors'
@@ -122,6 +123,6 @@ export function VarietyFormPage() {
       <div><label className="text-sm font-medium text-slate-700" htmlFor="variety-name">Nome</label><input aria-invalid={nomeError} className={controlClassName} id="variety-name" maxLength={200} minLength={1} onChange={(event) => { setNome(event.target.value); setNomeError(false) }} required type="text" value={nome} />{nomeError ? <p className="mt-1 text-sm text-red-700">Informe um nome entre 1 e 200 caracteres.</p> : null}</div>
       {saveError ? <p className="text-sm font-medium text-red-700" role="alert">{saveError}</p> : null}
       <div className="flex flex-wrap gap-3"><button className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60" disabled={isSaving} type="submit">{isSaving ? 'Salvando…' : 'Salvar'}</button><Link className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2" to="/variedades">Cancelar</Link></div>
-    </form>
+    </form>{id && currentVariety && <ImageGallery ownerId={id} kind="variedades" />}
   </div></main>
 }

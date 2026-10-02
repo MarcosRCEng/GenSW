@@ -1,0 +1,38 @@
+.animal-panel { margin-top:2rem; border:1px solid #cbd5e1; border-radius:1rem; background:white; padding:1.5rem; color:#16332a }
+.animal-panel h2 { font-size:1.35rem; font-weight:750; margin-bottom:.5rem }
+.animal-panel p { margin:.5rem 0; line-height:1.5 }
+.animal-panel label { display:block; font-size:.875rem; font-weight:600; min-width:0 }
+.animal-panel input,.animal-panel select,.animal-panel textarea { display:block; width:100%; padding:.55rem; margin-top:.25rem; border:1px solid #94a3b8; border-radius:.4rem; background:white; color:#172b25; font-weight:400 }
+.animal-panel button { border:1px solid #94a3b8; padding:.45rem .75rem; border-radius:.5rem; background:#f8faf9; font-size:.875rem; font-weight:600 }
+.animal-panel button[type=submit] { background:#16634d; border-color:#16634d; color:white }
+.animal-panel button:disabled { opacity:.45; cursor:not-allowed }
+.animal-panel :focus-visible { outline:3px solid #059669; outline-offset:3px }
+.animal-panel [role=alert] { color:#991b1b; background:#fff1f2; padding:.75rem; border-radius:.4rem }
+.animal-fields { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:1rem; margin:1rem 0; align-items:end }
+.animal-actions { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; margin:.75rem 0 }
+.animal-notice { padding:.7rem; border-left:3px solid #b89048; background:#fbf7ec; font-size:.875rem }
+.animal-table { overflow-x:auto; margin:1rem 0 }
+.animal-table table { width:100%; font-size:.875rem; text-align:left }
+.animal-table th,.animal-table td { padding:.7rem; border-bottom:1px solid #e2e8f0; vertical-align:top; min-width:90px }
+.animal-gallery { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; margin:1rem 0 }
+.animal-gallery article { border:1px solid #d7e1dc; padding:1rem; border-radius:.75rem; overflow-wrap:anywhere }
+.animal-gallery summary { cursor:pointer; margin:.5rem 0 }
+.animal-photo { display:inline-flex; width:72px; height:72px; border-radius:50%; overflow:hidden; background:#edf3f0; border:3px solid white; box-shadow:0 0 0 1px #ccdcd3; align-items:center; justify-content:center; flex-shrink:0 }
+.animal-photo img { width:100%; height:100%; object-fit:cover }
+.animal-photo>span { color:#567364; font-size:2rem }
+.genealogy-viewport { overflow:auto; max-height:720px; border:1px solid #cadad0; border-radius:.8rem; background:#f5f7f1; margin:1rem 0 }
+.genealogy-canvas { position:relative; transform-origin:top left }
+.genealogy-card { position:absolute; width:180px; min-height:162px; border:1px solid #a8bdb1; background:white; border-radius:.75rem; padding:.65rem; text-align:center; box-shadow:0 3px 8px #1234220b }
+.genealogy-card[data-root=true] { border:2px solid #16634d; background:#f0fdf4 }
+.genealogy-card button { border:0; background:transparent; padding:.2rem; display:block; width:100% }
+.genealogy-card button[aria-pressed=true] { box-shadow:inset 0 0 0 1px #16634d; border-radius:.4rem }
+.genealogy-card small { display:block; color:#526459 }
+.genealogy-card strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.genealogy-card .animal-photo { width:56px; height:56px }
+.genealogy-connectors { position:absolute; inset:0; pointer-events:none }
+.genealogy-connectors path { stroke:#708d7b; stroke-width:1.5; fill:none }
+.genealogy-connectors text { fill:#365442; font-size:12px }
+.candidate-options { list-style:none; margin:.5rem 0; border:1px solid #ccd9d1; border-radius:.5rem; max-height:240px; overflow:auto }
+.candidate-options li { padding:.6rem; cursor:pointer; border-bottom:1px solid #eef2ef }
+.candidate-options li[aria-selected=true] { background:#dcfce7; outline:1px solid #16634d }
+@media(max-width:480px) { .animal-panel { padding:1rem } .animal-fields { grid-template-columns:1fr } .animal-gallery { grid-template-columns:1fr } }

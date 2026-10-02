@@ -19,6 +19,18 @@ let refreshHandler: SessionRefreshHandler | null = null
 let refreshInFlight: Promise<SessionAccessToken | null> | null = null
 
 const invalidationListeners = new Set<SessionInvalidationListener>()
+const generationListeners = new Set<SessionInvalidationListener>()
+
+function notifyGenerationChange(): void {
+  for (const listener of generationListeners) {
+    try { listener() } catch { /* Observers cannot block a session change. */ }
+  }
+}
+
+export function subscribeToSessionGenerationChange(listener: SessionInvalidationListener): () => void {
+  generationListeners.add(listener)
+  return () => { generationListeners.delete(listener) }
+}
 
 export function getSessionSnapshot(): SessionSnapshot {
   return {
@@ -32,6 +44,7 @@ export function setAccessToken(token: string): void {
   accessToken = token
   sessionGeneration += 1
   sessionRevision += 1
+  notifyGenerationChange()
 }
 
 export function invalidateSession(expectedGeneration?: number): boolean {
@@ -42,6 +55,7 @@ export function invalidateSession(expectedGeneration?: number): boolean {
   accessToken = null
   sessionGeneration += 1
   sessionRevision += 1
+  notifyGenerationChange()
 
   for (const listener of invalidationListeners) {
     try {

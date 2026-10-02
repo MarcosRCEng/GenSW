@@ -1,3 +1,6 @@
+vi.mock('../evolution/WeightsPanel', () => ({ WeightsPanel: () => null }))
+vi.mock('../evolution/ImageGallery', () => ({ ImageGallery: () => null }))
+vi.mock('../filiations/components/AnimalFiliationsPanel', () => ({ AnimalFiliationsPanel: () => null }))
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -60,7 +63,7 @@ describe('AnimalFormPage', () => {
     renderPage('/animais/animal-1/editar')
     expect(await screen.findByRole('heading', { name: 'Identificações físicas' })).toBeInTheDocument()
     expect(screen.getByLabelText('Código interno')).toHaveValue(savedAnimal.codigoInterno)
-    expect(listAnimalIdentifications).toHaveBeenCalledWith(savedAnimal.id, { page: 1, pageSize: 10 })
+    await waitFor(() => expect(listAnimalIdentifications).toHaveBeenCalledWith(savedAnimal.id, { page: 1, pageSize: 10 }))
   })
 
   it('does not keep the previous animal panel while switching edit routes', async () => {
