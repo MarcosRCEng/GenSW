@@ -14,8 +14,54 @@ public sealed class PostgreSqlAnimalCodeAllocator(GenSWDbContext dbContext) : IA
     public async Task<IAnimalAutomaticCodeAttempt> BeginAttemptAsync(
         CancellationToken cancellationToken = default)
     {
+        if (dbContext.Database.CurrentTransaction is {} outer)
+        {
+            var savepoint = "animal_code_" + Guid.NewGuid().ToString("N");
+            await outer.CreateSavepointAsync(savepoint, cancellationToken);
+            return new NestedCodeAttempt(dbContext, outer, savepoint);
+        }
         var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
         return new AnimalAutomaticCodeAttempt(dbContext, transaction);
+    }
+
+    // A conversion owns the outer transaction; automatic-code retries use a
+    // savepoint so creating Animal cannot commit the conversion prematurely.
+    private sealed class NestedCodeAttempt(GenSWDbContext context, IDbContextTransaction outer, string savepoint)
+        : IAnimalAutomaticCodeAttempt
+    {
+        private bool completed;
+        public async Task<string> AllocateNextCodigoInternoAsync(CancellationToken ct = default)
+        {
+            if (completed) throw new InvalidOperationException("Automatic-code attempt is closed.");
+            await using var command = context.Database.GetDbConnection().CreateCommand();
+            command.Transaction = outer.GetDbTransaction();
+            command.CommandText = "SELECT nextval('\"AnimalCodigoInternoSequence\"');";
+            try
+            {
+                var value = Convert.ToInt64(await command.ExecuteScalarAsync(ct), CultureInfo.InvariantCulture);
+                return $"AN-{value.ToString("D6", CultureInfo.InvariantCulture)}";
+            }
+            catch (PostgresException e) when (e.SqlState == "2200H") { throw new AnimalCodeSequenceExhaustedException(); }
+        }
+        public async Task CommitAsync(CancellationToken ct = default)
+        {
+            if (completed) throw new InvalidOperationException("Automatic-code attempt is closed.");
+            await outer.ReleaseSavepointAsync(savepoint, ct);
+            completed = true;
+        }
+        public async Task RollbackAndDetachAsync(Animal failedAnimal, CancellationToken ct = default)
+        {
+            await RollbackAsync(ct);
+            context.Entry(failedAnimal).State = EntityState.Detached;
+        }
+        private async Task RollbackAsync(CancellationToken ct = default)
+        {
+            if (completed) return;
+            await outer.RollbackToSavepointAsync(savepoint, ct);
+            await outer.ReleaseSavepointAsync(savepoint, ct);
+            completed = true;
+        }
+        public async ValueTask DisposeAsync() => await RollbackAsync();
     }
 
     private sealed class AnimalAutomaticCodeAttempt(

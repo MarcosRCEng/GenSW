@@ -78,6 +78,10 @@ O módulo autenticado de cruzamentos está disponível em `/api/v1/cruzamentos` 
 
 O módulo autenticado de ciclos está em `/api/v1/ciclos-reprodutivos`, acessível a partir de cada Cruzamento. Há vários ciclos por Cruzamento, com fluxos ovíparo (postura, incubação/choco e eclosão) ou gestacional (início, previsão, parto e desfecho). Quantidades e pesos são dados brutos; duração, fertilidade e eclosão são calculadas na consulta, sem persistir percentuais. O módulo não cria animais, ovos individuais ou vínculos de filiação — essas confirmações continuam no domínio de Filiação.
 
+## Proles (NA-09)
+
+O módulo autenticado de proles está em `/api/v1/proles`, acessível na consulta de cada ciclo. Só aceita ciclos concluídos e limita os registros ao total apurado de eclodidos ou nascidos; o registro não modifica os números históricos do ciclo. Lotes podem ser desdobrados, deixando a origem rastreável, antes da conversão de uma unidade individual em Animal. A conversão é única por prole e encaminha os progenitores do Cruzamento apenas como sugestões para confirmação explícita no módulo de Filiação.
+
 ## Roadmap macro
 
 Identity, People, Properties, AnimalProduction, Reproduction, Genetics, AgriculturalProduction, Inventory, Purchasing, Sales, Financial, Accounting, Fiscal, Reporting e BI evoluirão incrementalmente. O MVP inicial priorizará autenticação, pessoas, usuários, animais, espécie, raça, cruzamento e pedigree.

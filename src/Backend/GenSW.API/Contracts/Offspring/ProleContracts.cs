@@ -1,0 +1,10 @@
+using GenSW.API.Contracts.Animals;
+using GenSW.Domain.Animals;
+namespace GenSW.API.Contracts.Offspring;
+public sealed record ProleRequest(TipoRegistroProle TipoRegistro,int Quantidade,TipoOrigemProle Origem,DateOnly Data,decimal? PesoGramas,SexoAnimal Sexo,string Condicao,string? Observacao);
+public sealed record ProleUpdateRequest(TipoOrigemProle Origem,DateOnly Data,decimal? PesoGramas,SexoAnimal Sexo,string Condicao,string? Observacao);
+public sealed record ProleConversaoRequest(string? CodigoInterno,string? Nome,Guid EspecieId,Guid? RacaId,Guid? VariedadeId,EscopoAnimal Escopo);
+public sealed record ProleResponse(Guid Id,Guid CicloReprodutivoId,Guid? LoteOrigemId,TipoRegistroProle TipoRegistro,int Quantidade,int QuantidadeDesdobrada,TipoOrigemProle Origem,DateOnly Data,decimal? PesoGramas,SexoAnimal Sexo,string Condicao,string? Observacao,Guid? AnimalId,DateTimeOffset CreatedAtUtc,DateTimeOffset UpdatedAtUtc);
+public sealed record ProlesListResponse(IReadOnlyList<ProleResponse> Items,int Page,int PageSize,int TotalItems,int TotalPages);
+public sealed record ProleConversaoResponse(ProleResponse Prole,AnimalResponse Animal,ProgenitorSugeridoResponse PaiSugerido,ProgenitorSugeridoResponse MaeSugerida);
+public sealed record ProgenitorSugeridoResponse(Guid Id,string CodigoInterno,string? Nome);

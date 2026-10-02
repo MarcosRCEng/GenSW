@@ -3,6 +3,7 @@ using System;
 using GenSW.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GenSW.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(GenSWDbContext))]
-    partial class GenSWDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260929180642_AddProles")]
+    partial class AddProles
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -270,16 +273,12 @@ namespace GenSW.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ProgenitorId");
+
                     b.HasIndex("AnimalId", "TipoFiliacao")
                         .IsUnique()
                         .HasDatabaseName("UX_FiliacoesAnimal_Animal_Tipo_Ativa")
                         .HasFilter("\"Ativa\" = TRUE");
-
-                    b.HasIndex("ProgenitorId");
-
-                    b.HasIndex("ProgenitorId", "AnimalId")
-                        .HasDatabaseName("IX_FiliacoesAnimal_DescendentesAtivos")
-                        .HasFilter("\"Ativa\"");
 
                     b.ToTable("FiliacoesAnimal", null, t =>
                         {
@@ -342,168 +341,6 @@ namespace GenSW.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("CK_IdentificacoesAnimal_Tipo", "\"Tipo\" IN (1, 2, 3, 4, 5, 6)");
 
                             t.HasCheckConstraint("CK_IdentificacoesAnimal_Valor_Canonical", "\"Valor\" <> '' AND \"Valor\" = btrim(\"Valor\")");
-                        });
-                });
-
-            modelBuilder.Entity("GenSW.Domain.Animals.ImagemAnimal", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Altura")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("AnimalId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ArquivoKey")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<bool>("Ativa")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateOnly?>("DataCaptura")
-                        .HasColumnType("date");
-
-                    b.Property<int>("Largura")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Legenda")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("Mime")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
-
-                    b.Property<string>("MiniaturaKey")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<int>("Ordem")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("Representativa")
-                        .HasColumnType("boolean");
-
-                    b.Property<long>("TamanhoBytes")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AnimalId")
-                        .IsUnique()
-                        .HasDatabaseName("UX_ImagensAnimal_Representativa")
-                        .HasFilter("\"Ativa\" AND \"Representativa\"");
-
-                    b.HasIndex("AnimalId", "Ordem", "CreatedAtUtc", "Id");
-
-                    b.ToTable("ImagensAnimal", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_ImagensAnimal_Dimensoes", "\"Largura\" BETWEEN 1 AND 2048 AND \"Altura\" BETWEEN 1 AND 2048 AND \"TamanhoBytes\" > 0");
-
-                            t.HasCheckConstraint("CK_ImagensAnimal_Ordem", "\"Ordem\" >= 0");
-
-                            t.HasCheckConstraint("CK_ImagensAnimal_Representativa", "NOT \"Representativa\" OR \"Ativa\"");
-                        });
-                });
-
-            modelBuilder.Entity("GenSW.Domain.Animals.PesagemAnimal", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("AnimalId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateOnly>("DataMedicao")
-                        .HasColumnType("date");
-
-                    b.Property<string>("DescricaoMarco")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int?>("IdadeReferenciaDias")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Observacao")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<decimal>("PesoGramas")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("numeric(10,2)");
-
-                    b.Property<int>("TipoMarco")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AnimalId", "DataMedicao", "Id");
-
-                    b.ToTable("PesagensAnimal", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_PesagensAnimal_Idade", "(\"TipoMarco\" = 3 AND \"IdadeReferenciaDias\" IS NOT NULL AND \"IdadeReferenciaDias\" >= 0) OR (\"TipoMarco\" <> 3 AND \"IdadeReferenciaDias\" IS NULL)");
-
-                            t.HasCheckConstraint("CK_PesagensAnimal_Marco", "\"TipoMarco\" BETWEEN 1 AND 6");
-
-                            t.HasCheckConstraint("CK_PesagensAnimal_Outro", "\"TipoMarco\" <> 6 OR (\"DescricaoMarco\" IS NOT NULL AND length(trim(\"DescricaoMarco\")) > 0)");
-
-                            t.HasCheckConstraint("CK_PesagensAnimal_Peso", "\"PesoGramas\" BETWEEN 0.01 AND 99999999.99");
-                        });
-                });
-
-            modelBuilder.Entity("GenSW.Domain.Animals.ProducaoOvo", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("AnimalId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateOnly>("DataPostura")
-                        .HasColumnType("date");
-
-                    b.Property<string>("Observacao")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<decimal>("PesoGramas")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("numeric(10,2)");
-
-                    b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AnimalId", "DataPostura");
-
-                    b.ToTable("ProducoesOvos", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_ProducoesOvos_PesoGramas", "\"PesoGramas\" > 0");
                         });
                 });
 
@@ -730,15 +567,6 @@ namespace GenSW.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<bool>("Ovipara")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<decimal?>("PesoPadraoOvoGramas")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("numeric(10,2)");
-
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -749,80 +577,6 @@ namespace GenSW.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("CK_Especies_NomeCientifico_Canonical", "\"NomeCientifico\" IS NULL OR (\"NomeCientifico\" <> '' AND \"NomeCientifico\" !~ U&'[\\0009-\\000D\\0085\\00A0\\1680\\2000-\\200A\\2028\\2029\\202F\\205F\\3000]' AND \"NomeCientifico\" !~ '(^ | $|  )')");
 
                             t.HasCheckConstraint("CK_Especies_NomeComum_Canonical", "\"NomeComum\" <> '' AND \"NomeComum\" !~ U&'[\\0009-\\000D\\0085\\00A0\\1680\\2000-\\200A\\2028\\2029\\202F\\205F\\3000]' AND \"NomeComum\" !~ '(^ | $|  )'");
-                        });
-                });
-
-            modelBuilder.Entity("GenSW.Domain.Varieties.ImagemVariedade", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Altura")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ArquivoKey")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<bool>("Ativa")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateOnly?>("DataCaptura")
-                        .HasColumnType("date");
-
-                    b.Property<int>("Largura")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Legenda")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("Mime")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
-
-                    b.Property<string>("MiniaturaKey")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<int>("Ordem")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("Representativa")
-                        .HasColumnType("boolean");
-
-                    b.Property<long>("TamanhoBytes")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("VariedadeId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("VariedadeId")
-                        .IsUnique()
-                        .HasDatabaseName("UX_ImagensVariedade_Representativa")
-                        .HasFilter("\"Ativa\" AND \"Representativa\"");
-
-                    b.HasIndex("VariedadeId", "Ordem", "CreatedAtUtc", "Id");
-
-                    b.ToTable("ImagensVariedade", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_ImagensVariedade_Dimensoes", "\"Largura\" BETWEEN 1 AND 2048 AND \"Altura\" BETWEEN 1 AND 2048 AND \"TamanhoBytes\" > 0");
-
-                            t.HasCheckConstraint("CK_ImagensVariedade_Ordem", "\"Ordem\" >= 0");
-
-                            t.HasCheckConstraint("CK_ImagensVariedade_Representativa", "NOT \"Representativa\" OR \"Ativa\"");
                         });
                 });
 
@@ -1187,33 +941,6 @@ namespace GenSW.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("GenSW.Domain.Animals.ImagemAnimal", b =>
-                {
-                    b.HasOne("GenSW.Domain.Animals.Animal", null)
-                        .WithMany()
-                        .HasForeignKey("AnimalId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("GenSW.Domain.Animals.PesagemAnimal", b =>
-                {
-                    b.HasOne("GenSW.Domain.Animals.Animal", null)
-                        .WithMany()
-                        .HasForeignKey("AnimalId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("GenSW.Domain.Animals.ProducaoOvo", b =>
-                {
-                    b.HasOne("GenSW.Domain.Animals.Animal", null)
-                        .WithMany()
-                        .HasForeignKey("AnimalId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("GenSW.Domain.Animals.Prole", b =>
                 {
                     b.HasOne("GenSW.Domain.Animals.Animal", null)
@@ -1247,15 +974,6 @@ namespace GenSW.Infrastructure.Persistence.Migrations
                     b.HasOne("GenSW.Domain.Species.Especie", null)
                         .WithMany()
                         .HasForeignKey("EspecieId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("GenSW.Domain.Varieties.ImagemVariedade", b =>
-                {
-                    b.HasOne("GenSW.Domain.Varieties.Variedade", null)
-                        .WithMany()
-                        .HasForeignKey("VariedadeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
