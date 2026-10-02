@@ -20,6 +20,7 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
+        services.AddScoped<GenSW.Application.Financial.FinancialService>();
         services.AddScoped<IPessoaService, PessoaService>();
         services.AddScoped<IEspecieService, EspecieService>();
         services.AddScoped<IRacaService, RacaService>();
