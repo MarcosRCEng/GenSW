@@ -8,17 +8,19 @@ public sealed class AnimalService : IAnimalService
     private readonly AnimalClassificationValidator classificationValidator;
     private readonly AnimalAutomaticCreator automaticCreator;
     private readonly TimeProvider timeProvider;
+    private readonly IAnimalMutationGuard? mutationGuard;
 
     internal AnimalService(
         IAnimalRepository repository,
         AnimalClassificationValidator classificationValidator,
         AnimalAutomaticCreator automaticCreator,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider, IAnimalMutationGuard? mutationGuard = null)
     {
         this.repository = repository;
         this.classificationValidator = classificationValidator;
         this.automaticCreator = automaticCreator;
         this.timeProvider = timeProvider;
+        this.mutationGuard = mutationGuard;
     }
 
     public async Task<AnimalResult> CreateAsync(CreateAnimalCommand command, CancellationToken cancellationToken = default)
@@ -72,8 +74,10 @@ public sealed class AnimalService : IAnimalService
     public async Task<AnimalResult> UpdateAsync(Guid animalId, UpdateAnimalCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
+        await using var mutation = mutationGuard is null ? null : await mutationGuard.BeginAsync(animalId, cancellationToken);
         ValidateClassificationIds(command.EspecieId, command.RacaId, command.VariedadeId);
         var animal = await GetTrackedAsync(animalId, cancellationToken);
+        if (mutationGuard is not null) await mutationGuard.ValidateAsync(animal, command, cancellationToken);
         await classificationValidator.ValidateUpdateAsync(animal, command.EspecieId, command.RacaId, command.VariedadeId, cancellationToken);
         if (animal.Sexo != command.Sexo && await repository.HasActiveFiliacaoSexConflictAsync(animalId, command.Sexo, cancellationToken))
         {
@@ -95,11 +99,13 @@ public sealed class AnimalService : IAnimalService
 
         await EnsureCodigoInternoIsAvailableAsync(animal.CodigoInterno, animal.Id, cancellationToken);
         await repository.SaveChangesAsync(cancellationToken);
+        if (mutation is not null) await mutation.CommitAsync(cancellationToken);
         return await GetResultAsync(animal.Id, cancellationToken);
     }
 
     public async Task<AnimalResult> SetActiveAsync(Guid animalId, bool ativo, CancellationToken cancellationToken = default)
     {
+        await using var mutation = mutationGuard is null ? null : await mutationGuard.BeginAsync(animalId, cancellationToken);
         var animal = await GetTrackedAsync(animalId, cancellationToken);
         if (ativo)
         {
@@ -111,6 +117,7 @@ public sealed class AnimalService : IAnimalService
         }
 
         await repository.SaveChangesAsync(cancellationToken);
+        if (mutation is not null) await mutation.CommitAsync(cancellationToken);
         return await GetResultAsync(animal.Id, cancellationToken);
     }
 

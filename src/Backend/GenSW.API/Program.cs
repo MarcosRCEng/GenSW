@@ -30,7 +30,18 @@ if (loginPermitLimit <= 0 || loginWindowSeconds <= 0)
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddControllers();
+builder.Services.AddControllers(options => options.Filters.Add<GenSW.API.Controllers.AnimalEvolutionFilter>());
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
+{
+    var original = options.InvalidModelStateResponseFactory;
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var result = original(context);
+        if (result is Microsoft.AspNetCore.Mvc.ObjectResult { Value: Microsoft.AspNetCore.Mvc.ProblemDetails problem })
+            problem.Extensions["code"] = "dados_invalidos";
+        return result;
+    };
+});
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

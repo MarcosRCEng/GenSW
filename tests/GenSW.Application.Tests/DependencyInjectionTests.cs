@@ -43,6 +43,7 @@ public sealed class DependencyInjectionTests
     {
         var services = new ServiceCollection();
         services.AddScoped<IAnimalRepository, UnusedAnimalRepository>();
+        services.AddScoped<IAnimalMutationGuard, UnusedAnimalMutationGuard>();
         services.AddScoped<IAnimalCodeAllocator, UnusedAnimalCodeAllocator>();
         services.AddScoped<IEspecieRepository, UnusedEspecieRepository>();
         services.AddScoped<IRacaRepository, UnusedRacaRepository>();
@@ -53,6 +54,12 @@ public sealed class DependencyInjectionTests
         using var scope = provider.CreateScope();
 
         Assert.IsType<AnimalService>(scope.ServiceProvider.GetRequiredService<IAnimalService>());
+    }
+
+    private sealed class UnusedAnimalMutationGuard : IAnimalMutationGuard
+    {
+        public Task<IAnimalMutationScope> BeginAsync(Guid id, CancellationToken ct) => throw new NotSupportedException();
+        public Task ValidateAsync(Animal animal, UpdateAnimalCommand command, CancellationToken ct) => throw new NotSupportedException();
     }
 
     private sealed class UnusedAnimalRepository : IAnimalRepository

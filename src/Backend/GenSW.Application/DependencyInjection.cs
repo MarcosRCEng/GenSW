@@ -30,7 +30,10 @@ public static class DependencyInjection
             serviceProvider.GetRequiredService<IAnimalRepository>(),
             serviceProvider.GetRequiredService<AnimalClassificationValidator>(),
             serviceProvider.GetRequiredService<AnimalAutomaticCreator>(),
-            serviceProvider.GetRequiredService<TimeProvider>()));
+            serviceProvider.GetRequiredService<TimeProvider>(),
+            serviceProvider.GetRequiredService<IAnimalMutationGuard>()));
+        services.AddScoped<GenSW.Application.Animals.Pesagens.PesagemService>();
+        services.AddScoped<GenSW.Application.Images.ImageService>();
         services.AddScoped<IIdentificacaoAnimalService, IdentificacaoAnimalService>();
         services.AddScoped<IRegistroAnimalService, RegistroAnimalService>();
         services.AddScoped<IFiliacaoAnimalService, FiliacaoAnimalService>();

@@ -5,11 +5,13 @@ public sealed class FiliacaoAnimalService(IFiliacaoAnimalRepository repository, 
 {
  public async Task<FiliacaoAnimalResult> CreateOrReplaceAsync(Guid animalId, CreateFiliacaoAnimalCommand command, CancellationToken ct = default)
  {
-  ArgumentNullException.ThrowIfNull(command); await using var tx = await repository.BeginMutationAsync(ct);
-  _ = await repository.LockAnimalAsync(animalId, ct) ?? throw new AnimalNotFoundException(animalId);
+  ArgumentNullException.ThrowIfNull(command);
+  if (!Enum.IsDefined(command.TipoFiliacao)) throw new ArgumentException("Tipo de filiação inválido.");
+  await using var tx = await repository.BeginMutationAsync(ct);
+  var child = await repository.LockAnimalAsync(animalId, ct) ?? throw new AnimalNotFoundException(animalId);
   var progenitor = await repository.GetAnimalAsync(command.ProgenitorId, ct) ?? throw new AnimalNotFoundException(command.ProgenitorId);
-  var expected = command.TipoFiliacao == TipoFiliacaoAnimal.Pai ? SexoAnimal.Macho : SexoAnimal.Femea;
-  if (progenitor.Sexo != expected) throw new FiliacaoAnimalConflictException("Progenitor sex is incompatible with filiation type.");
+  if (!ProgenitorEligibility.Predicate(child, command.TipoFiliacao).Compile()(progenitor))
+      throw new FiliacaoAnimalConflictException("Progenitor deve estar ativo, ter sexo e espécie compatíveis e a mesma raça quando informada no descendente.");
   if (await repository.WouldCreateCycleAsync(animalId, command.ProgenitorId, ct)) throw new FiliacaoAnimalConflictException("Filiation would create a genealogical cycle.");
   var current = await repository.GetActiveAsync(animalId, command.TipoFiliacao, ct);
   var other = await repository.GetActiveAsync(animalId, command.TipoFiliacao == TipoFiliacaoAnimal.Pai ? TipoFiliacaoAnimal.Mae : TipoFiliacaoAnimal.Pai, ct);

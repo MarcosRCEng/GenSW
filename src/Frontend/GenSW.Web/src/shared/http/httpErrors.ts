@@ -1,7 +1,7 @@
 export class HttpError extends Error {
   readonly status: number
 
-  constructor(status: number, statusText?: string) {
+  constructor(status: number, statusText?: string, public readonly detail?: string, public readonly code?: string) {
     const suffix = statusText?.trim() ? `: ${statusText.trim()}` : ''
     super(`A API respondeu com status ${status}${suffix}.`)
     this.name = 'HttpError'

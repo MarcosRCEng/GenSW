@@ -1,13 +1,42 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { isHttpError } from '../../../../shared/http/httpErrors'
-import { createFiliation, getPedigree, listFiliations, type Filiation, type FiliationType, type Pedigree } from '../services/filiationsService'
-const control='mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900'; const button='rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60'
-const label=(t:FiliationType)=>t===1?'Pai':'Mãe'
-function Tree({item}:{item:Pedigree}) { return <li><strong>{item.nome ?? item.codigoInterno}</strong>{item.progenitores.length ? <ul className="ml-5 list-disc">{item.progenitores.map(x=><Tree key={x.animalId} item={x}/>)}</ul>:null}</li> }
-export function AnimalFiliationsPanel({animalId}:{animalId:string}) {
- const [params]=useSearchParams();const paiSugerido=params.get('paiSugerido'),maeSugerida=params.get('maeSugerida');const [items,setItems]=useState<Filiation[]|null>(null),[progenitorId,setProgenitorId]=useState(''),[tipo,setTipo]=useState<FiliationType>(1),[error,setError]=useState<string|null>(null),[saving,setSaving]=useState(false),[pedigree,setPedigree]=useState<Pedigree|null>(null)
- const load=()=>{setItems(null);void listFiliations(animalId).then(setItems).catch(()=>setError('Não foi possível carregar a genealogia.'))};useEffect(load,[animalId])
- const submit=(e:FormEvent)=>{e.preventDefault();if(!progenitorId.trim())return setError('Informe o identificador do progenitor.');setSaving(true);setError(null);void createFiliation(animalId,{progenitorId:progenitorId.trim(),tipoFiliacao:tipo,dataRegistro:null}).then(()=>{setProgenitorId('');load()}).catch(e=>setError(isHttpError(e)&&e.status===409?'A filiação viola uma regra genealógica ou de sexo.':'Não foi possível salvar a filiação.')).finally(()=>setSaving(false))}
- return <section aria-labelledby="animal-filiations-heading" className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><h2 className="text-xl font-bold" id="animal-filiations-heading">Genealogia</h2><p className="mt-1 text-sm text-slate-600">A correção preserva o histórico da filiação anterior.</p>{(paiSugerido||maeSugerida)?<div className="mt-3 rounded border border-amber-300 bg-amber-50 p-3 text-sm">Progenitores sugeridos pelo cruzamento: {paiSugerido&&<button type="button" onClick={()=>{setTipo(1);setProgenitorId(paiSugerido)}}>usar Pai sugerido</button>} {maeSugerida&&<button type="button" onClick={()=>{setTipo(2);setProgenitorId(maeSugerida)}}>usar Mãe sugerida</button>}. Confirme cada vínculo em “Definir”; nenhuma filiação é automática.</div>:null}{error?<p className="mt-3 text-red-700" role="alert">{error}</p>:null}<form className="mt-4 grid gap-3 sm:grid-cols-3" onSubmit={submit}><select className={control} value={tipo} onChange={e=>setTipo(Number(e.target.value) as FiliationType)}><option value="1">Pai</option><option value="2">Mãe</option></select><input className={control} placeholder="ID do progenitor" value={progenitorId} onChange={e=>setProgenitorId(e.target.value)}/><button className={button} disabled={saving} type="submit">Definir</button></form>{items===null?<p className="mt-4" role="status">Carregando genealogia…</p>:<ul className="mt-5 space-y-2">{items.length===0?<li>Sem filiações cadastradas.</li>:items.map(x=><li className="rounded border p-3" key={x.id}><strong>{label(x.tipoFiliacao)}</strong> — {x.progenitorId} <span className="text-slate-600">({x.ativa?'Atual':'Histórico'})</span></li>)}</ul>}<button className="mt-4 rounded border px-3 py-2 text-sm" type="button" onClick={()=>void getPedigree(animalId).then(setPedigree).catch(()=>setError('Não foi possível carregar o pedigree.'))}>Visualizar pedigree</button>{pedigree?<ul className="mt-3 list-disc pl-5"><Tree item={pedigree}/></ul>:null}</section>
+import { useEffect, useId, useState, type FormEvent } from 'react'
+import { createFiliation, listFiliations, type Filiation, type FiliationType } from '../services/filiationsService'
+import { api, message, type Page, type Candidate } from '../../evolution/api'
+import { AnimalTree } from '../../evolution/AnimalTree'
+import '../../evolution/evolution.css'
+
+export function AnimalFiliationsPanel({ animalId, pendingClassification = false }: { animalId: string; pendingClassification?: boolean }) {
+  const [items, setItems] = useState<Filiation[]>([]), [type, setType] = useState<FiliationType>(1)
+  const [search, setSearch] = useState(''), [selected, setSelected] = useState<Candidate | null>(null), [index, setIndex] = useState(-1)
+  const [candidates, setCandidates] = useState<Page<Candidate> | null>(null), [page, setPage] = useState(1), [revision, setRevision] = useState(0)
+  const [error, setError] = useState(''), [busy, setBusy] = useState(false), [showTree, setShowTree] = useState(false)
+  const listId = useId()
+  useEffect(() => { let current = true; void listFiliations(animalId).then(x => { if (current) setItems(x) }).catch(e => { if (current) setError(message(e)) }); return () => { current = false } }, [animalId, revision])
+  useEffect(() => {
+    const controller = new AbortController(); setCandidates(null); setIndex(-1)
+    if (pendingClassification) return () => controller.abort()
+    const timer = setTimeout(() => {
+      const query = new URLSearchParams({ tipoFiliacao: String(type), search, page: String(page), pageSize: '10' })
+      void api<Page<Candidate>>(`/animais/${animalId}/progenitores-elegiveis?${query}`, controller.signal).then(x => { if (!controller.signal.aborted) setCandidates(x) }).catch(e => { if (!controller.signal.aborted) setError(message(e)) })
+    }, 300)
+    return () => { clearTimeout(timer); controller.abort() }
+  }, [animalId, type, search, page, revision, pendingClassification])
+  async function submit(e: FormEvent) {
+    e.preventDefault(); if (!selected || pendingClassification) return
+    setBusy(true); setError('')
+    try { await createFiliation(animalId, { progenitorId: selected.id, tipoFiliacao: type, dataRegistro: null }); setSelected(null); setSearch(''); setRevision(x => x + 1) }
+    catch (e) { setError(message(e)); setSelected(null); setRevision(x => x + 1) } finally { setBusy(false) }
+  }
+  function choose(candidate: Candidate) { setSelected(candidate); setIndex(-1) }
+  return <section className="animal-panel" aria-label="Genealogia"><h2>Genealogia</h2><p>A correção preserva a filiação anterior no histórico.</p>{pendingClassification && <p className="animal-notice">Salve as alterações de espécie, raça ou sexo antes de pesquisar e definir progenitores.</p>}{error && <p role="alert">{error}</p>}
+    <form onSubmit={e => void submit(e)}><fieldset disabled={busy || pendingClassification}><div className="animal-fields"><label>Papel do progenitor<select value={type} onChange={e => { setType(Number(e.target.value) as FiliationType); setSelected(null); setPage(1) }}><option value="1">Pai</option><option value="2">Mãe</option></select></label><label>Pesquisar progenitor por nome ou código<input role="combobox" aria-autocomplete="list" aria-expanded={!!candidates && !selected} aria-controls={listId} aria-activedescendant={index >= 0 ? `${listId}-${index}` : undefined} value={search} onChange={e => { setSearch(e.target.value); setSelected(null); setPage(1) }} onKeyDown={e => {
+      if (e.key === 'ArrowDown') { e.preventDefault(); setIndex(x => Math.min((candidates?.items.length ?? 0) - 1, x + 1)) }
+      if (e.key === 'ArrowUp') { e.preventDefault(); setIndex(x => Math.max(0, x - 1)) }
+      if (e.key === 'Enter' && index >= 0 && candidates?.items[index]) { e.preventDefault(); choose(candidates.items[index]) }
+      if (e.key === 'Escape') { setSelected(null); setIndex(-1) }
+    }} /></label></div>
+    {!pendingClassification && !selected && (!candidates ? <p role="status">Buscando progenitores…</p> : <><ul id={listId} role="listbox" aria-label="Progenitores elegíveis" className="candidate-options">{candidates.items.map((candidate, i) => <li role="option" aria-selected={index === i} id={`${listId}-${i}`} key={candidate.id} onClick={() => choose(candidate)}>{candidate.codigoInterno} — {candidate.nome || 'Sem nome'}</li>)}</ul>{!candidates.items.length && <p>Nenhum progenitor elegível para esta busca.</p>}<div className="animal-actions"><button type="button" disabled={page === 1} onClick={() => setPage(x => x - 1)}>Candidatos anteriores</button><span>Página {page}</span><button type="button" disabled={page >= candidates.totalPages} onClick={() => setPage(x => x + 1)}>Próximos candidatos</button></div></>)}
+    {selected && <p role="status">Selecionado: {selected.codigoInterno} — {selected.nome || 'Sem nome'} <button type="button" onClick={() => setSelected(null)}>Trocar</button></p>}<button type="submit" disabled={!selected}>Definir {type === 1 ? 'pai' : 'mãe'}</button></fieldset></form>
+    <ul className="mt-4 space-y-2">{items.map(x => <li key={x.id}>{x.tipoFiliacao === 1 ? 'Pai' : 'Mãe'}: <strong>{x.progenitor?.codigoInterno || 'Progenitor histórico'}</strong> {x.progenitor?.nome} · {x.ativa ? 'Atual' : 'Histórico'}{x.progenitor?.ativo === false && ' · Inativo'}</li>)}</ul>{!items.length && <p>Sem filiações cadastradas.</p>}
+    <button className="mt-4" type="button" onClick={() => setShowTree(x => !x)}>{showTree ? 'Ocultar árvore' : 'Árvore genealógica'}</button>{showTree && <AnimalTree key={revision} animalId={animalId} />}
+  </section>
 }

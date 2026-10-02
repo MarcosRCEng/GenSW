@@ -69,9 +69,16 @@ public static class DependencyInjection
         services.AddScoped<IRacaRepository, RacaRepository>();
         services.AddScoped<IVariedadeRepository, VariedadeRepository>();
         services.AddScoped<IAnimalRepository, AnimalRepository>();
+        services.AddScoped<IAnimalMutationGuard, AnimalMutationGuard>();
+        services.AddScoped<GenSW.Application.Images.IImageRepository, GenSW.Infrastructure.Images.ImageRepository>();
+        services.AddSingleton<GenSW.Application.Images.IPrivateImageStorage, GenSW.Infrastructure.Images.PrivateImageStorage>();
+        services.AddSingleton<GenSW.Application.Images.IImageProcessor, GenSW.Infrastructure.Images.MagickImageProcessor>();
+        services.AddScoped<GenSW.Application.Animals.Pesagens.IPesagemRepository, GenSW.Infrastructure.Animals.Pesagens.PesagemRepository>();
         services.AddScoped<IIdentificacaoAnimalRepository, IdentificacaoAnimalRepository>();
         services.AddScoped<IRegistroAnimalRepository, RegistroAnimalRepository>();
         services.AddScoped<IFiliacaoAnimalRepository, FiliacaoAnimalRepository>();
+        services.AddScoped<IProgenitorQuery, ProgenitorQuery>();
+        services.AddScoped<GenSW.Application.Animals.Tree.IAnimalTreeQuery, AnimalTreeQuery>();
         services.AddScoped<ICruzamentoRepository, CruzamentoRepository>();
         services.AddScoped<ICicloReprodutivoRepository, CicloReprodutivoRepository>();
         services.AddScoped<IProleRepository, ProleRepository>();
