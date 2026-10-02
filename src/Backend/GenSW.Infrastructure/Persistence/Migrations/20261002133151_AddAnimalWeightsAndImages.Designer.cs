@@ -3,6 +3,7 @@ using System;
 using GenSW.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GenSW.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(GenSWDbContext))]
-    partial class GenSWDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261002133151_AddAnimalWeightsAndImages")]
+    partial class AddAnimalWeightsAndImages
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -270,16 +273,12 @@ namespace GenSW.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ProgenitorId");
+
                     b.HasIndex("AnimalId", "TipoFiliacao")
                         .IsUnique()
                         .HasDatabaseName("UX_FiliacoesAnimal_Animal_Tipo_Ativa")
                         .HasFilter("\"Ativa\" = TRUE");
-
-                    b.HasIndex("ProgenitorId");
-
-                    b.HasIndex("ProgenitorId", "AnimalId")
-                        .HasDatabaseName("IX_FiliacoesAnimal_DescendentesAtivos")
-                        .HasFilter("\"Ativa\"");
 
                     b.ToTable("FiliacoesAnimal", null, t =>
                         {

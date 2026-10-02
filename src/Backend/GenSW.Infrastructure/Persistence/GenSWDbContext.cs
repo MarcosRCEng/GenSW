@@ -22,6 +22,9 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
     public DbSet<Variedade> Variedades => Set<Variedade>();
 
     public DbSet<Animal> Animais => Set<Animal>();
+    public DbSet<PesagemAnimal> PesagensAnimal => Set<PesagemAnimal>();
+    public DbSet<ImagemAnimal> ImagensAnimal => Set<ImagemAnimal>();
+    public DbSet<ImagemVariedade> ImagensVariedade => Set<ImagemVariedade>();
 
     public DbSet<IdentificacaoAnimal> IdentificacoesAnimal => Set<IdentificacaoAnimal>();
 
@@ -36,6 +39,25 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        ImageModelConfiguration.Configure(builder);
+        builder.Entity<FiliacaoAnimal>().HasIndex(x => new { x.ProgenitorId, x.AnimalId }).HasFilter("\"Ativa\"").HasDatabaseName("IX_FiliacoesAnimal_DescendentesAtivos");
+        builder.Entity<FiliacaoAnimal>().HasIndex(x => x.ProgenitorId);
+        builder.Entity<PesagemAnimal>(entity =>
+        {
+            entity.ToTable("PesagensAnimal", table =>
+            {
+                table.HasCheckConstraint("CK_PesagensAnimal_Peso", "\"PesoGramas\" BETWEEN 0.01 AND 99999999.99");
+                table.HasCheckConstraint("CK_PesagensAnimal_Marco", "\"TipoMarco\" BETWEEN 1 AND 6");
+                table.HasCheckConstraint("CK_PesagensAnimal_Idade", "(\"TipoMarco\" = 3 AND \"IdadeReferenciaDias\" IS NOT NULL AND \"IdadeReferenciaDias\" >= 0) OR (\"TipoMarco\" <> 3 AND \"IdadeReferenciaDias\" IS NULL)");
+                table.HasCheckConstraint("CK_PesagensAnimal_Outro", "\"TipoMarco\" <> 6 OR (\"DescricaoMarco\" IS NOT NULL AND length(trim(\"DescricaoMarco\")) > 0)");
+            });
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.PesoGramas).HasPrecision(10, 2);
+            entity.Property(x => x.DescricaoMarco).HasMaxLength(100);
+            entity.Property(x => x.Observacao).HasMaxLength(2000);
+            entity.HasOne<Animal>().WithMany().HasForeignKey(x => x.AnimalId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(x => new { x.AnimalId, x.DataMedicao, x.Id });
+        });
         var usesNpgsql = Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL";
         var commonNameCanonicalConstraint = usesNpgsql
             ? "\"NomeComum\" <> '' AND \"NomeComum\" !~ U&'[\\0009-\\000D\\0085\\00A0\\1680\\2000-\\200A\\2028\\2029\\202F\\205F\\3000]' AND \"NomeComum\" !~ '(^ | $|  )'"

@@ -75,7 +75,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          for executable in initdb pg_ctl createdb; do
+          for executable in initdb pg_ctl createdb pg_dump pg_restore; do
             path="$GENSW_TEST_POSTGRES_BIN/$executable"
             if [ ! -x "$path" ]; then
               echo "Required PostgreSQL executable not found: $path" >&2
@@ -107,6 +107,8 @@ jobs:
           printf 'GENSW_TEST_POSTGRES_SOCKET_DIRECTORY=%s\n' "$socket_directory" >> "$GITHUB_ENV"
           ln -sf "$GENSW_TEST_POSTGRES_BIN/initdb" "$diagnostic_bin/initdb"
           ln -sf "$GENSW_TEST_POSTGRES_BIN/createdb" "$diagnostic_bin/createdb"
+          ln -sf "$GENSW_TEST_POSTGRES_BIN/pg_dump" "$diagnostic_bin/pg_dump"
+          ln -sf "$GENSW_TEST_POSTGRES_BIN/pg_restore" "$diagnostic_bin/pg_restore"
 
           cat > "$diagnostic_bin/pg_ctl" <<'EOF'
           #!/usr/bin/env bash
