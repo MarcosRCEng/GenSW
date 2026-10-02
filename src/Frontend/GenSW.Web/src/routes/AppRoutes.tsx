@@ -1,4 +1,5 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { FinancialPage } from '../features/financial/FinancialPage'
 import { AuthenticatedHomePage } from '../features/auth/pages/AuthenticatedHomePage'
 import { AnimalFormPage } from '../features/animals/pages/AnimalFormPage'
 import { AnimalsListPage } from '../features/animals/pages/AnimalsListPage'
@@ -56,6 +57,7 @@ export function AppRoutes() {
       </Route>
       <Route element={<ProtectedRoute />}>
         <Route element={<AuthenticatedHomePage />} path="/" />
+        <Route element={<FinancialPage />} path="/financeiro" />
         <Route element={<PeopleListPage />} path="/pessoas" />
         <Route element={<PeopleFormPage />} path="/pessoas/nova" />
         <Route element={<PeopleFormPage />} path="/pessoas/:id/editar" />

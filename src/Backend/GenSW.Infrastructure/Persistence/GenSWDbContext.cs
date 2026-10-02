@@ -40,6 +40,7 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        FinancialModelConfiguration.Configure(builder, Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL");
         ImageModelConfiguration.Configure(builder);
         builder.Entity<FiliacaoAnimal>().HasIndex(x => new { x.ProgenitorId, x.AnimalId }).HasFilter("\"Ativa\"").HasDatabaseName("IX_FiliacoesAnimal_DescendentesAtivos");
         builder.Entity<FiliacaoAnimal>().HasIndex(x => x.ProgenitorId);
