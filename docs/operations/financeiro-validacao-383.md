@@ -13,7 +13,7 @@ Branch `codex/383-financeiro-mvp`, derivada de `codex/377-planejamento-financeir
 | `d168c7c` | Frontend navegável, referências pesquisáveis e prévias |
 | `2551ff0` | Precisão explícita, testes de concorrência, rollback e autorização |
 
-Documentação operacional: [financeiro-caixa.md](financeiro-caixa.md). O commit desta documentação e o resultado de push/revisão são registrados no Redmine. Não houve merge nem publicação em produção. `AGENTS.md`, `.gensw/` e evidências locais não são versionados. Arquivos e serviços locais preexistentes foram preservados; #363 não foi alterada.
+Documentação operacional: [financeiro-caixa.md](financeiro-caixa.md). Documentação inicial no commit `20841d4`, push confirmado e [PR #16 em rascunho](https://github.com/MarcosRCEng/GenSW/pull/16). Commits subsequentes e resultado final de CI são registrados no Redmine/PR. Não houve merge nem publicação em produção. `AGENTS.md`, `.gensw/` e evidências locais não são versionados. Arquivos e serviços locais preexistentes foram preservados; #363 não foi alterada.
 
 ## Validação automatizada efetivamente executada
 
@@ -44,6 +44,10 @@ npm run build
 `dotnet test GenSW.sln` também passou antes dos últimos casos adicionados (460 testes). A tentativa posterior no diretório Release padrão foi bloqueada por assemblies usados pela API preexistente na porta 7001. O resultado final de 464 usa diretório de artefatos isolado, sem interromper esse serviço. Uma tentativa intermediária de artefatos mais profundos falhou em dois testes preexistentes que localizam arquivos pela profundidade do caminho; o comando final acima mantém a profundidade esperada e passou integralmente.
 
 Logs locais: `.gensw/finance-383/backend-verified-tests.log`, `backend-build.log`, `frontend-final-tests.log`, `frontend-final-lint.log`, `frontend-final-build.log`; TRX em `.gensw/financial-test-results/verified/`.
+
+O [primeiro CI remoto](https://github.com/MarcosRCEng/GenSW/actions/runs/37077952448), em Ubuntu/PostgreSQL 16, aprovou Frontend, Domain, Application e API, mas falhou em uma asserção de Infrastructure. O relógio congelado de teste produz horários UTC iguais; o histórico desempata por UUID, portanto não se pode exigir que o último item seja o ajuste. A asserção foi corrigida para exigir exatamente dois registros, uma criação e um ajuste, mantendo as verificações de saldos, unicidade e snapshot. Código de produção não precisou mudar. Após a correção, os **13 testes financeiros de infraestrutura passaram novamente** no PostgreSQL local, sem falhas/ignorados (`--filter FullyQualifiedName~FinancialTests`, demais opções Release/artefatos iguais; log `backend-ci-correction.log`, TRX em `.gensw/financial-test-results/ci-correction/`). O resultado do novo CI é registrado no Redmine/PR, sem considerar esta primeira execução aprovada.
+
+Conferência final do Redmine detectou que a criação de #383 havia deixado o status como Novo, apesar da intenção de iniciar a execução. A divergência foi registrada e corrigida para Em andamento antes de registrar o resultado técnico. #378–#382 já estavam Em andamento antes do trabalho; #383 foi criada e o design aprovado foi registrado antes da investigação. A entrega não omite essa falha de transição inicial.
 
 PostgreSQL **18 real**, com clusters efêmeros do helper existente. As suítes financeiras verificam:
 

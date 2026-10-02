@@ -91,7 +91,11 @@ public sealed class FinancialTests : IAsyncLifetime
         Assert.Single(await Task.WhenAll(Adjust("a"),Adjust("b")),x=>x);
         var current = await Summary(October); Assert.Equal(200, current.Receitas); Assert.Equal(250,current.Despesas); Assert.Equal(300,current.SaldoFinal);
         Assert.Equal(first, await Run(s=>s.FechamentoAsync(August,default)));
-        var audit = await Run(s=>s.HistoricoAsync(original.Id,default)); Assert.Equal("Ajustado",audit[^1].Operacao);
+        // This clock is frozen: tied UTC timestamps are sorted by UUID, not operation order.
+        var audit = await Run(s=>s.HistoricoAsync(original.Id,default));
+        Assert.Equal(2, audit.Count);
+        Assert.Single(audit, x => x.Operacao == "Criado");
+        Assert.Single(audit, x => x.Operacao == "Ajustado");
         Assert.True((await Run(s=>s.GetAsync(original.Id,default))).Revertido);
     }
     [Fact]
