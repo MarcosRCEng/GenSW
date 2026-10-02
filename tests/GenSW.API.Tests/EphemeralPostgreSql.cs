@@ -22,13 +22,12 @@ internal sealed class EphemeralPostgreSql : IAsyncDisposable
         this.rootDirectory = rootDirectory;
         dataDirectory = Path.Combine(rootDirectory, "data");
         Port = port;
-        ConnectionString =
-            $"Host=127.0.0.1;Port={port};Database={DatabaseName};Username={UserName};Pooling=False;Timeout=5;Command Timeout=30";
     }
 
-    public int Port { get; }
+    public int Port { get; private set; }
 
-    public string ConnectionString { get; }
+    public string ConnectionString =>
+        $"Host=127.0.0.1;Port={Port};Database={DatabaseName};Username={UserName};Pooling=False;Timeout=5;Command Timeout=30";
 
     public Task BackupAsync(string destination) => RunAsync("pg_dump",
         ["-h", "127.0.0.1", "-p", Port.ToString(), "-U", UserName, "-Fc", "-f", destination, DatabaseName], TimeSpan.FromSeconds(30));
@@ -36,7 +35,7 @@ internal sealed class EphemeralPostgreSql : IAsyncDisposable
     public Task RestoreAsync(string source) => RunAsync("pg_restore",
         ["-h", "127.0.0.1", "-p", Port.ToString(), "-U", UserName, "--clean", "--if-exists", "-d", DatabaseName, source], TimeSpan.FromSeconds(30));
 
-    public static async Task<EphemeralPostgreSql> StartAsync()
+    public static async Task<EphemeralPostgreSql> StartAsync(int? initialPort = null)
     {
         var binDirectory = FindPostgreSqlBinDirectory();
 
@@ -65,16 +64,26 @@ internal sealed class EphemeralPostgreSql : IAsyncDisposable
                 ],
                 TimeSpan.FromMinutes(1));
 
-            await instance.RunAsync(
-                "pg_ctl",
-                [
-                    "-D", instance.dataDirectory,
-                    "-l", Path.Combine(rootDirectory, "postgresql.log"),
-                    "-o", $"-p {instance.Port} -h 127.0.0.1 -F",
-                    "-w", "start",
-                ],
-                TimeSpan.FromMinutes(1),
-                redirectOutput: false);
+            // Recheck after initdb and retry only an observed bind collision: releasing
+            // a probe socket cannot reserve its port across parallel test processes.
+            instance.Port = initialPort ?? GetAvailablePort();
+            var logPath = Path.Combine(rootDirectory, "postgresql.log");
+            for (var attempt = 0; ; attempt++)
+            {
+                var logOffset = File.Exists(logPath) ? File.ReadAllText(logPath).Length : 0;
+                try
+                {
+                    await instance.RunAsync("pg_ctl",
+                        ["-D", instance.dataDirectory, "-l", logPath,
+                         "-o", $"-p {instance.Port} -h 127.0.0.1 -F", "-w", "start"],
+                        TimeSpan.FromMinutes(1), redirectOutput: false);
+                    break;
+                }
+                catch (InvalidOperationException) when (attempt < 2 && PortWasOccupied(logPath, logOffset, instance.Port))
+                {
+                    instance.Port = GetAvailablePort();
+                }
+            }
             instance.serverStarted = true;
 
             await instance.RunAsync(
@@ -94,6 +103,21 @@ internal sealed class EphemeralPostgreSql : IAsyncDisposable
             await instance.DisposeAsync();
             throw;
         }
+    }
+
+    private static bool PortWasOccupied(string logPath, int offset, int port)
+    {
+        if (!File.Exists(logPath)) return false;
+        var log = File.ReadAllText(logPath);
+        var recent = log[Math.Min(offset, log.Length)..];
+        if (recent.Contains("Address already in use", StringComparison.OrdinalIgnoreCase)) return true;
+        // Windows can report a localized access-denied error for an exclusive
+        // socket. Confirm a listener occupies the port rather than retrying any
+        // permission or configuration error.
+        return recent.Contains("could not bind IPv4 address", StringComparison.OrdinalIgnoreCase)
+            && System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners()
+                .Any(endpoint => endpoint.Port == port &&
+                    (IPAddress.IsLoopback(endpoint.Address) || endpoint.Address.Equals(IPAddress.Any)));
     }
 
     public async ValueTask DisposeAsync()

@@ -3,10 +3,33 @@ using GenSW.Application.Animals.Proles;
 using GenSW.Domain.Animals;
 using GenSW.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using GenSW.Application.Animals;
+using Npgsql;
 
 namespace GenSW.Infrastructure.Animals.Proles;
 public sealed class ProleRepository(GenSWDbContext context) : IProleRepository
 {
+ public async Task<IAnimalMutationScope> BeginMutationAsync(Guid? cicloId, Guid? proleId, CancellationToken ct = default)
+ {
+  var cycle = cicloId ?? await context.Proles.AsNoTracking().Where(x => x.Id == proleId)
+      .Select(x => (Guid?)x.CicloReprodutivoId).SingleOrDefaultAsync(ct)
+      ?? throw new ProleNotFoundException(proleId!.Value);
+  var transaction = await context.Database.BeginTransactionAsync(ct);
+  try
+  {
+   await context.Database.ExecuteSqlRawAsync("SET LOCAL lock_timeout = '5s'", ct);
+   await context.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM \"CiclosReprodutivos\" WHERE \"Id\" = {cycle} FOR UPDATE", ct);
+   if (proleId is {} id)
+    await context.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM \"Proles\" WHERE \"Id\" = {id} FOR UPDATE", ct);
+   return new AnimalMutationScope(transaction);
+  }
+  catch (PostgresException e) when (e.SqlState == PostgresErrorCodes.LockNotAvailable)
+  {
+   await transaction.DisposeAsync();
+   throw new AnimalEvolutionException(409, "conflito_transitorio", "Outra operação está em andamento. Atualize e tente novamente.");
+  }
+  catch { await transaction.DisposeAsync(); throw; }
+ }
  public Task AddAsync(Prole item,CancellationToken ct=default)=>context.Proles.AddAsync(item,ct).AsTask();
  public Task<Prole?> GetForUpdateAsync(Guid id,CancellationToken ct=default)=>context.Proles.SingleOrDefaultAsync(x=>x.Id==id,ct);
  public Task<ProleResult?> GetAsync(Guid id,CancellationToken ct=default)=>Read(context.Proles.AsNoTracking().Where(x=>x.Id==id)).SingleOrDefaultAsync(ct);
