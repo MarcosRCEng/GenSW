@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { vi } from 'vitest'
 import {
@@ -25,7 +25,10 @@ import { createEspecie, getEspecieById, listEspecies, setEspecieAtivo, updateEsp
 import type { Especie } from '../features/species/types/species'
 import { createVariedade, getVariedadeById, listVariedades, setVariedadeAtivo, updateVariedade } from '../features/varieties/services/varietiesService'
 import type { Variedade } from '../features/varieties/types/varieties'
+import { httpRequest } from '../shared/http/httpClient'
 import { AppRoutes } from './AppRoutes'
+
+vi.mock('../shared/http/httpClient', () => ({ httpRequest: vi.fn() }))
 
 vi.mock('../features/auth/services/authService', () => ({
   bootstrapSession: vi.fn(),
@@ -114,6 +117,14 @@ describe('AppRoutes', () => {
     vi.mocked(loginSession).mockResolvedValue(currentUser)
     vi.mocked(logoutSession).mockResolvedValue()
     vi.mocked(subscribeToSessionInvalidation).mockReturnValue(vi.fn())
+    vi.mocked(httpRequest).mockImplementation(async (path) => {
+      if (path === '/financeiro/configuracao') return null
+      if (path === '/financeiro/categorias' || path === '/financeiro/fechamentos') return []
+      if (['/cruzamentos', '/ciclos-reprodutivos', '/proles'].includes(path)) {
+        return { items: [], page: 1, pageSize: 25, totalItems: 0, totalPages: 0 }
+      }
+      throw new Error(`Requisição inesperada no teste: ${path}`)
+    })
     vi.mocked(createPessoa).mockResolvedValue(activePerson)
     vi.mocked(getPessoaById).mockResolvedValue(activePerson)
     vi.mocked(setPessoaAtivo).mockResolvedValue(activePerson)
@@ -318,17 +329,23 @@ describe('AppRoutes', () => {
     expect(getVariedadeById).toHaveBeenCalledWith('variety-1')
   })
 
-  it('expõe os cadastros na navegação da home autenticada', async () => {
+  it('mantém os recursos atuais na região de cadastros básicos', async () => {
     vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
     renderApplication('/')
 
-    const cadastros = await screen.findByRole('navigation', { name: 'Cadastros' })
-    expect(cadastros).toHaveTextContent('Pessoas')
-    expect(cadastros).toHaveTextContent('Raças')
-    expect(cadastros).toHaveTextContent('Variedades')
-    expect(cadastros.querySelector('a[href="/pessoas"]')).toBeInTheDocument()
-    expect(cadastros.querySelector('a[href="/racas"]')).toBeInTheDocument()
-    expect(cadastros.querySelector('a[href="/variedades"]')).toBeInTheDocument()
+    const cadastros = await screen.findByRole('region', { name: 'Cadastros básicos' })
+    const basicLinks = [
+      ['Pessoas', '/pessoas'],
+      ['Espécies', '/especies'],
+      ['Raças', '/racas'],
+      ['Variedades', '/variedades'],
+      ['Animais', '/animais'],
+    ]
+    for (const [name, path] of basicLinks) {
+      expect(within(cadastros).getByRole('link', { name })).toHaveAttribute('href', path)
+    }
+    expect(cadastros).not.toHaveTextContent(/Financeiro|Fluxo de caixa|Cruzamentos/)
+    expect(cadastros.querySelector('a[href="/financeiro"]')).not.toBeInTheDocument()
   })
 
   it('navega da home autenticada para raças e variedades', async () => {
@@ -366,13 +383,126 @@ describe('AppRoutes', () => {
     expect(getAnimalById).toHaveBeenCalledWith('animal-1')
   })
 
-  it('expõe Animais em Cadastros e navega para a lista a partir da home autenticada', async () => {
+  it('expõe Animais em Cadastros básicos e navega para a lista a partir da home autenticada', async () => {
     vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
     renderApplication('/')
-    const cadastros = await screen.findByRole('navigation', { name: 'Cadastros' })
-    const animalsLink = cadastros.querySelector('a[href="/animais"]')
-    expect(animalsLink).toHaveTextContent('Animais')
-    fireEvent.click(animalsLink!)
+    const cadastros = await screen.findByRole('region', { name: 'Cadastros básicos' })
+    const animalsLink = within(cadastros).getByRole('link', { name: 'Animais' })
+    expect(animalsLink).toHaveAttribute('href', '/animais')
+    fireEvent.click(animalsLink)
     expect(await screen.findByRole('heading', { name: 'Animais' })).toBeInTheDocument()
+  })
+
+  it('oferece Fluxo de caixa somente no módulo Financeiro de Processos gerenciais', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
+    renderApplication('/')
+
+    const management = await screen.findByRole('region', { name: 'Processos gerenciais' })
+    const financial = within(management).getByRole('article', { name: 'Financeiro' })
+    expect(within(financial).getByRole('heading', { name: 'Financeiro' })).toBeInTheDocument()
+    expect(financial).toHaveTextContent('Disponível')
+    const cashFlow = within(financial).getByRole('link', { name: 'Fluxo de caixa' })
+    expect(cashFlow).toHaveAttribute('href', '/financeiro')
+    expect(screen.getAllByRole('link', { name: 'Fluxo de caixa' })).toEqual([cashFlow])
+
+    const basic = screen.getByRole('region', { name: 'Cadastros básicos' })
+    expect(basic).not.toHaveTextContent(/Financeiro|Fluxo de caixa/)
+    expect(basic.querySelector('a[href="/financeiro"]')).not.toBeInTheDocument()
+  })
+
+  it('abre Fluxo de caixa pela home e permite voltar ao início', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
+    renderApplication('/')
+
+    fireEvent.click(await screen.findByRole('link', { name: 'Fluxo de caixa' }))
+
+    expect(await screen.findByRole('heading', { name: 'Fluxo de caixa' })).toBeInTheDocument()
+    expect(screen.getByText('Financeiro')).toBeInTheDocument()
+    await screen.findByText('Um Admin precisa configurar o início do controle.')
+    const homeLink = screen.getByRole('link', { name: /Voltar ao início/ })
+    expect(homeLink).toHaveAttribute('href', '/')
+    fireEvent.click(homeLink)
+
+    expect(await screen.findByRole('region', { name: 'Processos gerenciais' })).toBeInTheDocument()
+  })
+
+  it('mantém o acesso direto a /financeiro para usuário autenticado', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
+    renderApplication('/financeiro')
+
+    expect(await screen.findByRole('heading', { name: 'Fluxo de caixa' })).toBeInTheDocument()
+    await screen.findByText('Um Admin precisa configurar o início do controle.')
+  })
+
+  it('protege /financeiro para usuário anônimo sem carregar dados financeiros', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(null)
+    renderApplication('/financeiro')
+
+    expect(await screen.findByRole('heading', { name: 'Acessar o sistema' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Fluxo de caixa' })).not.toBeInTheDocument()
+    expect(httpRequest).not.toHaveBeenCalled()
+  })
+
+  it('agrupa Cruzamentos, Ciclos reprodutivos e Proles no módulo Reprodução', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
+    renderApplication('/')
+
+    const operations = await screen.findByRole('region', { name: 'Produção e operações' })
+    const reproduction = within(operations).getByRole('article', { name: 'Reprodução' })
+    expect(reproduction).toHaveTextContent('Disponível')
+    for (const [name, path] of [
+      ['Cruzamentos', '/cruzamentos'],
+      ['Ciclos reprodutivos', '/ciclos-reprodutivos'],
+      ['Proles', '/proles'],
+    ]) {
+      expect(within(reproduction).getByRole('link', { name })).toHaveAttribute('href', path)
+    }
+  })
+
+  it.each([
+    ['Cruzamentos', 'Nenhum cruzamento encontrado.'],
+    ['Ciclos reprodutivos', 'Nenhum ciclo encontrado.'],
+    ['Proles', null],
+  ])('mantém %s acessível a partir da home autenticada', async (name, emptyMessage) => {
+    vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
+    renderApplication('/')
+
+    fireEvent.click(await screen.findByRole('link', { name }))
+
+    expect(await screen.findByRole('heading', { name })).toBeInTheDocument()
+    if (emptyMessage) await screen.findByText(emptyMessage)
+    const homeLink = screen.getByRole('link', {
+      name: name === 'Cruzamentos' ? 'Início' : /Voltar ao início/,
+    })
+    expect(homeLink).toHaveAttribute('href', '/')
+    fireEvent.click(homeLink)
+    expect(await screen.findByRole('region', { name: 'Produção e operações' })).toBeInTheDocument()
+  })
+
+  it('identifica módulos planejados sem oferecer ações ou links falsos', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
+    renderApplication('/')
+
+    await screen.findByRole('region', { name: 'Cadastros básicos' })
+    const plannedAreas = [
+      { area: 'Cadastros básicos', modules: ['Produtos', 'Propriedades'] },
+      { area: 'Produção e operações', modules: ['Produção', 'Produção animal', 'Genética', 'Estoque'] },
+      { area: 'Processos gerenciais', modules: ['Compras', 'Vendas', 'Fiscal', 'Contábil', 'Relatórios', 'BI / Indicadores'] },
+    ]
+    for (const { area, modules } of plannedAreas) {
+      const region = screen.getByRole('region', { name: area })
+      for (const name of modules) {
+        const module = within(region).getByRole('article', { name })
+        expect(module).toHaveTextContent('Planejado')
+        expect(module).toHaveTextContent('indisponível')
+        expect(within(module).queryByRole('link')).not.toBeInTheDocument()
+        expect(within(module).queryByRole('button')).not.toBeInTheDocument()
+        expect(module.querySelector('[href], [tabindex]')).not.toBeInTheDocument()
+      }
+    }
+    expect(screen.getAllByRole('link').map((link) => link.getAttribute('href')).sort()).toEqual([
+      '/animais', '/ciclos-reprodutivos', '/cruzamentos', '/especies', '/financeiro',
+      '/pessoas', '/proles', '/racas', '/variedades',
+    ])
   })
 })

@@ -192,7 +192,7 @@ export function FinancialPage() {
     <main className="finance">
       <header className="finance-header">
         <div>
-          <Link to="/">← GenSW</Link>
+          <Link to="/">← Voltar ao início</Link>
           <p className="finance-eyebrow">Financeiro</p>
           <h1>Fluxo de caixa</h1>
           <p>Recebimentos e pagamentos realizados · Caixa único em BRL</p>

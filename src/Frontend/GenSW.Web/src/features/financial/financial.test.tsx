@@ -22,6 +22,23 @@ const categories: Category[] = [
   },
 ]
 describe('Financeiro', () => {
+  it('identifica o módulo e a funcionalidade com retorno explícito à página inicial', async () => {
+    mock.roles = []
+    mock.request.mockImplementation((path: string) =>
+      Promise.resolve(path.endsWith('/configuracao') ? null : []),
+    )
+    render(
+      <MemoryRouter initialEntries={['/financeiro']}>
+        <FinancialPage />
+      </MemoryRouter>,
+    )
+
+    await screen.findByText('Um Admin precisa configurar o início do controle.')
+    expect(screen.getByText('Financeiro')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Fluxo de caixa' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Voltar ao início/ })).toHaveAttribute('href', '/')
+  })
+
   it('formats the decimal limit without float conversion and rejects excessive precision', () => {
     expect(brl('9999999999999999.99')).toBe('R$ 9.999.999.999.999.999,99')
     expect(decimal('12,30', true)).toBe('12.30')
