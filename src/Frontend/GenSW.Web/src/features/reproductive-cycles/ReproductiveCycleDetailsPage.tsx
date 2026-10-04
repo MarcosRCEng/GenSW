@@ -1,5 +1,45 @@
-import { useEffect,useState } from 'react'
-import { Link,useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
+import { DetailField, DetailsPage } from '../../shared/details/DetailsPage'
+import { useRecordDetails } from '../../shared/details/useRecordDetails'
 import { getReproductiveCycle } from './reproductiveCyclesService'
-import type { ReproductiveCycle } from './types'
-export function ReproductiveCycleDetailsPage(){const{id}=useParams(),[item,setItem]=useState<ReproductiveCycle|null>(null);useEffect(()=>{if(id)void getReproductiveCycle(id).then(setItem)},[id]);if(!item)return <main className="p-8" role="status">Carregando…</main>;const egg=item.tipo===1;return <main className="min-h-screen bg-slate-50 px-4 py-8"><section className="mx-auto max-w-3xl rounded-2xl border bg-white p-6"><Link className="text-sm font-semibold text-emerald-700" to={`/ciclos-reprodutivos?cruzamentoId=${item.cruzamentoId}`}>← Ciclos do cruzamento</Link><div className="mt-4 flex justify-between"><div><h1 className="text-3xl font-bold">{egg?'Ciclo ovíparo':'Ciclo gestacional'}</h1><p className="text-slate-600">Status: {['','Em andamento','Concluído','Cancelado'][item.status]}</p></div><div className="flex gap-2"><Link className="rounded border px-4 py-2" to={`/proles?cicloReprodutivoId=${item.id}`}>Proles</Link><Link className="rounded border px-4 py-2" to={`/ciclos-reprodutivos/${item.id}/editar`}>Editar</Link></div></div><dl className="mt-7 grid gap-4 sm:grid-cols-2">{egg?<><div><dt>Incubação/choco</dt><dd>{item.duracaoIncubacaoDias??'—'} dias</dd></div><div><dt>Fertilidade / eclosão</dt><dd>{item.taxaFertilidade??'—'}% / {item.taxaEclosao??'—'}%</dd></div><div><dt>Ovos postos / férteis / incubados</dt><dd>{item.ovosPostos??'—'} / {item.ovosFerteis??'—'} / {item.ovosIncubados??'—'}</dd></div><div><dt>Eclodidos / inviáveis</dt><dd>{item.ovosEclodidos??'—'} / {item.ovosInviaveis??'—'}</dd></div><div><dt>Peso médio do ovo</dt><dd>{item.pesoMedioOvoGramas??'—'} g</dd></div></>:<><div><dt>Duração da gestação</dt><dd>{item.duracaoGestacaoDias??'—'} dias</dd></div><div><dt>Previsão / parto</dt><dd>{item.dataPrevistaParto??'—'} / {item.dataParto??'—'}</dd></div><div><dt>Nascidos / vivos / mortos</dt><dd>{item.nascidos??'—'} / {item.nascidosVivos??'—'} / {item.nascidosMortos??'—'}</dd></div><div><dt>Peso ao nascer</dt><dd>{item.pesoAoNascerGramas??'—'} g</dd></div></>}<div className="sm:col-span-2"><dt>Observação</dt><dd>{item.observacao??'—'}</dd></div></dl><p className="mt-6 text-sm text-slate-500">A filiação permanece a fonte de verdade do pedigree; este ciclo não confirma descendentes.</p></section></main>}
+
+const date = (value: string | null) => value?.split('-').reverse().join('/')
+export function ReproductiveCycleDetailsPage() {
+  const { id } = useParams<{ id: string }>()
+  const { record: item, state, retry } = useRecordDetails(id, getReproductiveCycle)
+  return <DetailsPage title="Visualizar ciclo reprodutivo" listPath="/ciclos-reprodutivos" listLabel="Ciclos reprodutivos" state={state} onRetry={retry} editPath={id ? `/ciclos-reprodutivos/${id}/editar` : undefined}>
+    {item && <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <dl className="grid gap-5 sm:grid-cols-2">
+        <DetailField label="Fluxo">{item.tipo === 1 ? 'Ovíparo' : 'Gestacional'}</DetailField>
+        <DetailField label="Status">{['', 'Em andamento', 'Concluído', 'Cancelado'][item.status]}</DetailField>
+        <DetailField label="Cruzamento"><Link className="font-semibold text-emerald-700 underline" to={`/cruzamentos/${item.cruzamentoId}`}>Visualizar cruzamento</Link></DetailField>
+        {item.tipo === 1 ? <>
+          <DetailField label="Data da postura">{date(item.dataPostura)}</DetailField>
+          <DetailField label="Início da incubação">{date(item.dataInicioIncubacao)}</DetailField>
+          <DetailField label="Data da eclosão">{date(item.dataEclosao)}</DetailField>
+          <DetailField label="Duração da incubação (dias)">{item.duracaoIncubacaoDias}</DetailField>
+          <DetailField label="Ovos postos">{item.ovosPostos}</DetailField>
+          <DetailField label="Ovos férteis">{item.ovosFerteis}</DetailField>
+          <DetailField label="Ovos incubados">{item.ovosIncubados}</DetailField>
+          <DetailField label="Ovos eclodidos">{item.ovosEclodidos}</DetailField>
+          <DetailField label="Ovos inviáveis">{item.ovosInviaveis}</DetailField>
+          <DetailField label="Peso médio do ovo (g)">{item.pesoMedioOvoGramas}</DetailField>
+          <DetailField label="Taxa de fertilidade (%)">{item.taxaFertilidade}</DetailField>
+          <DetailField label="Taxa de eclosão (%)">{item.taxaEclosao}</DetailField>
+        </> : <>
+          <DetailField label="Início da gestação">{date(item.dataInicioGestacao)}</DetailField>
+          <DetailField label="Previsão de parto">{date(item.dataPrevistaParto)}</DetailField>
+          <DetailField label="Data do parto">{date(item.dataParto)}</DetailField>
+          <DetailField label="Duração da gestação (dias)">{item.duracaoGestacaoDias}</DetailField>
+          <DetailField label="Nascidos">{item.nascidos}</DetailField>
+          <DetailField label="Nascidos vivos">{item.nascidosVivos}</DetailField>
+          <DetailField label="Nascidos mortos">{item.nascidosMortos}</DetailField>
+          <DetailField label="Peso ao nascer (g)">{item.pesoAoNascerGramas}</DetailField>
+        </>}
+        <DetailField label="Observação">{item.observacao}</DetailField>
+      </dl>
+      <Link className="mt-6 inline-flex rounded-lg border px-4 py-2 font-semibold text-emerald-700" to={`/proles?cicloReprodutivoId=${item.id}`}>Visualizar proles</Link>
+      <p className="mt-4 text-sm text-slate-600">A filiação permanece a fonte de verdade do pedigree; este ciclo não confirma descendentes.</p>
+    </section>}
+  </DetailsPage>
+}

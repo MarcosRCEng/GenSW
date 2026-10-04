@@ -80,7 +80,8 @@
 .finance textarea {
   min-height: 90px;
 }
-.finance button {
+.finance button,
+.finance a.secondary {
   min-height: 44px;
   padding: 10px 15px;
   border-radius: 7px;
@@ -89,10 +90,16 @@
   font-weight: 600;
   margin: 4px 6px 4px 0;
 }
-.finance button.secondary {
+.finance button.secondary,
+.finance a.secondary {
   background: #fff;
   color: #135340;
   border: 1px solid #b5cec2;
+}
+.finance a.secondary {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
 }
 .finance button:disabled {
   opacity: 0.45;

@@ -26,6 +26,8 @@ public sealed class FinanceiroController(FinancialService service) : ControllerB
     public Task<IActionResult> Configure(ConfiguracaoCommand c, CancellationToken ct) => Run(() => service.ConfigureAsync(c, Autor, ct));
     [HttpGet("categorias")]
     public Task<IActionResult> Categories(CancellationToken ct) => Run(() => service.CategoriasAsync(ct));
+    [HttpGet("categorias/{id:guid}")]
+    public Task<IActionResult> Category(Guid id, CancellationToken ct) => Run(() => service.GetCategoriaAsync(id, ct));
     [HttpPost("categorias")]
     public Task<IActionResult> CreateCategory(CategoriaCommand c, CancellationToken ct) => Run(() => service.CreateCategoriaAsync(c, ct), true);
     [HttpPut("categorias/{id:guid}")]

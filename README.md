@@ -90,6 +90,10 @@ Identity, People, Properties, AnimalProduction, Reproduction, Genetics, Agricult
 
 Cada demanda executada pelo Codex deve possuir uma **Tarefa** no Redmine, vinculada a uma **Evolução**. A Tarefa registra objetivo, escopo, critérios de aceite, validações, branch, commit, push e pendências. Commits só são criados após as validações aplicáveis passarem.
 
+## Visualização dos cadastros
+
+A ação **Visualizar** abre detalhes somente de leitura em Pessoas, Espécies, Raças, Variedades, Animais, Cruzamentos, Ciclos reprodutivos, Proles e nos registros financeiros. As rotas por identificador permitem acesso direto, inclusive a registros inativos autorizados. Os painéis de Animal e imagens de Variedade também oferecem consulta individual. Filtros e paginação das listagens são preservados no retorno. Em Proles, conversão e desdobramento ficam no fluxo **Editar**. Consulte o [inventário, verificações e limites do aceite](docs/validation/2026-10-04-visualizar-cadastros-397.md).
+
 ## Pesos, imagens e genealogia de Animal
 
 A edição de Animal inclui pesagens individuais, galeria privada e seleção pesquisável de progenitores. Cada pesagem mantém a data observada e separa a idade alvo da idade calculada. A árvore exibe ascendentes e descendentes com expansão explícita; o pedigree legado permanece disponível. Variedade possui galeria própria de catálogo, sem herdar ou fornecer foto de um indivíduo.

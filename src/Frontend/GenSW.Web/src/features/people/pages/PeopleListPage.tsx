@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { useRememberListState, useRestoredListState } from '../../../shared/details/listNavigation'
 import { listPessoas, setPessoaAtivo } from '../services/peopleService'
 import {
   TipoPessoa,
@@ -26,12 +27,13 @@ function createdDateLabel(createdAtUtc: string): string {
 }
 
 interface PessoasTableProps {
+  navigationState: unknown
   changingStatusId: string | null
   items: Pessoa[]
   onChangeStatus: (pessoa: Pessoa) => void
 }
 
-function PessoasTable({ changingStatusId, items, onChangeStatus }: PessoasTableProps) {
+function PessoasTable({ changingStatusId, items, onChangeStatus, navigationState }: PessoasTableProps) {
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
@@ -48,7 +50,7 @@ function PessoasTable({ changingStatusId, items, onChangeStatus }: PessoasTableP
         <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
           {items.map((pessoa) => (
             <tr key={pessoa.id}>
-              <td className="whitespace-nowrap px-4 py-4 font-medium text-slate-900">
+              <td className="whitespace-nowrap px-4 py-4 font-medium text-slate-900" id={`person-${pessoa.id}-name`}>
                 {pessoa.nome}
               </td>
               <td className="whitespace-nowrap px-4 py-4">{pessoa.nomeFantasia || '—'}</td>
@@ -71,6 +73,7 @@ function PessoasTable({ changingStatusId, items, onChangeStatus }: PessoasTableP
               </td>
               <td className="whitespace-nowrap px-4 py-4">
                 <div className="flex items-center gap-3">
+                <Link aria-describedby={`person-${pessoa.id}-name`} className="font-semibold text-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2" to={`/pessoas/${pessoa.id}`} state={navigationState}>Visualizar</Link>
                   {pessoa.ativo ? (
                     <Link
                       className="font-semibold text-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
@@ -109,6 +112,7 @@ function PessoasTable({ changingStatusId, items, onChangeStatus }: PessoasTableP
 }
 
 export function PeopleListPage() {
+  const initial = useRestoredListState<ListPessoasParams & { searchDraft: string }>('/pessoas', { page: 1, pageSize: INITIAL_PAGE_SIZE, sortBy: 'nome', sortDirection: 'asc', searchDraft: '' })
   const [result, setResult] = useState<PessoasPage | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
@@ -116,14 +120,15 @@ export function PeopleListPage() {
   const [changingStatusId, setChangingStatusId] = useState<string | null>(null)
   const [statusMutationError, setStatusMutationError] = useState(false)
 
-  const [searchDraft, setSearchDraft] = useState('')
-  const [search, setSearch] = useState<string | undefined>()
-  const [tipoPessoa, setTipoPessoa] = useState<TipoPessoa | undefined>()
-  const [ativo, setAtivo] = useState<boolean | undefined>()
-  const [sortBy, setSortBy] = useState<PessoaSortBy>('nome')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(INITIAL_PAGE_SIZE)
+  const [searchDraft, setSearchDraft] = useState(initial.searchDraft)
+  const [search, setSearch] = useState<string | undefined>(initial.search)
+  const [tipoPessoa, setTipoPessoa] = useState<TipoPessoa | undefined>(initial.tipoPessoa)
+  const [ativo, setAtivo] = useState<boolean | undefined>(initial.ativo)
+  const [sortBy, setSortBy] = useState<PessoaSortBy>(initial.sortBy ?? 'nome')
+  const [sortDirection, setSortDirection] = useState<SortDirection>(initial.sortDirection ?? 'asc')
+  const [page, setPage] = useState(initial.page ?? 1)
+  const [pageSize, setPageSize] = useState(initial.pageSize ?? INITIAL_PAGE_SIZE)
+  const navigationState = useRememberListState('/pessoas', { page, pageSize, searchDraft, search, ativo, sortBy, sortDirection, tipoPessoa })
 
   useEffect(() => {
     let isCurrent = true
@@ -393,6 +398,7 @@ export function PeopleListPage() {
               changingStatusId={changingStatusId}
               items={result.items}
               onChangeStatus={changeStatus}
+              navigationState={navigationState}
             />
           ) : null}
 

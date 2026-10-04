@@ -15,6 +15,7 @@ public sealed class FinancialService(IFinancialRepository repository)
     public Task<ConfiguracaoCaixa?> ConfiguracaoAsync(CancellationToken ct) => repository.ConfiguracaoAsync(ct);
     public Task<ConfiguracaoCaixa> ConfigureAsync(ConfiguracaoCommand c, Guid actor, CancellationToken ct) { CaixaRules.Dinheiro(c.SaldoInicial); return repository.ConfigureAsync(c,actor,ct); }
     public Task<IReadOnlyList<CategoriaFinanceira>> CategoriasAsync(CancellationToken ct) => repository.CategoriasAsync(ct);
+    public Task<CategoriaFinanceiraView> GetCategoriaAsync(Guid id, CancellationToken ct) => repository.GetCategoriaAsync(id, ct);
     public Task<CategoriaFinanceira> CreateCategoriaAsync(CategoriaCommand c,CancellationToken ct) => repository.CreateCategoriaAsync(c,ct);
     public Task<CategoriaFinanceira> UpdateCategoriaAsync(Guid id,CategoriaUpdateCommand c,CancellationToken ct) => repository.UpdateCategoriaAsync(id,c,ct);
     public Task<LancamentosPage> ListAsync(LancamentoQuery q,CancellationToken ct) => repository.ListAsync(q,ct);

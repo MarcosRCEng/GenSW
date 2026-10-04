@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { useRememberListState, useRestoredListState } from '../../shared/details/listNavigation'
 import { useAuth } from '../auth/hooks/useAuth'
 import { EntryEditor } from './EntryEditor'
 import {
@@ -27,23 +28,20 @@ type Panel =
   | { kind: 'close' }
   | null
 export function FinancialPage() {
+  const initial = useRestoredListState('/financeiro', {
+    month: today().slice(0, 7), page: 1,
+    filters: { search: '', tipo: '', categoriaId: '', cancelado: '', de: '', ate: '' },
+  })
   const { user } = useAuth(),
     admin = user?.roles.includes('Admin') === true
   const [config, setConfig] = useState<Config | null>(),
     [categories, setCategories] = useState<Category[]>([]),
-    [month, setMonth] = useState(today().slice(0, 7)),
+    [month, setMonth] = useState(initial.month),
     [summary, setSummary] = useState<Summary | null>(null),
     [list, setList] = useState<EntryPage | null>(null),
     [closings, setClosings] = useState<Closing[]>([])
-  const [filters, setFilters] = useState({
-      search: '',
-      tipo: '',
-      categoriaId: '',
-      cancelado: '',
-      de: '',
-      ate: '',
-    }),
-    [page, setPage] = useState(1),
+  const [filters, setFilters] = useState(initial.filters),
+    [page, setPage] = useState(initial.page),
     [panel, setPanel] = useState<Panel>(null),
     [error, setError] = useState(''),
     [notice, setNotice] = useState(''),
@@ -59,6 +57,7 @@ export function FinancialPage() {
     [audits, setAudits] = useState<Audit[]>([])
   const sending = useRef(false),
     panelRef = useRef<HTMLElement>(null)
+  const detailsState = useRememberListState('/financeiro', { month, page, filters })
   const reload = useCallback(() => setRevision((x) => x + 1), [])
   useEffect(() => {
     let active = true
@@ -641,6 +640,7 @@ export function FinancialPage() {
                           </td>
                           <td>
                             <div className="finance-actions">
+                              <Link className="secondary" to={`/financeiro/lancamentos/${x.id}`} state={detailsState}>Visualizar</Link>
                               <button
                                 className="secondary"
                                 onClick={() =>
@@ -795,6 +795,7 @@ export function FinancialPage() {
             key={c.id}
             category={c}
             disabled={busy}
+            detailsState={detailsState}
             onSave={(nome, ativa) =>
               void run(() =>
                 finance(`categorias/${c.id}`, 'PUT', {
@@ -838,10 +839,12 @@ export function FinancialPage() {
 function CategoryRow({
   category,
   disabled,
+  detailsState,
   onSave,
 }: {
   category: Category
   disabled: boolean
+  detailsState: ReturnType<typeof useRememberListState>
   onSave: (nome: string, ativa: boolean) => void
 }) {
   const [name, setName] = useState(category.nome)
@@ -865,6 +868,7 @@ function CategoryRow({
           onChange={(e) => setName(e.target.value)}
         />
       </label>
+      <Link className="secondary" to={`/financeiro/categorias/${category.id}`} state={detailsState}>Visualizar</Link>
       <button disabled={disabled} className="secondary">
         Renomear
       </button>

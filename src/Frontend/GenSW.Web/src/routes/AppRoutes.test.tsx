@@ -443,6 +443,23 @@ describe('AppRoutes', () => {
     expect(httpRequest).not.toHaveBeenCalled()
   })
 
+  it.each([
+    '/pessoas/id', '/especies/id', '/racas/id', '/variedades/id', '/animais/id',
+    '/cruzamentos/id', '/ciclos-reprodutivos/id', '/proles/id',
+    '/financeiro/categorias/id', '/financeiro/lancamentos/id',
+    '/animais/owner/identificacoes/id', '/animais/owner/registros/id',
+    '/animais/owner/pesagens/id', '/animais/owner/producoes-ovos/id',
+    '/animais/owner/imagens/id', '/variedades/owner/imagens/id',
+  ])('protege consulta direta %s antes de buscar registros', async (path) => {
+    vi.mocked(bootstrapSession).mockResolvedValue(null)
+    renderApplication(path)
+    expect(await screen.findByRole('heading', { name: 'Acessar o sistema' })).toBeInTheDocument()
+    expect(httpRequest).not.toHaveBeenCalled()
+    for (const getter of [getPessoaById, getEspecieById, getRacaById, getVariedadeById, getAnimalById]) {
+      expect(getter).not.toHaveBeenCalled()
+    }
+  })
+
   it('agrupa Cruzamentos, Ciclos reprodutivos e Proles no módulo Reprodução', async () => {
     vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
     renderApplication('/')

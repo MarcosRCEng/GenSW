@@ -7,6 +7,7 @@ public sealed record ConfiguracaoCommand([property: JsonRequired] DateOnly DataI
     [property: JsonRequired, JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] decimal SaldoInicial, int? VersaoEsperada = null);
 public sealed record CategoriaCommand(string Nome, NaturezaFinanceira Natureza);
 public sealed record CategoriaUpdateCommand(string Nome, bool Ativa, int VersaoEsperada);
+public sealed record CategoriaFinanceiraView(Guid Id, string Nome, NaturezaFinanceira Natureza, string? Codigo, bool Ativa, int Versao);
 public sealed record LancamentoCommand(NaturezaFinanceira Tipo, DateOnly DataMovimento,
     [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] decimal Valor,
     string Descricao, Guid CategoriaId, FormaPagamento FormaPagamento, Guid? PessoaId = null, Guid? AnimalId = null, string? Observacao = null);
@@ -34,6 +35,7 @@ public interface IFinancialRepository
     Task<ConfiguracaoCaixa?> ConfiguracaoAsync(CancellationToken ct);
     Task<ConfiguracaoCaixa> ConfigureAsync(ConfiguracaoCommand command, Guid autor, CancellationToken ct);
     Task<IReadOnlyList<CategoriaFinanceira>> CategoriasAsync(CancellationToken ct);
+    Task<CategoriaFinanceiraView> GetCategoriaAsync(Guid id, CancellationToken ct);
     Task<CategoriaFinanceira> CreateCategoriaAsync(CategoriaCommand command, CancellationToken ct);
     Task<CategoriaFinanceira> UpdateCategoriaAsync(Guid id, CategoriaUpdateCommand command, CancellationToken ct);
     Task<LancamentosPage> ListAsync(LancamentoQuery query, CancellationToken ct);

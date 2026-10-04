@@ -20,6 +20,9 @@
 .animal-photo { display:inline-flex; width:72px; height:72px; border-radius:50%; overflow:hidden; background:#edf3f0; border:3px solid white; box-shadow:0 0 0 1px #ccdcd3; align-items:center; justify-content:center; flex-shrink:0 }
 .animal-photo img { width:100%; height:100%; object-fit:cover }
 .animal-photo>span { color:#567364; font-size:2rem }
+.animal-photo-full { display:flex; width:100%; min-height:12rem; align-items:center; justify-content:center; border:1px solid #ccdcd3; border-radius:.75rem; background:#edf3f0 }
+.animal-photo-full img { display:block; width:auto; height:auto; max-width:100%; max-height:32rem; object-fit:contain; border-radius:.75rem }
+.animal-photo-full>span { color:#567364; font-size:2rem }
 .genealogy-viewport { overflow:auto; max-height:720px; border:1px solid #cadad0; border-radius:.8rem; background:#f5f7f1; margin:1rem 0 }
 .genealogy-canvas { position:relative; transform-origin:top left }
 .genealogy-card { position:absolute; width:180px; min-height:162px; border:1px solid #a8bdb1; background:white; border-radius:.75rem; padding:.65rem; text-align:center; box-shadow:0 3px 8px #1234220b }

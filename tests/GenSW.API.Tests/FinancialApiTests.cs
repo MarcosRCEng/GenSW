@@ -3,13 +3,65 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using GenSW.Domain.Animals;
+using GenSW.Domain.Financial;
 using GenSW.Domain.Species;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace GenSW.API.Tests;
 
 public sealed class FinancialApiTests
 {
+    [Fact]
+    public async Task Category_details_require_authentication_include_inactive_and_execute_with_database_read_only()
+    {
+        await using var pg = await EphemeralPostgreSql.StartAsync();
+        await using var setup = new AuthWebApplicationFactory(pg.ConnectionString);
+        await setup.InitializeAsync();
+        await setup.SeedUserAsync("category-reader");
+        using var loginClient = setup.CreateHttpsClient();
+        using var login = await loginClient.LoginAsync("category-reader", AuthWebApplicationFactory.ValidPassword);
+        var token = (await login.ReadAccessTokenAsync()).AccessToken;
+        var now = new DateTimeOffset(2026, 8, 1, 12, 0, 0, TimeSpan.Zero);
+        var active = new CategoriaFinanceira(Guid.NewGuid(), "Categoria ativa", "CATEGORIA ATIVA", NaturezaFinanceira.Receita, null, true, 1, now, now);
+        var inactive = active with { Id = Guid.NewGuid(), Nome = "Categoria inativa", NomeNormalizado = "CATEGORIA INATIVA", Ativa = false, Versao = 2 };
+        await setup.ExecuteDbContextAsync(async db =>
+        {
+            db.AddRange(active, inactive);
+            await db.SaveChangesAsync();
+        });
+
+        // Every connection serving these GETs is read-only. An accidental database
+        // mutation fails the request, including writes outside the category table.
+        await using var factory = new AuthWebApplicationFactory(pg.ConnectionString + ";Options=-c default_transaction_read_only=on");
+        using var anonymous = factory.CreateHttpsClient();
+        using var reader = factory.CreateHttpsClient();
+        reader.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        const string root = "/api/v1/financeiro/categorias/";
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync(root + active.Id)).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync(root + Guid.NewGuid())).StatusCode);
+        using var missing = await reader.GetAsync(root + Guid.NewGuid());
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+        Assert.Equal("nao_encontrado", (await missing.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("code").GetString());
+        foreach (var expected in new[] { active, inactive })
+        {
+            using var response = await reader.GetAsync(root + expected.Id);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var item = await response.Content.ReadFromJsonAsync<JsonElement>();
+            Assert.Equal(expected.Id, item.GetProperty("id").GetGuid());
+            Assert.Equal(expected.Nome, item.GetProperty("nome").GetString());
+            Assert.Equal((int)expected.Natureza, item.GetProperty("natureza").GetInt32());
+            Assert.Equal(expected.Ativa, item.GetProperty("ativa").GetBoolean());
+            Assert.Equal(expected.Versao, item.GetProperty("versao").GetInt32());
+            Assert.False(item.TryGetProperty("nomeNormalizado", out _));
+        }
+        await setup.ExecuteDbContextAsync(async db =>
+        {
+            Assert.Equal(active, await db.Set<CategoriaFinanceira>().AsNoTracking().SingleAsync(x => x.Id == active.Id));
+            Assert.Equal(inactive, await db.Set<CategoriaFinanceira>().AsNoTracking().SingleAsync(x => x.Id == inactive.Id));
+        });
+    }
+
     [Fact]
     public async Task Jwt_admin_decimal_pagination_conflicts_and_animal_no_side_effects()
     {

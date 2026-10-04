@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { useRememberListState, useRestoredListState } from '../../../shared/details/listNavigation'
 import { listEspecies } from '../../species/services/speciesService'
 import type { Especie } from '../../species/types/species'
 import { listRacas, setRacaAtivo } from '../services/breedsService'
@@ -10,12 +11,13 @@ const SPECIES_PAGE_SIZE = 100
 const dateFormatter = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeZone: 'UTC' })
 
 interface BreedsTableProps {
+  navigationState: unknown
   changingStatusId: string | null
   items: Raca[]
   onChangeStatus: (raca: Raca) => void
 }
 
-function BreedsTable({ changingStatusId, items, onChangeStatus }: BreedsTableProps) {
+function BreedsTable({ changingStatusId, items, onChangeStatus, navigationState }: BreedsTableProps) {
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
@@ -34,6 +36,7 @@ function BreedsTable({ changingStatusId, items, onChangeStatus }: BreedsTablePro
               <td className="whitespace-nowrap px-4 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${raca.ativo ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}`}>{raca.ativo ? 'Ativo' : 'Inativo'}</span></td>
               <td className="whitespace-nowrap px-4 py-4">{dateFormatter.format(new Date(raca.createdAtUtc))}</td>
               <td className="whitespace-nowrap px-4 py-4"><div className="flex items-center gap-3">
+                <Link aria-describedby={`breed-${raca.id}-name`} className="font-semibold text-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2" to={`/racas/${raca.id}`} state={navigationState}>Visualizar</Link>
                 <Link aria-describedby={`breed-${raca.id}-name`} className="font-semibold text-emerald-700 hover:text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2" to={`/racas/${raca.id}/editar`}>Editar</Link>
                 <button className="font-semibold text-slate-700 hover:text-slate-950 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60" disabled={changingStatusId === raca.id} onClick={() => onChangeStatus(raca)} type="button">
                   {changingStatusId === raca.id ? (raca.ativo ? 'Inativando…' : 'Reativando…') : (raca.ativo ? 'Inativar' : 'Reativar')}
@@ -48,6 +51,7 @@ function BreedsTable({ changingStatusId, items, onChangeStatus }: BreedsTablePro
 }
 
 export function BreedsListPage() {
+  const initial = useRestoredListState<ListRacasParams & { searchDraft: string }>('/racas', { page: 1, pageSize: INITIAL_PAGE_SIZE, sortBy: 'nome', sortDirection: 'asc', searchDraft: '' })
   const [result, setResult] = useState<RacasPage | null>(null)
   const [species, setSpecies] = useState<Especie[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -56,14 +60,15 @@ export function BreedsListPage() {
   const [reloadKey, setReloadKey] = useState(0)
   const [changingStatusId, setChangingStatusId] = useState<string | null>(null)
   const [statusMutationError, setStatusMutationError] = useState(false)
-  const [searchDraft, setSearchDraft] = useState('')
-  const [search, setSearch] = useState<string | undefined>()
-  const [especieId, setEspecieId] = useState<string | undefined>()
-  const [ativo, setAtivo] = useState<boolean | undefined>()
-  const [sortBy, setSortBy] = useState<RacaSortBy>('nome')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(INITIAL_PAGE_SIZE)
+  const [searchDraft, setSearchDraft] = useState(initial.searchDraft)
+  const [search, setSearch] = useState<string | undefined>(initial.search)
+  const [especieId, setEspecieId] = useState<string | undefined>(initial.especieId)
+  const [ativo, setAtivo] = useState<boolean | undefined>(initial.ativo)
+  const [sortBy, setSortBy] = useState<RacaSortBy>(initial.sortBy ?? 'nome')
+  const [sortDirection, setSortDirection] = useState<SortDirection>(initial.sortDirection ?? 'asc')
+  const [page, setPage] = useState(initial.page ?? 1)
+  const [pageSize, setPageSize] = useState(initial.pageSize ?? INITIAL_PAGE_SIZE)
+  const navigationState = useRememberListState('/racas', { page, pageSize, searchDraft, search, ativo, sortBy, sortDirection, especieId })
 
   useEffect(() => {
     let isCurrent = true
@@ -158,7 +163,7 @@ export function BreedsListPage() {
     {speciesLoadError ? <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700" role="alert">Não foi possível carregar as espécies para o filtro.</p> : null}
     {statusMutationError ? <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700" role="alert">Não foi possível alterar o status da raça.</p> : null}
     <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      {isLoading && result === null ? <p className="p-8 text-center text-slate-600" role="status">Carregando raças…</p> : hasError ? <div className="p-8 text-center" role="alert"><p className="font-medium text-red-700">Não foi possível carregar as raças.</p><button className="mt-4 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-700" onClick={() => setReloadKey((current) => current + 1)} type="button">Tentar novamente</button></div> : result?.items.length === 0 ? <div className="p-8 text-center"><p className="font-medium text-slate-800">Nenhuma raça encontrada.</p><p className="mt-2 text-sm text-slate-600">Ajuste os filtros ou realize outra busca.</p></div> : result ? <BreedsTable changingStatusId={changingStatusId} items={result.items} onChangeStatus={changeStatus} /> : null}
+      {isLoading && result === null ? <p className="p-8 text-center text-slate-600" role="status">Carregando raças…</p> : hasError ? <div className="p-8 text-center" role="alert"><p className="font-medium text-red-700">Não foi possível carregar as raças.</p><button className="mt-4 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-700" onClick={() => setReloadKey((current) => current + 1)} type="button">Tentar novamente</button></div> : result?.items.length === 0 ? <div className="p-8 text-center"><p className="font-medium text-slate-800">Nenhuma raça encontrada.</p><p className="mt-2 text-sm text-slate-600">Ajuste os filtros ou realize outra busca.</p></div> : result ? <BreedsTable changingStatusId={changingStatusId} items={result.items} onChangeStatus={changeStatus} navigationState={navigationState} /> : null}
       {result && !hasError ? <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 px-5 py-4 text-sm text-slate-600"><div className="flex flex-wrap gap-3">{result.totalPages > 0 ? <span> Página {result.page} de {result.totalPages} </span> : null}<span>{result.totalItems} registros</span>{isLoading ? <span role="status">Atualizando…</span> : null}</div><div className="flex gap-2"><button className="rounded-lg border border-slate-300 px-3 py-2 font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50" disabled={isLoading || page <= 1} onClick={() => setPage((current) => current - 1)} type="button">Anterior</button><button className="rounded-lg border border-slate-300 px-3 py-2 font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50" disabled={isLoading || result.totalPages === 0 || page >= result.totalPages} onClick={() => setPage((current) => current + 1)} type="button">Próxima</button></div></footer> : null}
     </section>
   </div></main>

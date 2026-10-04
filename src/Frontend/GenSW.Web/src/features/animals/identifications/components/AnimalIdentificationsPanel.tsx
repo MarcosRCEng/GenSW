@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useEffect, useState, type FormEvent } from 'react'
 import { isHttpError } from '../../../../shared/http/httpErrors'
 import {
@@ -42,10 +43,10 @@ function displayDate(value: string | null): string {
   return `${day}/${month}/${year}`
 }
 
-interface AnimalIdentificationsPanelProps { animalId: string }
+interface AnimalIdentificationsPanelProps { animalId: string; readOnly?: boolean }
 interface MetadataDirtyState { dataAplicacao: boolean; observacao: boolean }
 
-export function AnimalIdentificationsPanel({ animalId }: AnimalIdentificationsPanelProps) {
+export function AnimalIdentificationsPanel({ animalId, readOnly = false }: AnimalIdentificationsPanelProps) {
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [retryKey, setRetryKey] = useState(0)
   const [pageNumber, setPageNumber] = useState(1)
@@ -89,7 +90,7 @@ export function AnimalIdentificationsPanel({ animalId }: AnimalIdentificationsPa
   }
 
   const runMutation = async (mutationId: string, action: () => Promise<unknown>, afterSuccess?: () => void) => {
-    if (pendingMutationId !== null) return
+    if (readOnly || pendingMutationId !== null) return
     setPendingMutationId(mutationId); setRequestError(null)
     try {
       await action()
@@ -147,12 +148,12 @@ export function AnimalIdentificationsPanel({ animalId }: AnimalIdentificationsPa
           <h2 className="text-xl font-bold text-slate-900" id="animal-identifications-heading">Identificações físicas</h2>
           <p className="mt-1 text-sm text-slate-600">Marcadores físicos de manejo. Não representam SISBOV, UELN ou registro de associação.</p>
         </div>
-        <button className={primaryButton} disabled={anyPending} onClick={openCreate} type="button">Adicionar identificação</button>
+        {!readOnly && <button className={primaryButton} disabled={anyPending} onClick={openCreate} type="button">Adicionar identificação</button>}
       </div>
 
       {requestError ? <p className="mt-4 text-sm font-medium text-red-700" role="alert">{requestError}</p> : null}
 
-      {showCreate ? (
+      {!readOnly && showCreate ? (
         <form className="mt-6 space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/40 p-4" noValidate onSubmit={handleCreate}>
           <h3 className="font-semibold text-slate-900">Nova identificação</h3>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -168,7 +169,7 @@ export function AnimalIdentificationsPanel({ animalId }: AnimalIdentificationsPa
         </form>
       ) : null}
 
-      {selectedRow ? (
+      {!readOnly && selectedRow ? (
         <form className="mt-6 space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4" noValidate onSubmit={handleMetadata}>
           <h3 className="font-semibold text-slate-900">Editar metadados</h3>
           <dl className="grid gap-3 text-sm sm:grid-cols-2"><div><dt className="font-medium text-slate-600">Tipo</dt><dd>{typeLabel(selectedRow.tipo)}{selectedRow.descricaoTipo ? ` — ${selectedRow.descricaoTipo}` : ''}</dd></div><div><dt className="font-medium text-slate-600">Valor</dt><dd>{selectedRow.valor}</dd></div></dl>
@@ -193,10 +194,12 @@ export function AnimalIdentificationsPanel({ animalId }: AnimalIdentificationsPa
                   <td className="px-3 py-3">{displayDate(item.dataAplicacao)}</td>
                   <td className="px-3 py-3">{item.ativo ? <><span>Ativa</span>{item.principal ? <span className="ml-2 rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-800">Principal</span> : null}</> : <span className="rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold">Histórico (inativa)</span>}</td>
                   <td className="px-3 py-3"><div className="flex flex-wrap gap-2">
+                    <Link className={secondaryButton} to={`/animais/${animalId}/identificacoes/${item.id}`}>Visualizar</Link>
+                    {!readOnly && <>
                     <button className={secondaryButton} disabled={anyPending} onClick={() => openMetadata(item)} type="button">Editar metadados</button>
                     {item.ativo ? <button className={secondaryButton} disabled={anyPending} onClick={() => void runMutation(item.id, () => setAnimalIdentificationPrincipal(animalId, item.id, !item.principal))} type="button">{item.principal ? 'Remover principal' : 'Definir como principal'}</button> : null}
                     <button className={secondaryButton} disabled={anyPending} onClick={() => void runMutation(item.id, () => setAnimalIdentificationAtivo(animalId, item.id, !item.ativo))} type="button">{item.ativo ? 'Inativar' : 'Reativar'}</button>
-                  </div></td>
+                  </>}</div></td>
                 </tr>
               ))}
             </tbody>

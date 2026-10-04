@@ -76,6 +76,10 @@ public sealed class FinancialRepository(GenSWDbContext db, TimeProvider clock) :
         return next;
     }, ct);
     public async Task<IReadOnlyList<CategoriaFinanceira>> CategoriasAsync(CancellationToken ct) => await Query<CategoriaFinanceira>().OrderBy(x => x.Natureza).ThenBy(x => x.Nome).ToArrayAsync(ct);
+    public async Task<CategoriaFinanceiraView> GetCategoriaAsync(Guid id, CancellationToken ct) =>
+        await Query<CategoriaFinanceira>().Where(x => x.Id == id)
+            .Select(x => new CategoriaFinanceiraView(x.Id, x.Nome, x.Natureza, x.Codigo, x.Ativa, x.Versao))
+            .SingleOrDefaultAsync(ct) ?? throw new CaixaNotFoundException("Categoria não encontrada.");
     public Task<CategoriaFinanceira> CreateCategoriaAsync(CategoriaCommand c, CancellationToken ct) => Write(async () =>
     {
         if (!Enum.IsDefined(c.Natureza)) throw new ArgumentException("Natureza inválida.");
