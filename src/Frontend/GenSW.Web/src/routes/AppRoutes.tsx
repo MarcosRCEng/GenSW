@@ -29,6 +29,9 @@ import { ReproductiveCycleDetailsPage } from '../features/reproductive-cycles/Re
 import { OffspringListPage } from '../features/offspring/OffspringListPage'
 import { OffspringFormPage } from '../features/offspring/OffspringFormPage'
 import { OffspringDetailsPage } from '../features/offspring/OffspringDetailsPage'
+import { PropertiesListPage } from '../features/properties/PropertiesListPage'
+import { PropertyFormPage } from '../features/properties/PropertyFormPage'
+import { PropertyDetailsPage } from '../features/properties/PropertyDetailsPage'
 
 function ApplicationLoading() {
   return (
@@ -64,6 +67,10 @@ export function AppRoutes() {
       </Route>
       <Route element={<ProtectedRoute />}>
         <Route element={<AuthenticatedHomePage />} path="/" />
+        <Route element={<PropertiesListPage />} path="/propriedades" />
+        <Route element={<PropertyFormPage />} path="/propriedades/nova" />
+        <Route element={<PropertyFormPage />} path="/propriedades/:id/editar" />
+        <Route element={<PropertyDetailsPage />} path="/propriedades/:id" />
         <Route element={<FinancialPage />} path="/financeiro" />
         <Route element={<CategoryDetailsPage />} path="/financeiro/categorias/:id" />
         <Route element={<EntryDetailsPage />} path="/financeiro/lancamentos/:id" />

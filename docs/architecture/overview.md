@@ -20,7 +20,7 @@ A página inicial organiza o ERP por finalidade de uso, em seções semânticas 
 
 | Grupo | Disponível | Planejado |
 | --- | --- | --- |
-| Cadastros básicos | Pessoas (`/pessoas`); Taxonomia: Espécies (`/especies`), Raças (`/racas`) e Variedades (`/variedades`); Animais (`/animais`) | Produtos; Propriedades |
+| Cadastros básicos | Pessoas (`/pessoas`); Propriedades (`/propriedades`); Taxonomia: Espécies (`/especies`), Raças (`/racas`) e Variedades (`/variedades`); Animais (`/animais`) | Produtos |
 | Produção e operações | Reprodução: Cruzamentos (`/cruzamentos`), Ciclos reprodutivos (`/ciclos-reprodutivos`) e Proles (`/proles`) | Produção (agrícola); Produção animal; Genética; Estoque |
 | Processos gerenciais | Financeiro: Fluxo de caixa (`/financeiro`) | Compras; Vendas; Fiscal; Contábil; Relatórios; BI |
 
@@ -50,6 +50,14 @@ GenSW.Web             -> API HTTP; interface React independente
 ## Persistência e configuração
 
 O provedor padrão é PostgreSQL via `Npgsql.EntityFrameworkCore.PostgreSQL`. A connection string deve ser fornecida por `ConnectionStrings__GenSW`, User Secrets ou configuração de ambiente não versionada. O `appsettings.json` não contém credenciais.
+
+## Propriedades operacionais
+
+Propriedade representa uma unidade física de operação, com nome, localização textual opcional, observação e estado ativo/inativo. Não representa titularidade jurídica, organização de permissões, estoque ou unidade financeira. O cadastro segue as camadas e os fluxos autenticados dos catálogos existentes.
+
+O vínculo temporal Animal–Propriedade é separado da identidade do Animal: ausência de vínculo é válida, inclusive para animais de referência. O histórico registra períodos; um índice único parcial impede dois vínculos abertos para o mesmo Animal. Associação, transferência e encerramento são operações explícitas e transacionais. Inativar uma Propriedade conserva os vínculos e bloqueia novas entradas; permite consultar o histórico e retirar ou transferir animais já vinculados.
+
+Filiação continua sendo a fonte do pedigree. Propriedade não é condição de elegibilidade nem altera as regras de Cruzamentos, Ciclos, Proles ou Fluxo de caixa. Veja o [contrato e procedimento operacional](../operations/propriedades.md).
 
 ## Estratégia modular
 

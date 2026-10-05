@@ -58,8 +58,8 @@ export const navigationModules: readonly NavigationModule[] = [
     description: 'Catálogo de produtos e insumos.',
   },
   {
-    id: 'propriedades', name: 'Propriedades', area: 'cadastros', state: 'planned',
-    description: 'Organização das propriedades e unidades rurais.',
+    id: 'propriedades', name: 'Propriedades', area: 'cadastros', state: 'available',
+    description: 'Unidades operacionais físicas e histórico de localização dos animais.', route: '/propriedades',
   },
   {
     id: 'reproducao', name: 'Reprodução', area: 'operacoes', state: 'available',

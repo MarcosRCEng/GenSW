@@ -65,6 +65,7 @@ public static class DependencyInjection
         services.TryAddSingleton<IAccessTokenService, JwtAccessTokenService>();
         services.TryAddScoped<IAuthenticationSessionService, AuthenticationSessionService>();
         services.AddScoped<IPessoaRepository, PessoaRepository>();
+        services.AddScoped<GenSW.Application.Properties.IPropriedadeRepository, GenSW.Infrastructure.Properties.PropriedadeRepository>();
         services.AddScoped<GenSW.Application.Financial.IFinancialRepository, GenSW.Infrastructure.Financial.FinancialRepository>();
         services.AddScoped<IEspecieRepository, EspecieRepository>();
         services.AddScoped<IRacaRepository, RacaRepository>();
