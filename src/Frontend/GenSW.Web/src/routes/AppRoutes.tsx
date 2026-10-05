@@ -1,4 +1,12 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { FinancialPage } from '../features/financial/FinancialPage'
+import { CategoryDetailsPage, EntryDetailsPage } from '../features/financial/FinancialDetailsPage'
+import { PeopleDetailsPage } from '../features/people/pages/PeopleDetailsPage'
+import { SpeciesDetailsPage } from '../features/species/pages/SpeciesDetailsPage'
+import { BreedDetailsPage } from '../features/breeds/pages/BreedDetailsPage'
+import { VarietyDetailsPage } from '../features/varieties/pages/VarietyDetailsPage'
+import { AnimalDetailsPage } from '../features/animals/pages/AnimalDetailsPage'
+import { AnimalRelatedDetailsPage } from '../features/animals/pages/AnimalRelatedDetailsPage'
 import { AuthenticatedHomePage } from '../features/auth/pages/AuthenticatedHomePage'
 import { AnimalFormPage } from '../features/animals/pages/AnimalFormPage'
 import { AnimalsListPage } from '../features/animals/pages/AnimalsListPage'
@@ -56,6 +64,20 @@ export function AppRoutes() {
       </Route>
       <Route element={<ProtectedRoute />}>
         <Route element={<AuthenticatedHomePage />} path="/" />
+        <Route element={<FinancialPage />} path="/financeiro" />
+        <Route element={<CategoryDetailsPage />} path="/financeiro/categorias/:id" />
+        <Route element={<EntryDetailsPage />} path="/financeiro/lancamentos/:id" />
+        <Route element={<PeopleDetailsPage />} path="/pessoas/:id" />
+        <Route element={<SpeciesDetailsPage />} path="/especies/:id" />
+        <Route element={<BreedDetailsPage />} path="/racas/:id" />
+        <Route element={<VarietyDetailsPage />} path="/variedades/:id" />
+        <Route element={<AnimalDetailsPage />} path="/animais/:id" />
+        <Route element={<AnimalRelatedDetailsPage section="identificacoes" />} path="/animais/:animalId/identificacoes/:recordId" />
+        <Route element={<AnimalRelatedDetailsPage section="registros" />} path="/animais/:animalId/registros/:recordId" />
+        <Route element={<AnimalRelatedDetailsPage section="pesagens" />} path="/animais/:animalId/pesagens/:recordId" />
+        <Route element={<AnimalRelatedDetailsPage section="producoes-ovos" />} path="/animais/:animalId/producoes-ovos/:recordId" />
+        <Route element={<AnimalRelatedDetailsPage section="imagens" />} path="/animais/:animalId/imagens/:recordId" />
+        <Route element={<AnimalRelatedDetailsPage section="imagens" kind="variedades" />} path="/variedades/:varietyId/imagens/:recordId" />
         <Route element={<PeopleListPage />} path="/pessoas" />
         <Route element={<PeopleFormPage />} path="/pessoas/nova" />
         <Route element={<PeopleFormPage />} path="/pessoas/:id/editar" />

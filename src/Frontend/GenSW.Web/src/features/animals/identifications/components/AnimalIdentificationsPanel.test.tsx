@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router-dom'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpError } from '../../../../shared/http/httpErrors'
@@ -46,7 +47,7 @@ describe('AnimalIdentificationsPanel', () => {
   it('shows loading, a retryable load error, and the empty state', async () => {
     let rejectLoad!: (reason: unknown) => void
     vi.mocked(listAnimalIdentifications).mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectLoad = reject }))
-    render(<AnimalIdentificationsPanel animalId="animal-1" />)
+    render(<MemoryRouter><AnimalIdentificationsPanel animalId="animal-1" /></MemoryRouter>)
     expect(screen.getByRole('status')).toHaveTextContent('Carregando identificações físicas')
     rejectLoad(new Error('offline'))
     expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível carregar as identificações físicas.')
@@ -58,7 +59,7 @@ describe('AnimalIdentificationsPanel', () => {
   it('distinguishes principal, active and historical rows and paginates history', async () => {
     vi.mocked(listAnimalIdentifications).mockResolvedValueOnce(page([active, inactive], { totalItems: 12, totalPages: 2 }))
       .mockResolvedValueOnce(page([inactive], { page: 2, totalItems: 12, totalPages: 2 }))
-    render(<AnimalIdentificationsPanel animalId="animal-1" />)
+    render(<MemoryRouter><AnimalIdentificationsPanel animalId="animal-1" /></MemoryRouter>)
     const principalRow = (await screen.findByText(active.valor)).closest('tr')!
     expect(within(principalRow).getByText('Principal')).toBeInTheDocument()
     expect(within(principalRow).getByRole('button', { name: 'Remover principal' })).toBeEnabled()
@@ -84,7 +85,7 @@ describe('AnimalIdentificationsPanel', () => {
     vi.mocked(listAnimalIdentifications).mockResolvedValueOnce(page([]))
       .mockImplementationOnce(() => new Promise((resolve) => { finishRefresh = resolve }))
     vi.mocked(createAnimalIdentification).mockResolvedValue({ ...active, id: 'response-only', tipo, valor: 'response-only' })
-    render(<AnimalIdentificationsPanel animalId="animal-1" />)
+    render(<MemoryRouter><AnimalIdentificationsPanel animalId="animal-1" /></MemoryRouter>)
     await screen.findByText('Nenhuma identificação física cadastrada.')
     fireEvent.click(screen.getByRole('button', { name: 'Adicionar identificação' }))
     fireEvent.change(screen.getByLabelText('Tipo'), { target: { value: String(tipo) } })
@@ -115,7 +116,7 @@ describe('AnimalIdentificationsPanel', () => {
 
   it('edits metadata only and refreshes the list after success', async () => {
     vi.mocked(listAnimalIdentifications).mockResolvedValueOnce(page([active])).mockResolvedValueOnce(page([{ ...active, observacao: 'Nova nota' }]))
-    render(<AnimalIdentificationsPanel animalId="animal-1" />)
+    render(<MemoryRouter><AnimalIdentificationsPanel animalId="animal-1" /></MemoryRouter>)
     const row = (await screen.findByText(active.valor)).closest('tr')!
     fireEvent.click(within(row).getByRole('button', { name: 'Editar metadados' }))
     expect(screen.getAllByText('Microchip')).toHaveLength(2)
@@ -132,7 +133,7 @@ describe('AnimalIdentificationsPanel', () => {
 
   it('omits untouched metadata fields from the PATCH payload', async () => {
     vi.mocked(listAnimalIdentifications).mockResolvedValue(page([active]))
-    render(<AnimalIdentificationsPanel animalId="animal-1" />)
+    render(<MemoryRouter><AnimalIdentificationsPanel animalId="animal-1" /></MemoryRouter>)
     const row = (await screen.findByText(active.valor)).closest('tr')!
     fireEvent.click(within(row).getByRole('button', { name: 'Editar metadados' }))
     expect(screen.getAllByText('Microchip').length).toBeGreaterThan(0)
@@ -149,7 +150,7 @@ describe('AnimalIdentificationsPanel', () => {
     ['Observação', 'Nova nota', { observacao: 'Nova nota' }],
   ] as const)('sends only the changed %s metadata field', async (field, value, expected) => {
     vi.mocked(listAnimalIdentifications).mockResolvedValue(page([active]))
-    render(<AnimalIdentificationsPanel animalId="animal-1" />)
+    render(<MemoryRouter><AnimalIdentificationsPanel animalId="animal-1" /></MemoryRouter>)
     const row = (await screen.findByText(active.valor)).closest('tr')!
     fireEvent.click(within(row).getByRole('button', { name: 'Editar metadados' }))
     fireEvent.change(screen.getByLabelText(field), { target: { value } })
@@ -162,7 +163,7 @@ describe('AnimalIdentificationsPanel', () => {
     ['Observação', { observacao: null }],
   ] as const)('sends explicit null when %s is cleared', async (field, expected) => {
     vi.mocked(listAnimalIdentifications).mockResolvedValue(page([active]))
-    render(<AnimalIdentificationsPanel animalId="animal-1" />)
+    render(<MemoryRouter><AnimalIdentificationsPanel animalId="animal-1" /></MemoryRouter>)
     const row = (await screen.findByText(active.valor)).closest('tr')!
     fireEvent.click(within(row).getByRole('button', { name: 'Editar metadados' }))
     fireEvent.change(screen.getByLabelText(field), { target: { value: '' } })
@@ -172,7 +173,7 @@ describe('AnimalIdentificationsPanel', () => {
 
   it('keeps creation and metadata editors mutually exclusive and starts creation with clean values', async () => {
     vi.mocked(listAnimalIdentifications).mockResolvedValue(page([active]))
-    render(<AnimalIdentificationsPanel animalId="animal-1" />)
+    render(<MemoryRouter><AnimalIdentificationsPanel animalId="animal-1" /></MemoryRouter>)
     const row = (await screen.findByText(active.valor)).closest('tr')!
     fireEvent.click(within(row).getByRole('button', { name: 'Editar metadados' }))
     expect(screen.getByRole('heading', { name: 'Editar metadados' })).toBeInTheDocument()
@@ -192,7 +193,7 @@ describe('AnimalIdentificationsPanel', () => {
       .mockResolvedValueOnce(page([nonPrincipal]))
       .mockResolvedValueOnce(page([{ ...nonPrincipal, ativo: false }]))
       .mockResolvedValueOnce(page([nonPrincipal]))
-    render(<AnimalIdentificationsPanel animalId="animal-1" />)
+    render(<MemoryRouter><AnimalIdentificationsPanel animalId="animal-1" /></MemoryRouter>)
     fireEvent.click(within((await screen.findByText(active.valor)).closest('tr')!).getByRole('button', { name: 'Definir como principal' }))
     await waitFor(() => expect(setAnimalIdentificationPrincipal).toHaveBeenCalledWith('animal-1', active.id, true))
     fireEvent.click(await screen.findByRole('button', { name: 'Remover principal' }))
@@ -212,7 +213,7 @@ describe('AnimalIdentificationsPanel', () => {
   ])('shows a safe mutation message for HTTP %s', async (status, message) => {
     vi.mocked(listAnimalIdentifications).mockResolvedValue(page([active]))
     vi.mocked(setAnimalIdentificationAtivo).mockRejectedValueOnce(new HttpError(status, 'SQLSTATE 23505 secret detail'))
-    render(<AnimalIdentificationsPanel animalId="animal-1" />)
+    render(<MemoryRouter><AnimalIdentificationsPanel animalId="animal-1" /></MemoryRouter>)
     fireEvent.click(within((await screen.findByText(active.valor)).closest('tr')!).getByRole('button', { name: 'Inativar' }))
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
     expect(screen.queryByText(/SQLSTATE|secret detail/)).not.toBeInTheDocument()
@@ -227,7 +228,7 @@ describe('AnimalIdentificationsPanel', () => {
     vi.mocked(createAnimalIdentification).mockRejectedValueOnce(new HttpError(409, 'duplicate detail'))
     vi.mocked(setAnimalIdentificationPrincipal).mockResolvedValueOnce({ ...nonPrincipal, principal: true })
 
-    render(<AnimalIdentificationsPanel animalId="animal-1" />)
+    render(<MemoryRouter><AnimalIdentificationsPanel animalId="animal-1" /></MemoryRouter>)
     const row = (await screen.findByText(nonPrincipal.valor)).closest('tr')!
     fireEvent.click(within(row).getByRole('button', { name: 'Definir como principal' }))
     await waitFor(() => expect(setAnimalIdentificationPrincipal).toHaveBeenCalledWith('animal-1', nonPrincipal.id, true))

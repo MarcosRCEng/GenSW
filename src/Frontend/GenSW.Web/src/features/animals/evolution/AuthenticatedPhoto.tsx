@@ -15,7 +15,7 @@ async function download(path: string, signal: AbortSignal) {
   } finally { running--; queue.shift()?.() }
 }
 
-export function AuthenticatedPhoto({ path, name }: { path?: string; name: string }) {
+export function AuthenticatedPhoto({ path, name, presentation = 'avatar' }: { path?: string; name: string; presentation?: 'avatar' | 'full' }) {
   const host = useRef<HTMLSpanElement>(null)
   const [url, setUrl] = useState<string | null>(null)
   useEffect(() => {
@@ -39,5 +39,5 @@ export function AuthenticatedPhoto({ path, name }: { path?: string; name: string
     if (observer && host.current) observer.observe(host.current); else start()
     return () => { observer?.disconnect(); unsubscribe(); controller.abort(); if (objectUrl) URL.revokeObjectURL(objectUrl) }
   }, [path])
-  return <span ref={host} className="animal-photo">{url ? <img src={url} alt={`Foto de ${name}`} onError={() => { URL.revokeObjectURL(url); setUrl(null) }} /> : <span role="img" aria-label={`${name}: sem foto disponível`}>◇</span>}</span>
+  return <span ref={host} className={presentation === 'full' ? 'animal-photo-full' : 'animal-photo'}>{url ? <img src={url} alt={`Foto de ${name}`} onError={() => { URL.revokeObjectURL(url); setUrl(null) }} /> : <span role="img" aria-label={`${name}: sem foto disponível`}>◇</span>}</span>
 }

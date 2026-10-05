@@ -270,12 +270,12 @@ namespace GenSW.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ProgenitorId");
+
                     b.HasIndex("AnimalId", "TipoFiliacao")
                         .IsUnique()
                         .HasDatabaseName("UX_FiliacoesAnimal_Animal_Tipo_Ativa")
                         .HasFilter("\"Ativa\" = TRUE");
-
-                    b.HasIndex("ProgenitorId");
 
                     b.HasIndex("ProgenitorId", "AnimalId")
                         .HasDatabaseName("IX_FiliacoesAnimal_DescendentesAtivos")
@@ -670,6 +670,396 @@ namespace GenSW.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("CK_Racas_Nome_Canonical", "\"Nome\" <> '' AND \"Nome\" !~ U&'[\\0009-\\000D\\0085\\00A0\\1680\\2000-\\200A\\2028\\2029\\202F\\205F\\3000]' AND \"Nome\" !~ '(^ | $|  )'");
                         });
+                });
+
+            modelBuilder.Entity("GenSW.Domain.Financial.AuditoriaLancamento", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AntesJson")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("AutorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DepoisJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("LancamentoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Motivo")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Operacao")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LancamentoId", "CreatedAtUtc");
+
+                    b.ToTable("AuditoriasLancamento", (string)null);
+                });
+
+            modelBuilder.Entity("GenSW.Domain.Financial.CategoriaFinanceira", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Ativa")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Codigo")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Natureza")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("NomeNormalizado")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Versao")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Codigo")
+                        .IsUnique();
+
+                    b.HasIndex("Natureza", "NomeNormalizado")
+                        .IsUnique();
+
+                    b.ToTable("CategoriasFinanceiras", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Categoria_Natureza", "\"Natureza\" IN (1,2)");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("37600000-0000-0000-0000-000000000001"),
+                            Ativa = true,
+                            CreatedAtUtc = new DateTimeOffset(new DateTime(2026, 10, 2, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Natureza = 2,
+                            Nome = "Insumos",
+                            NomeNormalizado = "INSUMOS",
+                            UpdatedAtUtc = new DateTimeOffset(new DateTime(2026, 10, 2, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Versao = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("37600000-0000-0000-0000-000000000002"),
+                            Ativa = true,
+                            CreatedAtUtc = new DateTimeOffset(new DateTime(2026, 10, 2, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Natureza = 2,
+                            Nome = "Alimentação",
+                            NomeNormalizado = "ALIMENTAÇÃO",
+                            UpdatedAtUtc = new DateTimeOffset(new DateTime(2026, 10, 2, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Versao = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("37600000-0000-0000-0000-000000000003"),
+                            Ativa = true,
+                            CreatedAtUtc = new DateTimeOffset(new DateTime(2026, 10, 2, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Natureza = 2,
+                            Nome = "Saúde animal",
+                            NomeNormalizado = "SAÚDE ANIMAL",
+                            UpdatedAtUtc = new DateTimeOffset(new DateTime(2026, 10, 2, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Versao = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("37600000-0000-0000-0000-000000000004"),
+                            Ativa = true,
+                            CreatedAtUtc = new DateTimeOffset(new DateTime(2026, 10, 2, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Natureza = 2,
+                            Nome = "Serviços",
+                            NomeNormalizado = "SERVIÇOS",
+                            UpdatedAtUtc = new DateTimeOffset(new DateTime(2026, 10, 2, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Versao = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("37600000-0000-0000-0000-000000000005"),
+                            Ativa = true,
+                            CreatedAtUtc = new DateTimeOffset(new DateTime(2026, 10, 2, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Natureza = 2,
+                            Nome = "Outras despesas",
+                            NomeNormalizado = "OUTRAS DESPESAS",
+                            UpdatedAtUtc = new DateTimeOffset(new DateTime(2026, 10, 2, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Versao = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("37600000-0000-0000-0000-000000000006"),
+                            Ativa = true,
+                            Codigo = "VENDA_ANIMAIS",
+                            CreatedAtUtc = new DateTimeOffset(new DateTime(2026, 10, 2, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Natureza = 1,
+                            Nome = "Venda de animais",
+                            NomeNormalizado = "VENDA DE ANIMAIS",
+                            UpdatedAtUtc = new DateTimeOffset(new DateTime(2026, 10, 2, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Versao = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("37600000-0000-0000-0000-000000000007"),
+                            Ativa = true,
+                            CreatedAtUtc = new DateTimeOffset(new DateTime(2026, 10, 2, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Natureza = 1,
+                            Nome = "Outras receitas",
+                            NomeNormalizado = "OUTRAS RECEITAS",
+                            UpdatedAtUtc = new DateTimeOffset(new DateTime(2026, 10, 2, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Versao = 1
+                        });
+                });
+
+            modelBuilder.Entity("GenSW.Domain.Financial.ConfiguracaoCaixa", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("AutorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("DataInicio")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("SaldoInicial")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Versao")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ConfiguracoesCaixa", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Caixa_Singleton", "\"Id\" = 1 AND EXTRACT(DAY FROM \"DataInicio\") = 1");
+                        });
+                });
+
+            modelBuilder.Entity("GenSW.Domain.Financial.FechamentoCaixa", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AutorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("Despesas")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateOnly>("Mes")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Observacao")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("QuantidadeDespesas")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("QuantidadeReceitas")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("Receitas")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("SaldoAbertura")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal?>("SaldoConferido")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("SaldoFinal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Mes")
+                        .IsUnique();
+
+                    b.ToTable("FechamentosCaixa", (string)null);
+                });
+
+            modelBuilder.Entity("GenSW.Domain.Financial.IdempotenciaFinanceira", b =>
+                {
+                    b.Property<Guid>("AutorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Operacao")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Chave")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PayloadHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("RespostaJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("AutorId", "Operacao", "Chave");
+
+                    b.ToTable("IdempotenciasFinanceiras", (string)null);
+                });
+
+            modelBuilder.Entity("GenSW.Domain.Financial.LancamentoCaixa", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AnimalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AutorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Cancelado")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("CategoriaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("DataMovimento")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("FormaPagamento")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("LancamentoOriginalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MotivoAjuste")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Observacao")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("Origem")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("PessoaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("Valor")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<int>("Versao")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AnimalId");
+
+                    b.HasIndex("CategoriaId");
+
+                    b.HasIndex("LancamentoOriginalId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Caixa_ReversaoOriginal")
+                        .HasFilter("\"Origem\" = 2");
+
+                    b.HasIndex("PessoaId");
+
+                    b.HasIndex("DataMovimento", "Id");
+
+                    b.ToTable("LancamentosCaixa", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Lancamento_Enums", "\"Tipo\" IN (1,2) AND \"FormaPagamento\" BETWEEN 1 AND 5 AND \"Origem\" BETWEEN 1 AND 3");
+
+                            t.HasCheckConstraint("CK_Lancamento_Origem", "(\"Origem\" = 1 AND \"LancamentoOriginalId\" IS NULL) OR (\"Origem\" <> 1 AND \"LancamentoOriginalId\" IS NOT NULL AND length(trim(\"MotivoAjuste\")) > 0)");
+
+                            t.HasCheckConstraint("CK_Lancamento_Valor", "\"Valor\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("GenSW.Domain.Financial.MesCaixa", b =>
+                {
+                    b.Property<DateOnly>("Mes")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("Fechado")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Versao")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.HasKey("Mes");
+
+                    b.ToTable("MesesCaixa", (string)null);
                 });
 
             modelBuilder.Entity("GenSW.Domain.People.Pessoa", b =>
@@ -1249,6 +1639,48 @@ namespace GenSW.Infrastructure.Persistence.Migrations
                         .HasForeignKey("EspecieId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("GenSW.Domain.Financial.AuditoriaLancamento", b =>
+                {
+                    b.HasOne("GenSW.Domain.Financial.LancamentoCaixa", null)
+                        .WithMany()
+                        .HasForeignKey("LancamentoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GenSW.Domain.Financial.FechamentoCaixa", b =>
+                {
+                    b.HasOne("GenSW.Domain.Financial.MesCaixa", null)
+                        .WithMany()
+                        .HasForeignKey("Mes")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GenSW.Domain.Financial.LancamentoCaixa", b =>
+                {
+                    b.HasOne("GenSW.Domain.Animals.Animal", null)
+                        .WithMany()
+                        .HasForeignKey("AnimalId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("GenSW.Domain.Financial.CategoriaFinanceira", null)
+                        .WithMany()
+                        .HasForeignKey("CategoriaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.Financial.LancamentoCaixa", null)
+                        .WithMany()
+                        .HasForeignKey("LancamentoOriginalId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("GenSW.Domain.People.Pessoa", null)
+                        .WithMany()
+                        .HasForeignKey("PessoaId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("GenSW.Domain.Varieties.ImagemVariedade", b =>

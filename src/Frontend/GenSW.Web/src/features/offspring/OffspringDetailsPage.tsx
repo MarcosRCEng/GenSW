@@ -1,2 +1,25 @@
-import {useEffect,useState,type FormEvent} from 'react';import {Link,useNavigate,useParams} from 'react-router-dom';import {convertOffspring,getOffspring,splitOffspring} from './offspringService';import type {Offspring} from './types'
-export function OffspringDetailsPage(){const{id}=useParams(),nav=useNavigate(),[item,setItem]=useState<Offspring|null>(null),[error,setError]=useState<string|null>(null),[species,setSpecies]=useState(''),[code,setCode]=useState(''),[name,setName]=useState('');useEffect(()=>{if(id)void getOffspring(id).then(setItem).catch(()=>setError('Não foi possível carregar a prole.'))},[id]);if(!item)return <main className="p-8">{error??'Carregando…'}</main>;const split=()=>void splitOffspring(item.id,{origem:item.origem,data:item.data,pesoGramas:item.pesoGramas,sexo:item.sexo,condicao:item.condicao,observacao:item.observacao}).then(x=>nav(`/proles/${x.id}`)).catch(()=>setError('Não foi possível desdobrar o lote.'));const convert=(e:FormEvent)=>{e.preventDefault();if(!species)return setError('Informe a espécie do Animal.');void convertOffspring(item.id,{codigoInterno:code||null,nome:name||null,especieId:species,escopo:1}).then(x=>nav(`/animais/${x.animal.id}/editar?paiSugerido=${x.paiSugerido.id}&maeSugerida=${x.maeSugerida.id}`)).catch(()=>setError('Não foi possível converter a prole.'))};return <main className="min-h-screen bg-slate-50 p-8"><section className="mx-auto max-w-xl rounded bg-white p-6"><Link to={`/proles?cicloReprodutivoId=${item.cicloReprodutivoId}`}>← Proles do ciclo</Link><h1 className="mt-3 text-2xl font-bold">Prole {item.tipoRegistro===1?'individual':'em lote'}</h1>{error&&<p role="alert">{error}</p>}<dl className="my-5"><dt>Origem</dt><dd>{item.origem===1?'Nascimento':'Eclosão'} em {item.data}</dd><dt>Condição</dt><dd>{item.condicao}</dd><dt>Animal resultante</dt><dd>{item.animalId?<Link to={`/animais/${item.animalId}/editar`}>Consultar Animal</Link>:'Ainda não convertido'}</dd></dl><Link to={`/proles/${item.id}/editar`}>Editar</Link>{item.tipoRegistro===2?<button className="ml-4 rounded border px-3 py-2" onClick={split}>Desdobrar uma unidade em registro individual</button>:!item.animalId?<form className="mt-8 space-y-3 border-t pt-5" onSubmit={convert}><h2 className="font-bold">Converter em Animal</h2><p className="text-sm">Os progenitores do cruzamento serão somente sugeridos no fluxo de Filiação. Nenhuma filiação será criada automaticamente.</p><label className="block">Código interno (opcional)<input value={code} onChange={e=>setCode(e.target.value)}/></label><label className="block">Nome<input value={name} onChange={e=>setName(e.target.value)}/></label><label className="block">ID da espécie<input required value={species} onChange={e=>setSpecies(e.target.value)}/></label><button className="rounded bg-emerald-700 px-4 py-2 text-white">Criar Animal e continuar para confirmação de Filiação</button></form>:null}</section></main>}
+import { Link, useParams } from 'react-router-dom'
+import { DetailField, DetailsPage } from '../../shared/details/DetailsPage'
+import { useRecordDetails } from '../../shared/details/useRecordDetails'
+import { getOffspring } from './offspringService'
+
+export function OffspringDetailsPage() {
+  const { id } = useParams<{ id: string }>()
+  const { record: item, state, retry } = useRecordDetails(id, getOffspring)
+  return <DetailsPage title="Visualizar prole" listPath="/proles" listLabel="Proles" state={state} onRetry={retry} editPath={id ? `/proles/${id}/editar` : undefined}>
+    {item && <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><dl className="grid gap-5 sm:grid-cols-2">
+      <DetailField label="Tipo de registro">{item.tipoRegistro === 1 ? 'Individual' : 'Lote'}</DetailField>
+      <DetailField label="Origem">{item.origem === 1 ? 'Nascimento' : 'Eclosão'}</DetailField>
+      <DetailField label="Data">{item.data.split('-').reverse().join('/')}</DetailField>
+      <DetailField label="Quantidade">{item.quantidade}</DetailField>
+      {item.tipoRegistro === 2 && <DetailField label="Quantidade desdobrada">{item.quantidadeDesdobrada}</DetailField>}
+      <DetailField label="Peso (g)">{item.pesoGramas}</DetailField>
+      <DetailField label="Sexo">{item.sexo === 1 ? 'Macho' : item.sexo === 2 ? 'Fêmea' : 'Indeterminado'}</DetailField>
+      <DetailField label="Condição">{item.condicao}</DetailField>
+      <DetailField label="Observação">{item.observacao}</DetailField>
+      <DetailField label="Ciclo reprodutivo"><Link className="font-semibold text-emerald-700 underline" to={`/ciclos-reprodutivos/${item.cicloReprodutivoId}`}>Visualizar ciclo reprodutivo</Link></DetailField>
+      {item.loteOrigemId && <DetailField label="Lote de origem"><Link className="font-semibold text-emerald-700 underline" to={`/proles/${item.loteOrigemId}`}>Visualizar lote</Link></DetailField>}
+      <DetailField label="Animal resultante">{item.animalId ? <Link className="font-semibold text-emerald-700 underline" to={`/animais/${item.animalId}`}>Visualizar animal</Link> : 'Ainda não convertido'}</DetailField>
+    </dl></section>}
+  </DetailsPage>
+}

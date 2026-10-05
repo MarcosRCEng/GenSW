@@ -1,3 +1,4 @@
+import { useRememberListState, useRestoredListState } from '../../../shared/details/listNavigation'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { listRacas } from '../../breeds/services/breedsService'
@@ -29,16 +30,17 @@ function optionLabel(name: string, active: boolean) { return active ? name : `${
 function sexoLabel(sexo: SexoAnimal) { return sexo === 1 ? 'Macho' : sexo === 2 ? 'Fêmea' : 'Indeterminado' }
 function escopoLabel(escopo: EscopoAnimal) { return escopo === 1 ? 'Operacional' : 'Referência' }
 
-function AnimalsTable({ items, changingStatusId, onChangeStatus }: { items: Animal[]; changingStatusId: string | null; onChangeStatus: (animal: Animal) => void }) {
+function AnimalsTable({ items, changingStatusId, onChangeStatus, listState }: { items: Animal[]; changingStatusId: string | null; onChangeStatus: (animal: Animal) => void; listState: unknown }) {
   return <div className="overflow-x-auto"><table className="min-w-full divide-y divide-slate-200 text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600"><tr>
     <th className="px-4 py-3 font-semibold" scope="col">Código interno</th><th className="px-4 py-3 font-semibold" scope="col">Nome</th><th className="px-4 py-3 font-semibold" scope="col">Espécie</th><th className="px-4 py-3 font-semibold" scope="col">Raça</th><th className="px-4 py-3 font-semibold" scope="col">Variedade</th><th className="px-4 py-3 font-semibold" scope="col">Sexo</th><th className="px-4 py-3 font-semibold" scope="col">Escopo</th><th className="px-4 py-3 font-semibold" scope="col">Status</th><th className="px-4 py-3 font-semibold" scope="col">Ações</th>
   </tr></thead><tbody className="divide-y divide-slate-100 bg-white text-slate-700">{items.map((animal) => <tr key={animal.id}>
     <td className="whitespace-nowrap px-4 py-4 font-medium text-slate-900">{animal.codigoInterno}</td><td className="whitespace-nowrap px-4 py-4">{animal.nome ?? '—'}</td><td className="whitespace-nowrap px-4 py-4">{animal.especie.nomeComum}</td><td className="whitespace-nowrap px-4 py-4">{animal.raca?.nome ?? '—'}</td><td className="whitespace-nowrap px-4 py-4">{animal.variedade?.nome ?? '—'}</td><td className="whitespace-nowrap px-4 py-4">{sexoLabel(animal.sexo)}</td><td className="whitespace-nowrap px-4 py-4">{escopoLabel(animal.escopo)}</td><td className="whitespace-nowrap px-4 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${animal.ativo ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}`}>{animal.ativo ? 'Ativo' : 'Inativo'}</span></td>
-    <td className="whitespace-nowrap px-4 py-4"><div className="flex gap-3"><Link className="font-semibold text-emerald-700 hover:text-emerald-900" to={`/animais/${animal.id}/editar`}>Editar</Link><button className="font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60" disabled={changingStatusId === animal.id} onClick={() => onChangeStatus(animal)} type="button">{changingStatusId === animal.id ? (animal.ativo ? 'Inativando…' : 'Reativando…') : (animal.ativo ? 'Inativar' : 'Reativar')}</button></div></td>
+    <td className="whitespace-nowrap px-4 py-4"><div className="flex gap-3"><Link className="font-semibold text-emerald-700 hover:text-emerald-900" state={listState} to={`/animais/${animal.id}`}>Visualizar</Link><Link className="font-semibold text-emerald-700 hover:text-emerald-900" state={listState} to={`/animais/${animal.id}/editar`}>Editar</Link><button className="font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60" disabled={changingStatusId === animal.id} onClick={() => onChangeStatus(animal)} type="button">{changingStatusId === animal.id ? (animal.ativo ? 'Inativando…' : 'Reativando…') : (animal.ativo ? 'Inativar' : 'Reativar')}</button></div></td>
   </tr>)}</tbody></table></div>
 }
 
 export function AnimalsListPage() {
+  const initial = useRestoredListState<ListAnimalsParams & { searchDraft: string }>('/animais', { searchDraft: '', page: 1, pageSize: INITIAL_PAGE_SIZE, sortBy: 'codigoInterno', sortDirection: 'asc' })
   const [result, setResult] = useState<AnimalsPage | null>(null)
   const [species, setSpecies] = useState<Especie[]>([])
   const [breeds, setBreeds] = useState<Raca[]>([])
@@ -49,18 +51,19 @@ export function AnimalsListPage() {
   const [reloadKey, setReloadKey] = useState(0)
   const [changingStatusId, setChangingStatusId] = useState<string | null>(null)
   const [statusMutationError, setStatusMutationError] = useState(false)
-  const [searchDraft, setSearchDraft] = useState('')
-  const [search, setSearch] = useState<string | undefined>()
-  const [especieId, setEspecieId] = useState<string | undefined>()
-  const [racaId, setRacaId] = useState<string | undefined>()
-  const [variedadeId, setVariedadeId] = useState<string | undefined>()
-  const [sexo, setSexo] = useState<SexoAnimal | undefined>()
-  const [escopo, setEscopo] = useState<EscopoAnimal | undefined>()
-  const [ativo, setAtivo] = useState<boolean | undefined>()
-  const [sortBy, setSortBy] = useState<AnimalSortBy>('codigoInterno')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(INITIAL_PAGE_SIZE)
+  const [searchDraft, setSearchDraft] = useState(initial.searchDraft)
+  const [search, setSearch] = useState<string | undefined>(initial.search)
+  const [especieId, setEspecieId] = useState<string | undefined>(initial.especieId)
+  const [racaId, setRacaId] = useState<string | undefined>(initial.racaId)
+  const [variedadeId, setVariedadeId] = useState<string | undefined>(initial.variedadeId)
+  const [sexo, setSexo] = useState<SexoAnimal | undefined>(initial.sexo)
+  const [escopo, setEscopo] = useState<EscopoAnimal | undefined>(initial.escopo)
+  const [ativo, setAtivo] = useState<boolean | undefined>(initial.ativo)
+  const [sortBy, setSortBy] = useState<AnimalSortBy>(initial.sortBy ?? 'codigoInterno')
+  const [sortDirection, setSortDirection] = useState<SortDirection>(initial.sortDirection ?? 'asc')
+  const [page, setPage] = useState(initial.page ?? 1)
+  const [pageSize, setPageSize] = useState(initial.pageSize ?? INITIAL_PAGE_SIZE)
+  const listState = useRememberListState('/animais', { searchDraft, search, especieId, racaId, variedadeId, sexo, escopo, ativo, sortBy, sortDirection, page, pageSize })
 
   useEffect(() => {
     let current = true
@@ -110,7 +113,7 @@ export function AnimalsListPage() {
     </form></section>
     {catalogError ? <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700" role="alert">Não foi possível carregar os catálogos para os filtros.</p> : null}
     {statusMutationError ? <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700" role="alert">Não foi possível alterar o status do animal.</p> : null}
-    <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">{isLoading && result === null ? <p className="p-8 text-center text-slate-600" role="status">Carregando animais…</p> : hasError ? <div className="p-8 text-center" role="alert"><p className="font-medium text-red-700">Não foi possível carregar os animais.</p><button className="mt-4 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-700" onClick={() => setReloadKey((key) => key + 1)} type="button">Tentar novamente</button></div> : result?.items.length === 0 ? <div className="p-8 text-center"><p className="font-medium text-slate-800">Nenhum animal encontrado.</p></div> : result ? <AnimalsTable changingStatusId={changingStatusId} items={result.items} onChangeStatus={changeStatus} /> : null}
+    <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">{isLoading && result === null ? <p className="p-8 text-center text-slate-600" role="status">Carregando animais…</p> : hasError ? <div className="p-8 text-center" role="alert"><p className="font-medium text-red-700">Não foi possível carregar os animais.</p><button className="mt-4 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-700" onClick={() => setReloadKey((key) => key + 1)} type="button">Tentar novamente</button></div> : result?.items.length === 0 ? <div className="p-8 text-center"><p className="font-medium text-slate-800">Nenhum animal encontrado.</p></div> : result ? <AnimalsTable listState={listState} changingStatusId={changingStatusId} items={result.items} onChangeStatus={changeStatus} /> : null}
       {result && !hasError ? <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 px-5 py-4 text-sm text-slate-600"><div>{result.totalPages > 0 ? <span>Página {result.page} de {result.totalPages}</span> : null}<span className="ml-3">{result.totalItems} registros</span>{isLoading ? <span className="ml-3" role="status">Atualizando…</span> : null}</div><div className="flex gap-2"><button disabled={isLoading || page <= 1} onClick={() => setPage((current) => current - 1)} type="button">Anterior</button><button disabled={isLoading || result.totalPages === 0 || page >= result.totalPages} onClick={() => setPage((current) => current + 1)} type="button">Próxima</button></div></footer> : null}
     </section></div></main>
 }
