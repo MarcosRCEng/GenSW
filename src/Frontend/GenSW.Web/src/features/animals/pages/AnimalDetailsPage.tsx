@@ -9,6 +9,7 @@ import { AnimalFiliationsPanel } from '../filiations/components/AnimalFiliations
 import { AnimalEggProductionPanel } from '../egg-production/AnimalEggProductionPanel'
 import { WeightsPanel } from '../evolution/WeightsPanel'
 import { ImageGallery } from '../evolution/ImageGallery'
+import { AnimalPropertiesPanel } from '../../properties/AnimalPropertiesPanel'
 
 function EggProduction({ animalId, speciesId }: { animalId: string; speciesId: string }) {
   const { record, state, retry } = useRecordDetails(speciesId, getEspecieById)
@@ -35,6 +36,7 @@ export function AnimalDetailsPage() {
           <DetailField label="Data de nascimento">{animal.dataNascimento?.split('-').reverse().join('/')}</DetailField>
         </dl>
       </section>
+      <AnimalPropertiesPanel key={`properties-${animal.id}`} animalId={animal.id} readOnly />
       <AnimalIdentificationsPanel key={`identifications-${animal.id}`} animalId={animal.id} readOnly />
       <AnimalRegistrationsPanel key={`registrations-${animal.id}`} animalId={animal.id} readOnly />
       <WeightsPanel key={`weights-${animal.id}`} animalId={animal.id} birth={animal.dataNascimento} readOnly />

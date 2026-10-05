@@ -86,6 +86,12 @@ O módulo autenticado de proles está em `/api/v1/proles`, acessível na consult
 
 Identity, People, Properties, AnimalProduction, Reproduction, Genetics, AgriculturalProduction, Inventory, Purchasing, Sales, Financial, Accounting, Fiscal, Reporting e BI evoluirão incrementalmente. O MVP inicial priorizará autenticação, pessoas, usuários, animais, espécie, raça, cruzamento e pedigree.
 
+## Propriedades como unidades operacionais físicas
+
+O módulo autenticado em `/propriedades` oferece cadastro, busca, edição, visualização e ativação/inativação. A edição de Animal permite associar, transferir ou encerrar seu vínculo operacional; Visualizar exibe o vínculo atual e o histórico em leitura. Animais sem Propriedade, inclusive os de referência, continuam válidos.
+
+Cada Animal possui no máximo um vínculo atual. Transferências preservam os períodos anteriores; a inativação da Propriedade conserva os vínculos existentes e impede novas entradas. O módulo não modifica pedigree, reprodução ou caixa. Consulte [regras, API e publicação](docs/operations/propriedades.md) e [evidências de validação](docs/validation/2026-10-05-propriedades-404.md).
+
 ## Governança Git/Redmine
 
 Cada demanda executada pelo Codex deve possuir uma **Tarefa** no Redmine, vinculada a uma **Evolução**. A Tarefa registra objetivo, escopo, critérios de aceite, validações, branch, commit, push e pendências. Commits só são criados após as validações aplicáveis passarem.

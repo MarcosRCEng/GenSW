@@ -21,6 +21,7 @@ public static class DependencyInjection
     {
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<GenSW.Application.Financial.FinancialService>();
+        services.AddScoped<GenSW.Application.Properties.PropriedadeService>();
         services.AddScoped<IPessoaService, PessoaService>();
         services.AddScoped<IEspecieService, EspecieService>();
         services.AddScoped<IRacaService, RacaService>();

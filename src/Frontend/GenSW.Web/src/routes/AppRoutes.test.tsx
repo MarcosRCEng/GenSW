@@ -118,6 +118,7 @@ describe('AppRoutes', () => {
     vi.mocked(logoutSession).mockResolvedValue()
     vi.mocked(subscribeToSessionInvalidation).mockReturnValue(vi.fn())
     vi.mocked(httpRequest).mockImplementation(async (path) => {
+      if (path.startsWith('/propriedades?')) return { items: [], page: 1, pageSize: 25, totalItems: 0, totalPages: 0 }
       if (path === '/financeiro/configuracao') return null
       if (path === '/financeiro/categorias' || path === '/financeiro/fechamentos') return []
       if (['/cruzamentos', '/ciclos-reprodutivos', '/proles'].includes(path)) {
@@ -445,6 +446,7 @@ describe('AppRoutes', () => {
 
   it.each([
     '/pessoas/id', '/especies/id', '/racas/id', '/variedades/id', '/animais/id',
+    '/propriedades', '/propriedades/nova', '/propriedades/id', '/propriedades/id/editar',
     '/cruzamentos/id', '/ciclos-reprodutivos/id', '/proles/id',
     '/financeiro/categorias/id', '/financeiro/lancamentos/id',
     '/animais/owner/identificacoes/id', '/animais/owner/registros/id',
@@ -478,6 +480,7 @@ describe('AppRoutes', () => {
 
   it.each([
     ['Cruzamentos', 'Nenhum cruzamento encontrado.'],
+    ['Propriedades', 'Nenhuma propriedade encontrada.'],
     ['Ciclos reprodutivos', 'Nenhum ciclo encontrado.'],
     ['Proles', null],
   ])('mantém %s acessível a partir da home autenticada', async (name, emptyMessage) => {
@@ -502,7 +505,7 @@ describe('AppRoutes', () => {
 
     await screen.findByRole('region', { name: 'Cadastros básicos' })
     const plannedAreas = [
-      { area: 'Cadastros básicos', modules: ['Produtos', 'Propriedades'] },
+      { area: 'Cadastros básicos', modules: ['Produtos'] },
       { area: 'Produção e operações', modules: ['Produção', 'Produção animal', 'Genética', 'Estoque'] },
       { area: 'Processos gerenciais', modules: ['Compras', 'Vendas', 'Fiscal', 'Contábil', 'Relatórios', 'BI / Indicadores'] },
     ]
@@ -519,7 +522,7 @@ describe('AppRoutes', () => {
     }
     expect(screen.getAllByRole('link').map((link) => link.getAttribute('href')).sort()).toEqual([
       '/animais', '/ciclos-reprodutivos', '/cruzamentos', '/especies', '/financeiro',
-      '/pessoas', '/proles', '/racas', '/variedades',
+      '/pessoas', '/proles', '/propriedades', '/racas', '/variedades',
     ])
   })
 })

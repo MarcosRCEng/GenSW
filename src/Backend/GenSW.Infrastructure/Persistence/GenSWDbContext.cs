@@ -22,6 +22,8 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
     public DbSet<Variedade> Variedades => Set<Variedade>();
 
     public DbSet<Animal> Animais => Set<Animal>();
+    public DbSet<GenSW.Domain.Properties.Propriedade> Propriedades => Set<GenSW.Domain.Properties.Propriedade>();
+    public DbSet<GenSW.Domain.Properties.VinculoAnimalPropriedade> VinculosAnimalPropriedade => Set<GenSW.Domain.Properties.VinculoAnimalPropriedade>();
     public DbSet<PesagemAnimal> PesagensAnimal => Set<PesagemAnimal>();
     public DbSet<ImagemAnimal> ImagensAnimal => Set<ImagemAnimal>();
     public DbSet<ImagemVariedade> ImagensVariedade => Set<ImagemVariedade>();
@@ -42,6 +44,7 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
         base.OnModelCreating(builder);
         FinancialModelConfiguration.Configure(builder, Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL");
         ImageModelConfiguration.Configure(builder);
+        PropriedadeModelConfiguration.Configure(builder, Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL");
         builder.Entity<FiliacaoAnimal>().HasIndex(x => new { x.ProgenitorId, x.AnimalId }).HasFilter("\"Ativa\"").HasDatabaseName("IX_FiliacoesAnimal_DescendentesAtivos");
         builder.Entity<FiliacaoAnimal>().HasIndex(x => x.ProgenitorId);
         builder.Entity<PesagemAnimal>(entity =>
