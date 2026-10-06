@@ -45,7 +45,7 @@ Concorrência é validada com duas sessões PostgreSQL efetivamente bloqueadas p
 
 Também foi feito `pg_dump` somente de leitura da homologação, restaurado em outro cluster PostgreSQL local. Todas as 30 tabelas existentes conservaram contagens e hashes SHA-256 do conteúdo após as migrations na cópia. Só depois dessa comparação foram inseridas fixtures sintéticas e uma conta de teste na cópia isolada. Banco e sessão do ambiente original não foram alterados.
 
-A base compartilhada continua em `20261002222623_AddFinancialCash`, com schema de Propriedades pendente antes deste trabalho. A cópia recebeu essa migration anterior e `20261006220939_AddCatalogAndFormulation`. Não foi aplicada migration à base compartilhada; nenhum merge ou deploy foi feito. O [SQL revisável](../operations/sql/2026-10-06-catalogo-formulacao-413.sql) cobre somente esta migration nova, a partir de Propriedades.
+A base compartilhada continua em `20261002222623_AddFinancialCash`, com schema de Propriedades pendente antes deste trabalho. A cópia recebeu essa migration anterior e `20261006220939_AddCatalogAndFormulation`. Não foi aplicada migration à base compartilhada nem feito deploy. A integração Git foi autorizada posteriormente no aceite abaixo. O [SQL revisável](../operations/sql/2026-10-06-catalogo-formulacao-413.sql) cobre somente esta migration nova, a partir de Propriedades.
 
 ## Navegador HTTPS e revisão humana
 
@@ -62,8 +62,10 @@ Animal, pesagens/filiação, ovos, Propriedades e Caixa foram consultados na có
 
 Roteiro de aceite: entrar em 5175 com uma conta copiada; abrir Insumos e produtos; revisar perfis e suas fontes; abrir Receitas e a versão publicada da fixture; calcular outra escala; abrir Formulação e comparação; comparar F1/F2 e o caso PB ausente; criar sua própria variação documental. Dados sintéticos servem somente para teste e não são recomendação nutricional.
 
-## Limites e pendências
+## Aceite e limites do escopo
 
-Revisão humana, aceite e eventual merge permanecem pendentes. Estoque, vínculo com ovos, custos e solver continuam adiados. O lock transacional serializa escritas deste MVP; retenção multissaída não é modelada. Os seletores históricos podem apresentar ID enquanto a referência não estiver na página carregada. O build alerta sobre tamanho do bundle; nenhuma dependência foi alterada para tratar trabalho fora do escopo. Publicação em produção/base compartilhada exige decisão posterior, backup e revisão das migrations pendentes.
+Em 06/10/2026, após a entrega para revisão, o usuário confirmou: “Validado, pode concluir a tarefa fazer commit, push e merge, deixe sem nenhuma pendencia de governança”. O aceite do MVP-1 e a autorização de integração estão registrados na Tarefa [#427](https://devops-lab.tailaf9418.ts.net/issues/427), filha da #413. O [PR #20](https://github.com/MarcosRCEng/GenSW/pull/20) reúne implementação e planejamento aprovado; o PR documental #19 é substituído por essa entrega. O estado da integração, seus commits e o CI final são verificáveis no PR e nas notas de encerramento do Redmine.
 
-Commit, push, PR e resultados de CI são registrados nas Tarefas #421–#426 e no PR de entrega. #413, #415 e #420 não são concluídas por esta implementação.
+Estoque, vínculo com ovos, custos e solver continuam adiados, fora do aceite do MVP-1. O lock transacional serializa escritas deste MVP; retenção multissaída não é modelada. Os seletores históricos podem apresentar ID enquanto a referência não estiver na página carregada. O build alerta sobre tamanho do bundle; nenhuma dependência foi alterada para tratar trabalho fora do escopo. Publicação em produção/base compartilhada exige decisão posterior, backup e revisão das migrations pendentes; não integra este encerramento.
+
+Commit, push, merge, aceite e resultados de CI são registrados nas Tarefas #421–#427 e no PR de entrega. O encerramento de #413 e das tarefas de preparação/planejamento abrange o trabalho executado e o MVP-1 aprovado; não declara as fases futuras implementadas nem concede autorização para executá-las.

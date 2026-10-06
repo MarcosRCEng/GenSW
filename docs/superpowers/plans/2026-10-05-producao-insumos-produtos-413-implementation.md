@@ -2,7 +2,7 @@
 
 Data: 2026-10-05. Planejamento [#415](https://devops-lab.tailaf9418.ts.net/issues/415), filho da [Evolução #413](https://devops-lab.tailaf9418.ts.net/issues/413). Estado: **proposto para revisão, sem implementação autorizada**.
 
-Atualização em 06/10/2026: o estado acima é o da elaboração original. O usuário aprovou o conjunto e autorizou P01–P05, executados sob #421/#422–#426. As migrations das verticais foram consolidadas em uma migration aditiva do MVP; definições semânticas ficam versionadas no código, sem seed nutricional. A entrega funcional, os gates e as limitações estão nas [evidências de validação](../../validation/2026-10-06-catalogo-formulacao-413.md), com revisão humana pendente. F01–F06 permanecem futuros.
+Atualização em 06/10/2026: o estado acima é o da elaboração original. O usuário aprovou o conjunto e autorizou P01–P05, executados sob #421/#422–#426. As migrations das verticais foram consolidadas em uma migration aditiva do MVP; definições semânticas ficam versionadas no código, sem seed nutricional. A entrega funcional, os gates, o aceite humano e a autorização posterior de merge do PR #20 estão nas [evidências de validação](../../validation/2026-10-06-catalogo-formulacao-413.md). O encerramento é rastreado na #427. F01–F06 permanecem futuros, sem autorização de execução ou produção.
 
 Contrato de domínio: [especificação](../specs/2026-10-05-producao-insumos-produtos-413-design.md). Entrada futura: [prompt condicionado ao aceite](2026-10-05-producao-insumos-produtos-413-prompt.md).
 

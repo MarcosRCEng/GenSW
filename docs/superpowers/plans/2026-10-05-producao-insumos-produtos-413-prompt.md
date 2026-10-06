@@ -2,7 +2,7 @@
 
 **Condição de execução:** este prompt só pode implementar após aprovação humana explícita da especificação e do plano abaixo. A presença deste arquivo, um PR draft ou decisões de recorte não constituem aprovação. Se ainda não houver aceite verificável, apresente os documentos para revisão e pare antes de modificar código funcional/migrations.
 
-Registro em 06/10/2026: a aprovação humana explícita foi recebida junto à instrução de executar a continuidade. O MVP-1 foi implementado sob #421 e #422–#426; [evidências e roteiro de revisão](../../validation/2026-10-06-catalogo-formulacao-413.md). Este registro não autoriza merge, produção ou as fases adiadas.
+Registro em 06/10/2026: a aprovação humana explícita foi recebida junto à instrução de executar a continuidade. O MVP-1 foi implementado sob #421 e #422–#426; [evidências e aceite](../../validation/2026-10-06-catalogo-formulacao-413.md). Após a revisão, o usuário validou a entrega e autorizou commit, push, merge do PR #20 e encerramento da governança, rastreados na #427. Produção e fases adiadas continuam sem autorização. As instruções abaixo preservam o contrato original da etapa de implementação.
 
 Trabalhe no repositório `C:\Users\Marcos\Documents\ChatGPT\GenSW`. Siga integralmente o `AGENTS.md` local, mantendo-o fora do Git. Leia:
 
