@@ -42,6 +42,7 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        FormulationModelConfiguration.Configure(builder, Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL");
         FinancialModelConfiguration.Configure(builder, Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL");
         ImageModelConfiguration.Configure(builder);
         PropriedadeModelConfiguration.Configure(builder, Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL");

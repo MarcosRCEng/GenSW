@@ -20,8 +20,8 @@ A página inicial organiza o ERP por finalidade de uso, em seções semânticas 
 
 | Grupo | Disponível | Planejado |
 | --- | --- | --- |
-| Cadastros básicos | Pessoas (`/pessoas`); Propriedades (`/propriedades`); Taxonomia: Espécies (`/especies`), Raças (`/racas`) e Variedades (`/variedades`); Animais (`/animais`) | Produtos |
-| Produção e operações | Reprodução: Cruzamentos (`/cruzamentos`), Ciclos reprodutivos (`/ciclos-reprodutivos`) e Proles (`/proles`) | Produção (agrícola); Produção animal; Genética; Estoque |
+| Cadastros básicos | Pessoas (`/pessoas`); Propriedades (`/propriedades`); Taxonomia: Espécies (`/especies`), Raças (`/racas`) e Variedades (`/variedades`); Animais (`/animais`); Insumos e produtos (`/itens`) | — |
+| Produção e operações | Reprodução: Cruzamentos (`/cruzamentos`), Ciclos reprodutivos (`/ciclos-reprodutivos`) e Proles (`/proles`); Produção — transformações: Receitas (`/producao/receitas`) e Formulação e comparação (`/producao/formulacao`) | Produção agrícola; Produção animal; Genética; Estoque |
 | Processos gerenciais | Financeiro: Fluxo de caixa (`/financeiro`) | Compras; Vendas; Fiscal; Contábil; Relatórios; BI |
 
 Produção (agrícola), Produção animal e Genética permanecem módulos próprios no roadmap. Os recursos atuais de produção de ovos, filiação e pedigree continuam acessíveis por Animais; sua existência dentro dessa vertical não torna disponíveis os módulos futuros completos. A área Administração só deve ser exibida quando houver uma rota administrativa implementada. Identity permanece presente na autenticação e nas ações de sessão, incluindo Sair.
@@ -60,6 +60,8 @@ O vínculo temporal Animal–Propriedade é separado da identidade do Animal: au
 Filiação continua sendo a fonte do pedigree. Propriedade não é condição de elegibilidade nem altera as regras de Cruzamentos, Ciclos, Proles ou Fluxo de caixa. Veja o [contrato e procedimento operacional](../operations/propriedades.md).
 
 ## Estratégia modular
+
+O MVP-1 da #413 introduz `Domain/Catalog` e `Domain/Formulation`, casos de uso em `Application/Formulation`, persistência própria em `Infrastructure/Formulation` e controllers autenticados específicos. A feature React `formulation` usa HTTP/sessão e componentes de detalhes existentes. Conteúdo de perfis/receitas é versionado em JSONB tipado, com referências publicadas protegidas por FKs e guards de imutabilidade. Cálculos usam decimal no backend; snapshots incluem receitas, perfis, conversões, hipóteses, contribuições e versão do motor. Escritas do módulo são serializadas por advisory lock transacional próprio. Não há vínculo físico/financeiro com Animal, Caixa ou estoque. Veja [decisões e contrato operacional](../operations/catalogo-formulacao.md).
 
 Novos módulos começam pequenos, com uma Evolução no Redmine e Tarefas rastreáveis. Criar uma nova entidade, tabela, endpoint ou tela exige uma necessidade concreta do módulo. Abstrações compartilhadas só são introduzidas quando houver uso real em mais de um ponto.
 

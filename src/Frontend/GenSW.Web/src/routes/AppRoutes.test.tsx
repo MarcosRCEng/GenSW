@@ -505,8 +505,7 @@ describe('AppRoutes', () => {
 
     await screen.findByRole('region', { name: 'Cadastros básicos' })
     const plannedAreas = [
-      { area: 'Cadastros básicos', modules: ['Produtos'] },
-      { area: 'Produção e operações', modules: ['Produção', 'Produção animal', 'Genética', 'Estoque'] },
+      { area: 'Produção e operações', modules: ['Produção agrícola', 'Produção animal', 'Genética', 'Estoque'] },
       { area: 'Processos gerenciais', modules: ['Compras', 'Vendas', 'Fiscal', 'Contábil', 'Relatórios', 'BI / Indicadores'] },
     ]
     for (const { area, modules } of plannedAreas) {
@@ -522,7 +521,7 @@ describe('AppRoutes', () => {
     }
     expect(screen.getAllByRole('link').map((link) => link.getAttribute('href')).sort()).toEqual([
       '/animais', '/ciclos-reprodutivos', '/cruzamentos', '/especies', '/financeiro',
-      '/pessoas', '/proles', '/propriedades', '/racas', '/variedades',
+      '/itens', '/pessoas', '/producao/formulacao', '/producao/receitas', '/proles', '/propriedades', '/racas', '/variedades',
     ])
   })
 })

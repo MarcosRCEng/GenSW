@@ -215,7 +215,8 @@ public sealed class PostgreSqlPropriedadesTests(AnimalApiPostgreSqlFixture fixtu
             Filiation = await db.FiliacoesAnimal.AsNoTracking().SingleAsync(),
         });
         Assert.Equal(before, after);
-        Assert.Equal(columnsBefore, await ReadExistingColumnsAsync(db));
+        var existingTables = columnsBefore.Select(x => x.Split('.')[0]).ToHashSet();
+        Assert.Equal(columnsBefore, (await ReadExistingColumnsAsync(db)).Where(x => existingTables.Contains(x.Split('.')[0])));
         Assert.Empty(await db.Set<Propriedade>().ToArrayAsync());
         Assert.Empty(await db.Set<VinculoAnimalPropriedade>().ToArrayAsync());
         Assert.Empty(await db.Database.GetPendingMigrationsAsync());

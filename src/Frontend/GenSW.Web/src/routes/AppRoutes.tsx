@@ -32,6 +32,10 @@ import { OffspringDetailsPage } from '../features/offspring/OffspringDetailsPage
 import { PropertiesListPage } from '../features/properties/PropertiesListPage'
 import { PropertyFormPage } from '../features/properties/PropertyFormPage'
 import { PropertyDetailsPage } from '../features/properties/PropertyDetailsPage'
+import { ItemsPage, ItemFormPage, ItemDetailsPage, CategoriesPage, ConversionFormPage } from '../features/formulation/CatalogPages'
+import { ProfileFormPage, ProfileDetailsPage } from '../features/formulation/ProfilePages'
+import { RecipesPage, RecipeHeaderFormPage, RecipeDetailsPage, RecipeVersionFormPage, RecipeVersionDetailsPage } from '../features/formulation/RecipePages'
+import { FormulationPage, SimulationFormPage, SimulationDetailsPage, ComparisonDetailsPage } from '../features/formulation/SimulationPages'
 
 function ApplicationLoading() {
   return (
@@ -67,6 +71,26 @@ export function AppRoutes() {
       </Route>
       <Route element={<ProtectedRoute />}>
         <Route element={<AuthenticatedHomePage />} path="/" />
+        <Route element={<ItemsPage />} path="/itens" />
+        <Route element={<ItemFormPage />} path="/itens/novo" />
+        <Route element={<CategoriesPage />} path="/itens/categorias" />
+        <Route element={<ItemDetailsPage />} path="/itens/:id" />
+        <Route element={<ItemFormPage />} path="/itens/:id/editar" />
+        <Route element={<ConversionFormPage />} path="/itens/:id/conversoes/nova" />
+        <Route element={<ProfileFormPage />} path="/itens/:id/perfis/novo" />
+        <Route element={<ProfileDetailsPage />} path="/producao/perfis/:profileId" />
+        <Route element={<ProfileFormPage />} path="/producao/perfis/:profileId/editar" />
+        <Route element={<RecipesPage />} path="/producao/receitas" />
+        <Route element={<RecipeHeaderFormPage />} path="/producao/receitas/nova" />
+        <Route element={<RecipeDetailsPage />} path="/producao/receitas/:id" />
+        <Route element={<RecipeHeaderFormPage />} path="/producao/receitas/:id/editar" />
+        <Route element={<RecipeVersionFormPage />} path="/producao/receitas/:id/versoes/nova" />
+        <Route element={<RecipeVersionDetailsPage />} path="/producao/receitas/versoes/:versionId" />
+        <Route element={<RecipeVersionFormPage />} path="/producao/receitas/versoes/:versionId/editar" />
+        <Route element={<FormulationPage />} path="/producao/formulacao" />
+        <Route element={<SimulationFormPage />} path="/producao/formulacao/nova" />
+        <Route element={<SimulationDetailsPage />} path="/producao/formulacao/:simulationId" />
+        <Route element={<ComparisonDetailsPage />} path="/producao/formulacao/comparacoes/:comparisonId" />
         <Route element={<PropertiesListPage />} path="/propriedades" />
         <Route element={<PropertyFormPage />} path="/propriedades/nova" />
         <Route element={<PropertyFormPage />} path="/propriedades/:id/editar" />
