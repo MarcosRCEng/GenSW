@@ -54,8 +54,8 @@ export const navigationModules: readonly NavigationModule[] = [
     description: 'Cadastro individual, pesos, imagens, genealogia e produção de ovos.', route: '/animais',
   },
   {
-    id: 'produtos', name: 'Produtos', area: 'cadastros', state: 'planned',
-    description: 'Catálogo de produtos e insumos.',
+    id: 'produtos', name: 'Insumos e produtos', area: 'cadastros', state: 'available',
+    description: 'Catálogo único de materiais, conversões e perfis nutricionais.', route: '/itens',
   },
   {
     id: 'propriedades', name: 'Propriedades', area: 'cadastros', state: 'available',
@@ -71,8 +71,16 @@ export const navigationModules: readonly NavigationModule[] = [
     ],
   },
   {
-    id: 'producao', name: 'Produção', area: 'operacoes', state: 'planned',
+    id: 'producao', name: 'Produção agrícola', area: 'operacoes', state: 'planned',
     description: 'Planejamento e acompanhamento da produção agrícola.',
+  },
+  {
+    id: 'transformacoes', name: 'Produção — transformações', area: 'operacoes', state: 'available',
+    description: 'Receitas versionadas, simulação manual e comparação nutricional.',
+    features: [
+      { id: 'receitas', name: 'Receitas', route: '/producao/receitas' },
+      { id: 'formulacao', name: 'Formulação e comparação', route: '/producao/formulacao' },
+    ],
   },
   {
     id: 'producao-animal', name: 'Produção animal', area: 'operacoes', state: 'planned',

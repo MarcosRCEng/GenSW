@@ -105,3 +105,9 @@ A ação **Visualizar** abre detalhes somente de leitura em Pessoas, Espécies, 
 A edição de Animal inclui pesagens individuais, galeria privada e seleção pesquisável de progenitores. Cada pesagem mantém a data observada e separa a idade alvo da idade calculada. A árvore exibe ascendentes e descendentes com expansão explícita; o pedigree legado permanece disponível. Variedade possui galeria própria de catálogo, sem herdar ou fornecer foto de um indivíduo.
 
 As APIs autenticadas ficam em `/api/v1/animais/{id}/pesagens`, `/imagens`, `/progenitores-elegiveis` e `/arvore`; imagens de catálogo ficam em `/api/v1/variedades/{id}/imagens`. Conteúdo binário exige autenticação. Consulte [operação, migrações e backup](docs/operations/animal-evolution.md), [auditoria somente leitura](docs/operations/animal-genealogy-audit.sql) e [evidências da implementação](docs/validation/2026-10-02-animal-evolution-372.md).
+
+## Catálogo, receitas e formulação (MVP-1 #413)
+
+O catálogo único em `/itens` oferece categorias, capacidades cumulativas, conversões documentais e perfis nutricionais versionados. Receitas em `/producao/receitas` registram entradas, saídas esperadas, etapas, perdas, escala e sub-receitas acíclicas. `/producao/formulacao` calcula e compara simulações manuais BN/MS com fontes, cobertura, metas e snapshots imutáveis. Dados ausentes não viram zero; estimativas e contextos incompatíveis ficam explícitos. Estoque, vínculo com ovos, custos e solver permanecem adiados.
+
+Consulte [uso, API, semântica, migration e recuperação](docs/operations/catalogo-formulacao.md) e [evidências e roteiro de revisão](docs/validation/2026-10-06-catalogo-formulacao-413.md). A validação desta entrega usa cópia isolada em `https://localhost:5175`, API `https://localhost:7005`, preservando a homologação existente.

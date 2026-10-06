@@ -30,7 +30,7 @@ if (loginPermitLimit <= 0 || loginWindowSeconds <= 0)
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddControllers(options => options.Filters.Add<GenSW.API.Controllers.AnimalEvolutionFilter>());
+builder.Services.AddControllers(options => { options.Filters.Add<GenSW.API.Controllers.AnimalEvolutionFilter>(); options.Filters.Add<GenSW.API.Controllers.FormulationFilter>(); });
 builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
 {
     var original = options.InvalidModelStateResponseFactory;
