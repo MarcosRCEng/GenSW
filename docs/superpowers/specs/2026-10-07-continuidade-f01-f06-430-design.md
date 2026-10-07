@@ -1,6 +1,8 @@
 # Continuidade F01–F06 — estoque e produção física
 
-Data: 07/10/2026, America/Sao_Paulo. Evolução [#430](https://devops-lab.tailaf9418.ts.net/issues/430), relacionada à [#413](https://devops-lab.tailaf9418.ts.net/issues/413); planejamento [#431](https://devops-lab.tailaf9418.ts.net/issues/431). **Contrato proposto para revisão. A autorização atual abrange investigação e documentação; implementação e migrations ainda dependem de aceite explícito.** Sem merge ou produção.
+Data: 07/10/2026, America/Sao_Paulo. Evolução [#430](https://devops-lab.tailaf9418.ts.net/issues/430), relacionada à [#413](https://devops-lab.tailaf9418.ts.net/issues/413); planejamento [#431](https://devops-lab.tailaf9418.ts.net/issues/431). **Contrato de F01 aceito pelo usuário; F02–F06 continuam propostas. A implementação de F01 aguarda autorização específica.** Sem merge ou produção.
+
+Aceite humano em 07/10/2026: após a exposição do escopo F01 e de D06-F01 (papéis), V01 (validade não informada) e Q01 (precisão/resíduos), o usuário respondeu **“Considere aceitos”**. O contexto distinguia aceite do contrato e autorização adicional de implementação. Registro na [Tarefa #433](https://devops-lab.tailaf9418.ts.net/issues/433). Esses pontos de F01 não serão submetidos novamente ao mesmo aceite; F02–F06, implementação, migrations compartilhadas, merge e produção conservam seus gates próprios.
 
 Base verificada por fetch: `origin/main` = `dda69509c01b4a27bc6b6b5c3f2add842c441a53`, merge do PR #20. Branch documental `codex/431-planejamento-f01-f06`, em worktree isolado. O checkout original e seus arquivos locais foram preservados. #413 permanece concluída no recorte MVP-1; #428 e #429 foram reconsultadas e permaneciam Em validação. Não foram criadas tarefas de implementação.
 
@@ -30,16 +32,16 @@ Leitura integral das referências obrigatórias concluída, incluindo [operaçã
 
 | Decisão | Recomendação concreta | Gate |
 | --- | --- | --- |
-| D06-F01 — Papéis | Autenticado consulta, cadastra Local/Lote e registra recebimento operacional, transferência ordinária, saída justificada e consumo interno. Admin abre inventário, ajusta quantidades, altera situação/validade/referências do lote, inativa/reativa Local e executa tratamentos excepcionais. | Aceite de F01. Não cria papel novo nem ACL por Propriedade. |
-| V01 — Validade não informada | Não configurar regra sanitária por classe por inferência. Sem data = não informada, aviso permanente; não equivale a vencido. Recebimento vencido ou declarado pendente entra Bloqueado; nenhum recebimento o libera automaticamente. | Aceite de F01. Se o negócio exigir validade obrigatória por item, revisar esse ponto antes de implementar, com política explícita própria. |
-| Q01 — Resolução física | Saldo e movimentos `numeric(20,6)` na unidade canônica; quantização ToEven somente com prévia e aceite do resíduo. `un` sempre inteiro, nunca arredondado automaticamente. | Aceite de F01. Não altera escala/nutrição do MVP-1. |
+| D06-F01 — Papéis | Autenticado consulta, cadastra Local/Lote e registra recebimento operacional, transferência ordinária, saída justificada e consumo interno. Admin abre inventário, ajusta quantidades, altera situação/validade/referências do lote, inativa/reativa Local e executa tratamentos excepcionais. | **Aceito em 07/10/2026.** Não cria papel novo nem ACL por Propriedade. |
+| V01 — Validade não informada | Não configurar regra sanitária por classe por inferência. Sem data = não informada, aviso permanente; não equivale a vencido. Recebimento vencido ou declarado pendente entra Bloqueado; nenhum recebimento o libera automaticamente. | **Aceito em 07/10/2026:** validade opcional com aviso, sem obrigação por item/classe inferida. Exigência futura diferente requer mudança explícita do contrato. |
+| Q01 — Resolução física | Saldo e movimentos `numeric(20,6)` na unidade canônica; quantização ToEven somente com prévia e aceite do resíduo. `un` sempre inteiro, nunca arredondado automaticamente. | **Aceito em 07/10/2026.** Não altera escala/nutrição do MVP-1. |
 | L01 — Coordenação | Escritas físicas obtêm lock atual de catálogo, depois lock próprio físico `(430,1)`, depois linhas em ordem estável. Catálogo mantém seu lock atual. Sem locks de Caixa/Genealogia. | Técnica, testada em F01; não depende de escolha rotineira do usuário. |
 | D05-F02 — Execução | Reserva ao iniciar, consumo/saídas apenas na confirmação única. Sem WIP. Execução curta com revalidação; se fato físico já ocorreu sob divergência/bloqueio, registro excepcional de ocorrência por Admin, sem autorização ordinária de uso inválido. | Aceite específico de F02, posterior a F01. |
 | R02 — Reversão | Corrigir lançamento que não representa transformação real, com evidência física; não desfazer uma moagem ou perda real por crédito fictício de grão. Ausência de uso posterior é necessária, mas insuficiente. | Aceite específico de F02. |
 | O03 — Ovos | Entrada explícita posterior; confirmar unidade versus amostra e conciliar acervo manual antes de escolher IDs. | Aceite específico de F03, nenhuma importação agora. |
 | C04 / S05 / H06 | Custos somente por prioridade expressa; solver só após contrato/dados; F06 escolhido por vertical real. | Desenhos/aceites próprios. |
 
-Para iniciar F01 basta aceitar o contrato F01, incluindo D06-F01/V01/Q01, ou registrar suas alterações e autorizar a implementação. A revisão de F02–F06 pode continuar sem antecipar sua execução. Silêncio, CI ou aceite do MVP-1 não aprovam este contrato.
+O aceite do contrato F01, incluindo D06-F01/V01/Q01, está concluído. Para iniciar sua implementação resta autorização humana específica, registrada em Tarefa própria. A revisão de F02–F06 pode continuar sem antecipar sua execução; o aceite de F01 não aprova essas fases nem autoriza merge/produção.
 
 ## 3. F01 — domínio e fronteiras
 
@@ -146,7 +148,7 @@ Listas padrão 25/máximo 100, filtros explícitos, busca escapando `%`/`_`/barr
 
 Saldo retorna físico contabilizado e elegível; F01 não expõe reservado fictício. Somar somente por Item/unidade compatíveis; total de kg/L/un juntos não existe. Mostrar quantidade em inativos/Bloqueados/vencidos separada da utilizável. `GET /reconciliacao` compara projeção com livro no mesmo corte e devolve divergências por posição, quantidade do livro/projeção/diferença e corte. Paginação sobre divergências com totais no mesmo snapshot; leitura pode ser custosa, timeout 3 s e filtros de lote/local disponíveis. Timeout indica consulta não concluída. Divergência exige diagnóstico e revisão; não ajusta automaticamente o saldo nem gera estoque por recontagem de Animal/Caixa.
 
-## 5. API F01 proposta
+## 5. API F01 — contrato aceito, implementação futura
 
 Prefixo `/api/v1/estoque`; todas autenticadas. Novas **mutações de domínio** (POST/PUT/PATCH e transições) exigem `Idempotency-Key` e versões esperadas; POST `/previas` é consulta, sem chave/gravação. Criação usa `versaoEsperada: 0`; movimentos enviam `versoesEsperadas` com lote, item, locais e posições. Histórico de cadastro incrementa Revisao da entidade; um movimento incrementa posições, sem mudar artificialmente revisão de metadados do lote. Resposta informa todas as revisões resultantes.
 
@@ -266,7 +268,7 @@ Replay de confirmação após reversão retorna resposta original Confirmada; GE
 
 ### F03 — Ponte explícita de ovos
 
-Pode depender apenas de F01 aceita para recebimento simples; depende também de F02 quando a entrega incluir consumo em transformação. Não há dependência artificial de F04. Antes de importar: confirmar se cada `ProducaoOvoId` é uma unidade ou amostra; se amostra, manter entrada coletiva manual e projetar origem coletiva separada. Semântica não é inferida de uma linha de tabela.
+Pode depender apenas da entrega física de F01 aceita para recebimento simples; depende também de F02 quando a entrega incluir consumo em transformação. Não há dependência artificial de F04. Antes de importar: confirmar se cada `ProducaoOvoId` é uma unidade ou amostra; se amostra, manter entrada coletiva manual e projetar origem coletiva separada. Semântica não é inferida de uma linha de tabela.
 
 Seleção humana de IDs/item ovo/lote/local; ponte única vitalícia por ProducaoOvoId, inclusive depois de compensação. Snapshot do AnimalId/postura/peso/observação/UpdatedAtUtc e hash do conteúdo observado, sem inventar Revisao. Prévia de seleção e confirmação devem comparar hash/UpdatedAtUtc observado; mudança concorrente detectável causa conflito/novo aceite, sem adquirir lock de genealogia. Capturar um snapshot consistente dos registros; edição posterior pode ocorrer e aparece na conciliação, sem recalcular saldo.
 
@@ -325,6 +327,6 @@ Recuperação: antes de publicação, descartar apenas cópia de teste identific
 | Ovo já recebido manualmente, edição posterior | Ponte explícita não soma duplicata; snapshot/hash/UpdatedAtUtc e diferença visível; compensação não permite segunda importação do ID. F03. |
 | Custo ausente e rateio de R$0,01 em partes | Ausente é parcial; centavo distribuído uma vez por maior resto, soma preservada; nenhum caixa. F04. |
 
-F01 aceita quando a vertical completa permite cadastrar/consultar Local/Lote, abrir inventário e receber/mover/consumir/ajustar com permissões, livro/saldo/reconciliação/precisão/versionamento/replay e UI reais; migrations/preservação, PostgreSQL concorrência/rollback, API/auth, navegador e CI comprovados. F02 exige reservas/estados/execução/rastreabilidade/reversão/ocorrência com os gates próprios; F03–F06 requerem seus contratos e critérios acima antes da tarefa executável. O [plano](../plans/2026-10-07-continuidade-f01-f06-430-implementation.md) especifica a matriz por camada.
+O aceite funcional futuro de F01 exige que a vertical completa permita cadastrar/consultar Local/Lote, abrir inventário e receber/mover/consumir/ajustar com permissões, livro/saldo/reconciliação/precisão/versionamento/replay e UI reais; migrations/preservação, PostgreSQL concorrência/rollback, API/auth, navegador e CI comprovados. O aceite atual do contrato não declara esses recursos implementados. F02 exige reservas/estados/execução/rastreabilidade/reversão/ocorrência com os gates próprios; F03–F06 requerem seus contratos e critérios acima antes da tarefa executável. O [plano](../plans/2026-10-07-continuidade-f01-f06-430-implementation.md) especifica a matriz por camada.
 
-Nesta entrega documental, validam-se referências/links, consistência do recorte e diff/segredos; não se alegam testes funcionais locais executados. Branch/commit/push/PR/checks e limitações reais serão registrados na #431; Em validação enquanto houver revisão humana/merge. A #430 permanece Proposta: planejamento técnico entregue não representa aceite das fases.
+Nesta entrega documental, validam-se referências/links, consistência do recorte e diff/segredos; não se alegam testes funcionais locais executados. Branch/commit/push/PR/checks e limitações reais estão registrados na #431 e na atualização #433; Em validação enquanto houver revisão/merge pendentes. A #430 permanece aberta para a continuidade: contrato F01 aceito, F02–F06 propostas e nenhuma implementação autorizada por este registro.
