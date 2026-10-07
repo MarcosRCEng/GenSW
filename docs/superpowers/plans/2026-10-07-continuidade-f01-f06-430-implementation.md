@@ -2,15 +2,18 @@
 
 Data: 07/10/2026, America/Sao_Paulo. Evolução [#430](https://devops-lab.tailaf9418.ts.net/issues/430), planejamento [#431](https://devops-lab.tailaf9418.ts.net/issues/431). Base `origin/main` `dda69509c01b4a27bc6b6b5c3f2add842c441a53`, branch documental `codex/431-planejamento-f01-f06`. **Somente planejamento autorizado.** Este plano organiza execução futura por gates; não autoriza código, migrations, merge ou produção.
 
+Atualização de aceite em 07/10/2026, [#433](https://devops-lab.tailaf9418.ts.net/issues/433): o usuário respondeu “Considere aceitos” à exposição do escopo F01 e das decisões D06-F01/V01/Q01. Contrato F01 aceito; resta autorização específica de implementação. F02–F06 continuam propostas e o aceite documental não aprova fases futuras, merge ou produção. Não solicitar novamente o mesmo aceite de F01.
+
 Contrato: [especificação F01–F06](../specs/2026-10-07-continuidade-f01-f06-430-design.md). Entrada futura: [prompt executável condicionado de F01](../../../output/planning/prompt-implementacao-f01-430.md). Referências históricas: [plano P01–P05](2026-10-05-producao-insumos-produtos-413-implementation.md), [operação integrada](../../operations/catalogo-formulacao.md) e [aceite MVP-1](../../validation/2026-10-06-catalogo-formulacao-413.md). Não executar novamente P01–P05.
 
 ## 1. Dependências e gates de autorização
 
 ```mermaid
 flowchart TD
-  M[MVP-1 aceito e integrado] --> A[Aceite de F01: D06-F01, V01, Q01]
-  A --> F1[F01 Estoque manual completo]
-  F1 --> G1[Validação e aceite de F01]
+  M[MVP-1 aceito e integrado] --> A[Contrato F01 aceito: D06-F01, V01, Q01]
+  A --> E[Autorização específica de implementação F01]
+  E --> F1[F01 Estoque manual completo]
+  F1 --> G1[Validação e aceite funcional da entrega F01]
   G1 --> A2[Aceite F02: D05 e reversão/ocorrência]
   A2 --> F2[F02 Reserva e execução completa]
   G1 --> O[Semântica dos ovos e conciliação aceitas]
@@ -31,19 +34,19 @@ F03 não exige artificialmente todas as fases anteriores: entrada simples usa F0
 
 Rótulos F01–F06 e passos abaixo **não são IDs Redmine**. Na execução de um prompt autorizado, criar sua Tarefa própria sob #430, objetivo/escopo/restrições/aceite e Em andamento antes da investigação técnica. Criar outras tarefas somente para trabalhos efetivamente autorizados/executados. Não reutilizar #431 como implementação nem reabrir #413. Consultar transições permitidas e confirmar mudança por leitura; Em validação ao entregar com aceite/revisão/merge pendentes.
 
-## 2. F01 — sequência pronta para execução após aceite
+## 2. F01 — sequência pronta para execução após autorização
 
 Cada passo é parte da mesma vertical de F01; o resultado final inclui Domain/Application/Infrastructure/API, React navegável, testes e operação. Passos técnicos não são entregas de backend isolado ao usuário. Identificar/investigar padrões antes de editar; alterações mínimas e sem framework genérico de módulos.
 
 ### F01.0 — Baseline e ambiente
 
-1. Confirmar aceite da especificação F01 e suas decisões D06-F01 (papéis), V01 (validade não informada) e Q01 (quantização/resíduo), registrando a mensagem humana no Redmine. Se o usuário ajustar alguma decisão, atualizar contrato/plano antes do código dependente; não pedir novamente aceite já explícito.
+1. Reutilizar o aceite já registrado na #433 para especificação F01 e D06-F01 (papéis), V01 (validade não informada) e Q01 (quantização/resíduo), sem nova confirmação desses pontos. Verificar a autorização específica de implementação na mensagem humana. Se houver ajuste posterior explícito de decisão, atualizar contrato/plano antes do código dependente.
 2. Ler AGENTS local integralmente e criar a tarefa executável em #430; usar API Redmine com variável `REDMINE_API_KEY`, nunca expor chave. Confirmar papel dedicado Codex do projeto, sem alterar workflow/papéis globais.
 3. Fetch/reconsultar main e worktrees; branch `codex/<nova-tarefa>-f01-estoque` a partir da main atual, reutilizando checkout adequado ou isolamento gerenciado. Não usar branch integrada de #421 nem trocar checkout de homologação ativa.
 4. Ler integralmente documentos F01–F06/contrato vigente/validação e instruções ambientais. Reidentificar portas/PIDs/versão/banco/finalidade antes de qualquer start/stop. Guardar metadados seguros, sem command lines com connection strings ou caminho privado de imagens.
 5. Inventariar migrations atuais/pendentes, sem aplicar na base compartilhada. Preparar PostgreSQL efêmero/base isolada e artefatos de build separados se DLLs em uso. Fixture somente em base descartável identificada; não seed de estoque/conta no banco do usuário.
 
-Saída verificável: tarefa e branch corretas, baseline/limites/ambiente registrados. Gate: nenhuma alteração funcional ou migration compartilhada antes do aceite; nenhuma perda de untracked locais.
+Saída verificável: tarefa e branch corretas, baseline/limites/ambiente registrados. Gate: nenhuma alteração funcional antes da autorização de implementação; migration compartilhada exige autorização específica adicional; nenhuma perda de untracked locais.
 
 ### F01.1 — Regras e persistência físicas
 
@@ -148,11 +151,11 @@ PostgreSQL real com binários/fixtures do CI, `GENSW_TEST_POSTGRES_BIN` externo;
 
 Usar `FormulationApiTests` como precedente de barreiras/replay/rollback, `PostgreSqlPropriedadesTests` de observer/inativação, e `FinancialTests` de timeout/falha; adicionar testes físicos nos pontos reais de risco. `Task.WhenAll` sem observar bloqueio não prova disputa. Não criar testes que apenas espelhem implementação ou número de arquivos.
 
-Aceite humano F01: fluxo completo na cópia inequívoca, papéis D06 aplicados, saldo/livro/quantização compreensíveis, histórico/inativos preservados, testes/gates comprovados e pendências materiais resolvidas. CI não substitui esse aceite. Depois, F02 pode ser detalhada/autorizada sem criar automaticamente tarefas/ordens/reservas.
+Aceite humano da entrega funcional F01, após implementação: fluxo completo na cópia inequívoca, papéis D06 aplicados, saldo/livro/quantização compreensíveis, histórico/inativos preservados, testes/gates comprovados e pendências materiais resolvidas. O aceite atual do contrato e o CI não substituem esse aceite futuro. Depois, F02 pode ser detalhada/autorizada sem criar automaticamente tarefas/ordens/reservas.
 
 ## 4. F02 — roteiro e gates físicos próprios
 
-Antes do código: F01 aceita; aceite explícito D05 e da regularização de ocorrência/reversão da spec §7. Recomendações corrigem riscos do desenho antigo e exigem revisão humana por alterarem o sentido operacional. Sem custos/ponte de ovos.
+Antes do código: entrega física de F01 aceita; aceite explícito D05 e da regularização de ocorrência/reversão da spec §7. Recomendações corrigem riscos do desenho antigo e exigem revisão humana por alterarem o sentido operacional. Sem custos/ponte de ovos.
 
 1. Ordem/snapshots/estados: Domain/Application com comandos de rascunho/planejamento/revisão/início/reserva/confirmação/cancelamento/aborto/anotação/reversão e ocorrência. Migration aditiva de ordem/reservas/execuções/arestas, incluindo QuantidadeReservada e constraints, sem fases extras.
 2. Reservas: alocar explicitamente no início; saldo disponível correto, revisão/locks e histórico de reserva que não desaparece ao liberar. Reduzir/reatribuir só material declarado ainda não consumido e presente; já retirado permanece reservado até confirmação/ocorrência. Ajuste de estoque/transferência não retira reserva alheia. Inativação/bloqueio mantém reserva e alerta ordem.
@@ -179,7 +182,7 @@ Aceite F02: planejar/iniciar/reservar/apontar/confirmar e corrigir pelos caminho
 
 | Fase | Próxima ação autorizável / dependência | Aceite e testes próprios |
 | --- | --- | --- |
-| F03 | Confirmar unidade versus amostra, inventário manual existente e regra de conciliação. F01 aceita; F02 se transformação incluída. Especificar seleção/prévia/entrada ou associação sem incrementar, ponte vitalícia/snapshot/hash/UpdatedAtUtc e comparação atual. | Uma entrada por ID, compensação não libera reentrada; edição antes/depois visível, concorrência/replay/sem alteração Animal; sem importação automática ou peso padrão. UI permite seleção humana e explica duplicidade manual. |
+| F03 | Confirmar unidade versus amostra, inventário manual existente e regra de conciliação. Entrega física F01 aceita; F02 se transformação incluída. Especificar seleção/prévia/entrada ou associação sem incrementar, ponte vitalícia/snapshot/hash/UpdatedAtUtc e comparação atual. | Uma entrada por ID, compensação não libera reentrada; edição antes/depois visível, concorrência/replay/sem alteração Animal; sem importação automática ou peso padrão. UI permite seleção humana e explica duplicidade manual. |
 | F04 | Prioridade explícita após F02; definir camada de custo/desconhecidos/entradas anteriores, preço referência versus custo apurado e rateio. | Transferência/custo distinto/camadas/fontes preservados; percentuais100 exatos; centavos conciliados, perda total/zero; falta de custo parcial, snapshots antigos intactos, sem margem/caixa automático. UI e documentação completas. |
 | F05 | Definir problema/dados/metas/política e objetivos; F04 se econômico, estoque pertinente se disponibilidade. Só então pesquisar solver em fontes primárias atuais, justificar escolha/dependência. | Solução conhecida, inviável provada versus lacuna/limite de tempo/incompatível, contribuições/restrições ativas, snapshot/rascunho explícito; validação decimal após quantização, sem selo de dieta. |
 | F06 | Escolher uma vertical: retenção multissaída, WIP, compra/recebimento ou venda/expedição. Desenho de impacto/dados/events/recuperação e autorização próprios. | Invariantes de saldo/reserva/compensação/snapshots/custos preservadas; integração idempotente sem Caixa em duplicidade; contexto legal/fontes/responsável quando pertinente. Nada de pacote fiscal/comercial implícito. |
@@ -201,4 +204,4 @@ Artefatos concretos: especificação nova em specs, este plano e prompt condicio
 
 Validação aplicável agora: leitura integral obrigatória, inspeção da main/código/testes atuais, confirmação de vínculos/status Redmine, referências e links locais resolvidos, números sintéticos conferidos, consistência de API/estados/recortes/gates e `git diff --check`/escopo/segredos. Nenhuma suíte funcional local/build/browser/migration desta fase física é declarada executada. CI do PR documental é identificado separadamente com resultado real, sem chamar seus testes de cobertura de estoque inexistente.
 
-Fazer commit/push e PR documental draft para revisão, anexar ao chat, registrar evidências/base/branch/commit/push/PR/checks/limitações. A #431 vai para Em validação; #430 conserva Proposta até decisão do usuário. Sem merge/produção e sem tarefa de implementação criada por antecipação. Pendências materiais para F01: aceitar/ajustar D06-F01/V01/Q01 e autorizar implementação; decisões D05/R02 e ovos/custos/solver/F06 ficam nos gates de suas fases.
+Commit/push e PR documental draft #21 entregues para revisão, com evidências e checks na #431. A atualização do aceite é rastreada na #433; as tarefas permanecem Em validação enquanto houver revisão/merge pendentes. #430 permanece aberta para continuidade. Contrato F01 e D06-F01/V01/Q01 aceitos: a próxima decisão é autorizar implementação, em Tarefa própria. D05/R02 e ovos/custos/solver/F06 ficam nos gates de suas fases. Sem merge/produção ou tarefa de implementação criada por antecipação.
