@@ -22,6 +22,22 @@ public sealed class FormulationMigrationTests
         await using var pg = await EphemeralPostgreSql.StartAsync();
         await using var db = new GenSWDbContext(new DbContextOptionsBuilder<GenSWDbContext>().UseNpgsql(pg.ConnectionString).Options);
         await db.GetService<IMigrator>().MigrateAsync("20261005132012_AddOperationalProperties");
+        await SeedPreviousAsync(db);
+        var before = await RowsAsync(db);
+        await db.GetService<IMigrator>().MigrateAsync("20261006220939_AddCatalogAndFormulation");
+        var after = await RowsAsync(db, before.Keys);
+        Assert.Equal(JsonSerializer.Serialize(before), JsonSerializer.Serialize(after));
+        Assert.NotEmpty(before["Animais"]); Assert.NotEmpty(before["FiliacoesAnimal"]); Assert.NotEmpty(before["Cruzamentos"]); Assert.NotEmpty(before["CiclosReprodutivos"]); Assert.NotEmpty(before["Proles"]); Assert.NotEmpty(before["ProducoesOvos"]); Assert.NotEmpty(before["Propriedades"]); Assert.NotEmpty(before["LancamentosCaixa"]);
+        Assert.Empty(await db.Set<Item>().ToArrayAsync()); Assert.Empty(await db.Set<NutritionProfile>().ToArrayAsync()); Assert.Empty(await db.Set<Recipe>().ToArrayAsync()); Assert.Empty(await db.Set<FormulationSnapshot>().ToArrayAsync());
+        var names = (await RowsAsync(db)).Keys.ToArray(); Assert.DoesNotContain(names, x => x.Contains("LoteMaterial") || x.Contains("Estoque") || x.Contains("OrdemProducao"));
+        Assert.Contains("20261006220939_AddCatalogAndFormulation", await db.Database.GetAppliedMigrationsAsync());
+        Assert.DoesNotContain("20261006220939_AddCatalogAndFormulation", await db.Database.GetPendingMigrationsAsync());
+        // PostgreSQL guards remain effective when application rules are bypassed.
+        var item = Item.Create(new("CHECK", "Fixture", null, null, "Alimentar", "kg", true, true, true, false), DateTimeOffset.UtcNow); db.Add(item); await db.SaveChangesAsync();
+        var error = await Assert.ThrowsAsync<PostgresException>(() => db.Database.ExecuteSqlInterpolatedAsync($"UPDATE \"Itens\" SET \"Unidade\"='ton' WHERE \"Id\"={item.Id}")); Assert.Equal("23514", error.SqlState);
+    }
+    internal static async Task SeedPreviousAsync(GenSWDbContext db)
+    {
         var now = DateTimeOffset.UtcNow; var date = new DateOnly(2026, 1, 1); var author = Guid.NewGuid();
         var species = GenSW.Domain.Species.Especie.Criar("Fixture de preservação", null, true, 12m, now);
         var father = Animal.Criar("MIG-FORM-PAI", "Pai", species.Id, null, null, SexoAnimal.Macho, null, EscopoAnimal.Operacional, date, now);
@@ -38,18 +54,8 @@ public sealed class FormulationMigrationTests
         var cash = new LancamentoCaixa(Guid.NewGuid(), NaturezaFinanceira.Receita, date, 123.45m, "Fixture de preservação", category.Id, FormaPagamento.Pix, null, child.Id, null, false, 1, author, now, now, OrigemLancamento.Ordinario, null, null);
         db.AddRange(species, father, mother, child, filiation, breeding, cycle, prole, egg, property, link, cash);
         await db.SaveChangesAsync();
-        var before = await RowsAsync(db);
-        await db.Database.MigrateAsync();
-        var after = await RowsAsync(db, before.Keys);
-        Assert.Equal(JsonSerializer.Serialize(before), JsonSerializer.Serialize(after));
-        Assert.NotEmpty(before["Animais"]); Assert.NotEmpty(before["FiliacoesAnimal"]); Assert.NotEmpty(before["Cruzamentos"]); Assert.NotEmpty(before["CiclosReprodutivos"]); Assert.NotEmpty(before["Proles"]); Assert.NotEmpty(before["ProducoesOvos"]); Assert.NotEmpty(before["Propriedades"]); Assert.NotEmpty(before["LancamentosCaixa"]);
-        Assert.Empty(await db.Set<Item>().ToArrayAsync()); Assert.Empty(await db.Set<NutritionProfile>().ToArrayAsync()); Assert.Empty(await db.Set<Recipe>().ToArrayAsync()); Assert.Empty(await db.Set<FormulationSnapshot>().ToArrayAsync());
-        var names = (await RowsAsync(db)).Keys.ToArray(); Assert.DoesNotContain(names, x => x.Contains("LoteMaterial") || x.Contains("Estoque") || x.Contains("OrdemProducao")); Assert.Empty(await db.Database.GetPendingMigrationsAsync());
-        // PostgreSQL guards remain effective when application rules are bypassed.
-        var item = Item.Create(new("CHECK", "Fixture", null, null, "Alimentar", "kg", true, true, true, false), now); db.Add(item); await db.SaveChangesAsync();
-        var error = await Assert.ThrowsAsync<PostgresException>(() => db.Database.ExecuteSqlInterpolatedAsync($"UPDATE \"Itens\" SET \"Unidade\"='ton' WHERE \"Id\"={item.Id}")); Assert.Equal("23514", error.SqlState);
     }
-    private static async Task<SortedDictionary<string, string[]>> RowsAsync(GenSWDbContext db, IEnumerable<string>? selected = null)
+    internal static async Task<SortedDictionary<string, string[]>> RowsAsync(GenSWDbContext db, IEnumerable<string>? selected = null)
     {
         await db.Database.OpenConnectionAsync(); var conn = db.Database.GetDbConnection(); var tables = new List<string>();
         if (selected is null)

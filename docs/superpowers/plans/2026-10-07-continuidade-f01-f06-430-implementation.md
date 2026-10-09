@@ -1,5 +1,7 @@
 # Plano executável da continuidade F01–F06
 
+Atualização em 08/10/2026: o usuário autorizou **'Implementação autorizada'** e solicitou **'Termine'**. Execução na [#434](https://devops-lab.tailaf9418.ts.net/issues/434), conclusão na [#435](https://devops-lab.tailaf9418.ts.net/issues/435), branch `codex/434-f01-estoque`. As referências abaixo à autorização ainda pendente descrevem a etapa documental anterior e estão superadas para F01. F02–F06, aceite funcional, merge, produção e migration compartilhada conservam seus próprios gates.
+
 Data: 07/10/2026, America/Sao_Paulo. Evolução [#430](https://devops-lab.tailaf9418.ts.net/issues/430), planejamento [#431](https://devops-lab.tailaf9418.ts.net/issues/431). Base `origin/main` `dda69509c01b4a27bc6b6b5c3f2add842c441a53`, branch documental `codex/431-planejamento-f01-f06`. **Somente planejamento autorizado.** Este plano organiza execução futura por gates; não autoriza código, migrations, merge ou produção.
 
 Atualização de aceite em 07/10/2026, [#433](https://devops-lab.tailaf9418.ts.net/issues/433): o usuário respondeu “Considere aceitos” à exposição do escopo F01 e das decisões D06-F01/V01/Q01. Contrato F01 aceito; resta autorização específica de implementação. F02–F06 continuam propostas e o aceite documental não aprova fases futuras, merge ou produção. Não solicitar novamente o mesmo aceite de F01.

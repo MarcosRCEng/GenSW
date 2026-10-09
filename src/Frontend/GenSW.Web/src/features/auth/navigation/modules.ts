@@ -91,8 +91,14 @@ export const navigationModules: readonly NavigationModule[] = [
     description: 'Melhoramento genético; a genealogia atual permanece em Animais.',
   },
   {
-    id: 'estoque', name: 'Estoque', area: 'operacoes', state: 'planned',
-    description: 'Controle de materiais, insumos e produtos armazenados.',
+    id: 'estoque', name: 'Estoque', area: 'operacoes', state: 'available',
+    description: 'Locais, lotes, entradas manuais e livro de movimentos físicos.',
+    features: [
+      { id: 'saldos', name: 'Saldos', route: '/estoque/saldos' },
+      { id: 'locais-estoque', name: 'Locais', route: '/estoque/locais' },
+      { id: 'lotes-materiais', name: 'Lotes', route: '/estoque/lotes' },
+      { id: 'movimentos-estoque', name: 'Movimentos', route: '/estoque/movimentos' },
+    ],
   },
   {
     id: 'financeiro', name: 'Financeiro', area: 'gerenciais', state: 'available',

@@ -36,6 +36,9 @@ import { ItemsPage, ItemFormPage, ItemDetailsPage, CategoriesPage, ConversionFor
 import { ProfileFormPage, ProfileDetailsPage } from '../features/formulation/ProfilePages'
 import { RecipesPage, RecipeHeaderFormPage, RecipeDetailsPage, RecipeVersionFormPage, RecipeVersionDetailsPage } from '../features/formulation/RecipePages'
 import { FormulationPage, SimulationFormPage, SimulationDetailsPage, ComparisonDetailsPage } from '../features/formulation/SimulationPages'
+import { InventoryListPage, LocalDetailsPage, LoteDetailsPage, EventDetailsPage } from '../features/inventory/InventoryPages'
+import { LocalFormPage, LoteFormPage, InventoryStatePage } from '../features/inventory/InventoryForms'
+import { InventoryOperationPage } from '../features/inventory/InventoryOperationPage'
 
 function ApplicationLoading() {
   return (
@@ -71,6 +74,22 @@ export function AppRoutes() {
       </Route>
       <Route element={<ProtectedRoute />}>
         <Route element={<AuthenticatedHomePage />} path="/" />
+        <Route element={<Navigate replace to="/estoque/saldos" />} path="/estoque" />
+        <Route element={<InventoryListPage key="saldos" resource="saldos" />} path="/estoque/saldos" />
+        <Route element={<InventoryListPage key="locais" resource="locais" />} path="/estoque/locais" />
+        <Route element={<LocalFormPage />} path="/estoque/locais/novo" />
+        <Route element={<LocalDetailsPage />} path="/estoque/locais/:id" />
+        <Route element={<LocalFormPage />} path="/estoque/locais/:id/editar" />
+        <Route element={<InventoryStatePage kind="locais" />} path="/estoque/locais/:id/comandos/:command" />
+        <Route element={<InventoryListPage key="lotes" resource="lotes" />} path="/estoque/lotes" />
+        <Route element={<LoteFormPage />} path="/estoque/lotes/novo" />
+        <Route element={<LoteDetailsPage />} path="/estoque/lotes/:id" />
+        <Route element={<LoteFormPage />} path="/estoque/lotes/:id/editar" />
+        <Route element={<InventoryStatePage kind="lotes" />} path="/estoque/lotes/:id/comandos/:command" />
+        <Route element={<InventoryListPage key="movimentos" resource="movimentos" />} path="/estoque/movimentos" />
+        <Route element={<EventDetailsPage />} path="/estoque/movimentos/:id" />
+        <Route element={<InventoryListPage key="reconciliacao" resource="reconciliacao" />} path="/estoque/reconciliacao" />
+        <Route element={<InventoryOperationPage key="operation" />} path="/estoque/operacoes/:type" />
         <Route element={<ItemsPage />} path="/itens" />
         <Route element={<ItemFormPage />} path="/itens/novo" />
         <Route element={<CategoriesPage />} path="/itens/categorias" />

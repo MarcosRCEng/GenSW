@@ -1,5 +1,7 @@
 # Continuidade F01–F06 — estoque e produção física
 
+Atualização em 08/10/2026: o usuário autorizou **'Implementação autorizada'** e solicitou **'Termine'**. Execução na [#434](https://devops-lab.tailaf9418.ts.net/issues/434), conclusão na [#435](https://devops-lab.tailaf9418.ts.net/issues/435), branch `codex/434-f01-estoque`. As referências abaixo à autorização ainda pendente descrevem a etapa documental anterior e estão superadas para F01. F02–F06, aceite funcional, merge, produção e migration compartilhada conservam seus próprios gates.
+
 Data: 07/10/2026, America/Sao_Paulo. Evolução [#430](https://devops-lab.tailaf9418.ts.net/issues/430), relacionada à [#413](https://devops-lab.tailaf9418.ts.net/issues/413); planejamento [#431](https://devops-lab.tailaf9418.ts.net/issues/431). **Contrato de F01 aceito pelo usuário; F02–F06 continuam propostas. A implementação de F01 aguarda autorização específica.** Sem merge ou produção.
 
 Aceite humano em 07/10/2026: após a exposição do escopo F01 e de D06-F01 (papéis), V01 (validade não informada) e Q01 (precisão/resíduos), o usuário respondeu **“Considere aceitos”**. O contexto distinguia aceite do contrato e autorização adicional de implementação. Registro na [Tarefa #433](https://devops-lab.tailaf9418.ts.net/issues/433). Esses pontos de F01 não serão submetidos novamente ao mesmo aceite; F02–F06, implementação, migrations compartilhadas, merge e produção conservam seus gates próprios.
@@ -86,7 +88,7 @@ Admin não ganha bypass para saldo negativo, fracionar contagem ou consumir ordi
 
 Elegível para retirada/consumo ordinário = Item ativo + capacidade pertinente + Local ativo `Ordinario` + Lote ativo `Liberado` + não encerrado + validade não vencida. Validade é inclusiva: vencido quando Validade < DataOperacional atual. UTC de gravação e DataOperacional em America/Sao_Paulo calculados pelo TimeProvider; data observada pode ser passada e não modifica saldos retroativos. Capturar/revalidar o relógio ao fim das validações, imediatamente antes dos lançamentos. Testar passagem de meia-noite; timestamp não é garantia de que uma execução física ocorreu naquele segundo.
 
-Sem validade aparece “não informada”; nenhum cálculo de validade pela fórmula, classe, espécie ou peso. Não há selo de segurança. Se fabricação/coleta/validade forem informadas no mesmo escopo, validade não precede a data de origem declarada; data observada de entrada/fabricação/coleta não é futura. Correção de validade exige fonte e responsável Admin; se a correção tornou vencido, elegibilidade cai imediatamente, sem apagar o saldo.
+Sem validade aparece “não informada”; nenhum cálculo de validade pela fórmula, classe, espécie ou peso. Não há selo de segurança. Se fabricação/coleta/validade forem informadas no mesmo escopo, validade não precede a data de origem declarada; data observada de entrada/fabricação/coleta não é futura. Correção de validade exige fonte, responsável ativo e autor Admin; se a correção tornou vencido, elegibilidade cai imediatamente, sem apagar o saldo.
 
 | Ação | Regra |
 | --- | --- |
