@@ -2,7 +2,7 @@
 
 F01 registra materiais físicos de itens existentes, por lote e local. O cadastro de lote fixa a unidade do item e começa sem saldo. As telas em `/estoque` oferecem Saldos, Locais, Lotes, Movimentos e Reconciliação. Os comandos têm prévia e confirmação; a prévia mostra uma observação de disponibilidade, sem reservar material.
 
-Implementação rastreada nas Tarefas [#434](https://devops-lab.tailaf9418.ts.net/issues/434) e [#435](https://devops-lab.tailaf9418.ts.net/issues/435). O contrato e os papéis foram aceitos na [#433](https://devops-lab.tailaf9418.ts.net/issues/433); o aceite funcional da entrega é uma etapa posterior. Consulte o [desenho](../superpowers/specs/2026-10-07-continuidade-f01-f06-430-design.md) e a [matriz T01–T16](../superpowers/plans/2026-10-07-continuidade-f01-f06-430-implementation.md).
+Implementação rastreada nas Tarefas [#434](https://devops-lab.tailaf9418.ts.net/issues/434) e [#435](https://devops-lab.tailaf9418.ts.net/issues/435). O contrato e os papéis foram aceitos na [#433](https://devops-lab.tailaf9418.ts.net/issues/433). Em 09/10/2026, o usuário concedeu o aceite funcional e autorizou a conclusão/merge do [PR #22](https://github.com/MarcosRCEng/GenSW/pull/22), registrados na [#438](https://devops-lab.tailaf9418.ts.net/issues/438). Consulte o [desenho](../superpowers/specs/2026-10-07-continuidade-f01-f06-430-design.md) e a [matriz T01–T16](../superpowers/plans/2026-10-07-continuidade-f01-f06-430-implementation.md).
 
 ## Fluxo de uso
 

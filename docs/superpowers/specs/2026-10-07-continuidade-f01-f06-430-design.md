@@ -1,5 +1,7 @@
 # Continuidade F01–F06 — estoque e produção física
 
+Atualização em 09/10/2026: a implementação F01 do [PR #22](https://github.com/MarcosRCEng/GenSW/pull/22) recebeu aceite funcional humano, com conclusão, commit, push e merge expressamente autorizados. Encerramento na [#438](https://devops-lab.tailaf9418.ts.net/issues/438). O diagnóstico e os gates históricos abaixo documentam as etapas anteriores; F02–F06 continuam propostas, e produção/migrations compartilhadas exigem autorização própria.
+
 Atualização em 08/10/2026: o usuário autorizou **'Implementação autorizada'** e solicitou **'Termine'**. Execução na [#434](https://devops-lab.tailaf9418.ts.net/issues/434), conclusão na [#435](https://devops-lab.tailaf9418.ts.net/issues/435), branch `codex/434-f01-estoque`. As referências abaixo à autorização ainda pendente descrevem a etapa documental anterior e estão superadas para F01. F02–F06, aceite funcional, merge, produção e migration compartilhada conservam seus próprios gates.
 
 Data: 07/10/2026, America/Sao_Paulo. Evolução [#430](https://devops-lab.tailaf9418.ts.net/issues/430), relacionada à [#413](https://devops-lab.tailaf9418.ts.net/issues/413); planejamento [#431](https://devops-lab.tailaf9418.ts.net/issues/431). **Contrato de F01 aceito pelo usuário; F02–F06 continuam propostas. A implementação de F01 aguarda autorização específica.** Sem merge ou produção.

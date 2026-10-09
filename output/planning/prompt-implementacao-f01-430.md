@@ -1,4 +1,6 @@
-# Executar F01 — contrato aceito, após autorização de implementação
+# F01 — registro do prompt de implementação concluído
+
+Encerramento em 09/10/2026: F01 do [PR #22](https://github.com/MarcosRCEng/GenSW/pull/22) foi implementada, validada e aceita funcionalmente pelo usuário, que autorizou conclusão, commit, push e merge. Registro na [#438](https://devops-lab.tailaf9418.ts.net/issues/438). Este prompt preserva a instrução executada; não deve reiniciar F01. As restrições anteriores de aceite/merge foram superadas pela autorização humana para esta entrega. F02–F06, produção e migrations compartilhadas exigem escopo e autorização próprios.
 
 Atualização em 08/10/2026: o usuário autorizou **'Implementação autorizada'** e solicitou **'Termine'**. Execução na [#434](https://devops-lab.tailaf9418.ts.net/issues/434), conclusão na [#435](https://devops-lab.tailaf9418.ts.net/issues/435), branch `codex/434-f01-estoque`. As referências abaixo à autorização ainda pendente descrevem a etapa documental anterior e estão superadas para F01. F02–F06, aceite funcional, merge, produção e migration compartilhada conservam seus próprios gates.
 
