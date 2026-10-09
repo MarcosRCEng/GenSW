@@ -108,6 +108,12 @@ As APIs autenticadas ficam em `/api/v1/animais/{id}/pesagens`, `/imagens`, `/pro
 
 ## Catálogo, receitas e formulação (MVP-1 #413)
 
-O catálogo único em `/itens` oferece categorias, capacidades cumulativas, conversões documentais e perfis nutricionais versionados. Receitas em `/producao/receitas` registram entradas, saídas esperadas, etapas, perdas, escala e sub-receitas acíclicas. `/producao/formulacao` calcula e compara simulações manuais BN/MS com fontes, cobertura, metas e snapshots imutáveis. Dados ausentes não viram zero; estimativas e contextos incompatíveis ficam explícitos. Estoque, vínculo com ovos, custos e solver permanecem adiados.
+O catálogo único em `/itens` oferece categorias, capacidades cumulativas, conversões documentais e perfis nutricionais versionados. Receitas em `/producao/receitas` registram entradas, saídas esperadas, etapas, perdas, escala e sub-receitas acíclicas. `/producao/formulacao` calcula e compara simulações manuais BN/MS com fontes, cobertura, metas e snapshots imutáveis. Dados ausentes não viram zero; estimativas e contextos incompatíveis ficam explícitos. Execução de receitas, vínculo com ovos, custos e solver permanecem adiados.
 
 Consulte [uso, API, semântica, migration e recuperação](docs/operations/catalogo-formulacao.md) e [evidências e roteiro de revisão](docs/validation/2026-10-06-catalogo-formulacao-413.md). A validação desta entrega usa cópia isolada em `https://localhost:5175`, API `https://localhost:7005`, preservando a homologação existente.
+
+## Estoque manual (F01 #430)
+
+`/estoque/saldos` reúne estoque por lote/local, com quantidade física, elegibilidade e validade não informada visíveis. Locais e lotes têm detalhes, edição de metadados e histórico; recebimentos, transferências, saídas/consumo e tratamentos Admin usam prévia e confirmação idempotente. Livro imutável, projeção e auditoria confirmam juntos. Quantidades são strings decimais; contagens são inteiras e quantização exige aceite explícito. Reconciliação somente consulta diferenças.
+
+Consulte [operação, API, papéis, migration e recuperação](docs/operations/estoque.md) e [validação da entrega](docs/validation/2026-10-08-estoque-435.md). F01 recebeu aceite funcional em 09/10/2026, com conclusão/merge do [PR #22](https://github.com/MarcosRCEng/GenSW/pull/22) autorizados; resultados da integração e encerramento na [#438](https://devops-lab.tailaf9418.ts.net/issues/438). A revisão usa cópia isolada em `https://localhost:5179`, API `https://localhost:7009`; produção e migrations compartilhadas exigem autorização própria.

@@ -118,6 +118,8 @@ describe('AppRoutes', () => {
     vi.mocked(logoutSession).mockResolvedValue()
     vi.mocked(subscribeToSessionInvalidation).mockReturnValue(vi.fn())
     vi.mocked(httpRequest).mockImplementation(async (path) => {
+      if (path.startsWith('/estoque/') && path.includes('?')) return { items: [], page: 1, pageSize: 25, totalItems: 0, totalPages: 0, observadoEmUtc: '2026-10-08T15:00:00Z', sequenciaAte: '1' }
+      if (path.startsWith('/itens?')) return { items: [], page: 1, pageSize: 10, totalItems: 0, totalPages: 0 }
       if (path.startsWith('/propriedades?')) return { items: [], page: 1, pageSize: 25, totalItems: 0, totalPages: 0 }
       if (path === '/financeiro/configuracao') return null
       if (path === '/financeiro/categorias' || path === '/financeiro/fechamentos') return []
@@ -445,6 +447,11 @@ describe('AppRoutes', () => {
   })
 
   it.each([
+    '/estoque', '/estoque/saldos', '/estoque/locais', '/estoque/locais/novo',
+    '/estoque/locais/id', '/estoque/locais/id/editar', '/estoque/locais/id/comandos/ativo',
+    '/estoque/lotes', '/estoque/lotes/novo', '/estoque/lotes/id', '/estoque/lotes/id/editar',
+    '/estoque/lotes/id/comandos/validade', '/estoque/movimentos', '/estoque/movimentos/id',
+    '/estoque/reconciliacao', '/estoque/operacoes/entrada', '/estoque/operacoes/abertura',
     '/pessoas/id', '/especies/id', '/racas/id', '/variedades/id', '/animais/id',
     '/propriedades', '/propriedades/nova', '/propriedades/id', '/propriedades/id/editar',
     '/cruzamentos/id', '/ciclos-reprodutivos/id', '/proles/id',
@@ -505,7 +512,7 @@ describe('AppRoutes', () => {
 
     await screen.findByRole('region', { name: 'Cadastros básicos' })
     const plannedAreas = [
-      { area: 'Produção e operações', modules: ['Produção agrícola', 'Produção animal', 'Genética', 'Estoque'] },
+      { area: 'Produção e operações', modules: ['Produção agrícola', 'Produção animal', 'Genética'] },
       { area: 'Processos gerenciais', modules: ['Compras', 'Vendas', 'Fiscal', 'Contábil', 'Relatórios', 'BI / Indicadores'] },
     ]
     for (const { area, modules } of plannedAreas) {
@@ -520,8 +527,18 @@ describe('AppRoutes', () => {
       }
     }
     expect(screen.getAllByRole('link').map((link) => link.getAttribute('href')).sort()).toEqual([
-      '/animais', '/ciclos-reprodutivos', '/cruzamentos', '/especies', '/financeiro',
-      '/itens', '/pessoas', '/producao/formulacao', '/producao/receitas', '/proles', '/propriedades', '/racas', '/variedades',
+      '/animais', '/ciclos-reprodutivos', '/cruzamentos', '/especies',
+      '/estoque/locais', '/estoque/lotes', '/estoque/movimentos', '/estoque/saldos',
+      '/financeiro', '/itens', '/pessoas', '/producao/formulacao', '/producao/receitas', '/proles', '/propriedades', '/racas', '/variedades',
     ])
+  })
+  it('disponibiliza Estoque na home e abre Saldos autenticado', async () => {
+    vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
+    renderApplication('/')
+    const module = await screen.findByRole('article', { name: 'Estoque' })
+    expect(module).toHaveTextContent('Disponível')
+    fireEvent.click(within(module).getByRole('link', { name: 'Saldos' }))
+    expect(await screen.findByRole('heading', { name: 'Saldos de estoque' })).toBeInTheDocument()
+    await screen.findByText('Nenhum registro encontrado.')
   })
 })

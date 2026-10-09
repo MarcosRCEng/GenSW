@@ -38,10 +38,18 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
     public DbSet<ProducaoOvo> ProducoesOvos => Set<ProducaoOvo>();
 
     public DbSet<RefreshSession> RefreshSessions => Set<RefreshSession>();
+    public DbSet<GenSW.Domain.Inventory.LocalEstoque> LocaisEstoque => Set<GenSW.Domain.Inventory.LocalEstoque>();
+    public DbSet<GenSW.Domain.Inventory.LoteMaterial> LotesMateriais => Set<GenSW.Domain.Inventory.LoteMaterial>();
+    public DbSet<GenSW.Domain.Inventory.PosicaoEstoque> PosicoesEstoque => Set<GenSW.Domain.Inventory.PosicaoEstoque>();
+    public DbSet<GenSW.Domain.Inventory.EventoEstoque> EventosEstoque => Set<GenSW.Domain.Inventory.EventoEstoque>();
+    public DbSet<GenSW.Domain.Inventory.MovimentoEstoque> MovimentosEstoque => Set<GenSW.Domain.Inventory.MovimentoEstoque>();
+    public DbSet<GenSW.Domain.Inventory.HistoricoEstoque> HistoricoEstoque => Set<GenSW.Domain.Inventory.HistoricoEstoque>();
+    public DbSet<GenSW.Domain.Inventory.ComandoEstoque> ComandosEstoque => Set<GenSW.Domain.Inventory.ComandoEstoque>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        InventoryModelConfiguration.Configure(builder, Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL");
         FormulationModelConfiguration.Configure(builder, Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL");
         FinancialModelConfiguration.Configure(builder, Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL");
         ImageModelConfiguration.Configure(builder);
