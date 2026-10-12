@@ -2,7 +2,33 @@
   max-width: 1240px;
   margin: auto;
   padding: 32px 24px;
-  color: #16312c;
+  color: var(--gensw-ink, #24362f);
+  min-width: 0;
+}
+.finance-drawer-content {
+  padding: 0;
+  margin: 0;
+  max-width: none;
+}
+.finance-drawer {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(720px, 100vw);
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0 0 0 auto;
+  border-radius: 0;
+}
+.finance .gensw-dialog-close {
+  padding: 0;
+  margin: 0;
+  color: var(--gensw-ink, #24362f);
+  background: white;
+}
+.finance-drawer-content > .finance-panel {
+  padding: 0;
+  margin: 0;
+  border: 0;
 }
 .finance h1 {
   font-size: 2.25rem;
@@ -85,7 +111,7 @@
   min-height: 44px;
   padding: 10px 15px;
   border-radius: 7px;
-  background: #047857;
+  background: var(--gensw-primary, #176348);
   color: white;
   font-weight: 600;
   margin: 4px 6px 4px 0;
@@ -173,6 +199,7 @@
 }
 .finance-table {
   overflow-x: auto;
+  max-width: 100%;
 }
 .finance th,
 .finance td {
@@ -223,7 +250,7 @@
 .finance summary {
   cursor: pointer;
   font-weight: 600;
-  min-height: 36px;
+  min-height: 44px;
 }
 .finance label.finance-checkbox {
   flex-direction: row;
@@ -237,6 +264,9 @@
 @media (max-width: 600px) {
   .finance {
     padding: 20px 12px;
+  }
+  .finance-drawer-content {
+    padding: 0;
   }
   .finance h1 {
     font-size: 1.8rem;

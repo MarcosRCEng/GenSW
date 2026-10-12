@@ -1,5 +1,6 @@
+import { parentReturnState, readParentReturnState } from '../../../shared/details/listNavigation'
 import { useCallback } from 'react'
-import { useParams } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
 import { DetailField, DetailStatus, DetailsPage } from '../../../shared/details/DetailsPage'
 import { useRecordDetails } from '../../../shared/details/useRecordDetails'
 import { HttpError } from '../../../shared/http/httpErrors'
@@ -35,6 +36,7 @@ async function findInPages<T extends { id: string }>(root: string, id: string, f
 
 export function AnimalRelatedDetailsPage({ section, kind = 'animais' }: { section: AnimalRelatedSection; kind?: 'animais' | 'variedades' }) {
   const { animalId, varietyId, recordId } = useParams<{ animalId: string; varietyId: string; recordId: string }>()
+  const location = useLocation()
   const ownerId = kind === 'variedades' ? varietyId : animalId
   const load = useCallback(async (id: string): Promise<RelatedRecord> => {
     if (!ownerId) throw new HttpError(404)
@@ -57,8 +59,10 @@ export function AnimalRelatedDetailsPage({ section, kind = 'animais' }: { sectio
     }
     throw new HttpError(404)
   }, [kind, ownerId, section])
+  const parentPath = `/${kind}/${ownerId}`
+  const returnState = readParentReturnState(location.state, parentPath) ?? parentReturnState(location.state, parentPath, { section })
   const { record, state, retry } = useRecordDetails(recordId, load)
-  return <DetailsPage title={`Visualizar ${titles[section]}`} listPath={`/${kind}/${ownerId}`} listLabel={kind === 'animais' ? 'Animal' : 'Variedade'} state={state} onRetry={retry} editPath={ownerId ? `/${kind}/${ownerId}/editar` : undefined}>
+  return <DetailsPage title={`Visualizar ${titles[section]}`} listPath={parentPath} backState={returnState} listLabel={kind === 'animais' ? 'Animal' : 'Variedade'} state={state} onRetry={retry}>
     {record && <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><dl className="grid gap-5 sm:grid-cols-2">
       {record.section === 'identificacoes' && <>
         <DetailField label="Tipo">{identificationTypes[record.item.tipo - 1]}{record.item.descricaoTipo && ` — ${record.item.descricaoTipo}`}</DetailField>

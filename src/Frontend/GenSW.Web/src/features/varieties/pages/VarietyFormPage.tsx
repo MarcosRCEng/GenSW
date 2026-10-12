@@ -1,6 +1,9 @@
+import { formReturnTarget, listReturnState, savedRecordState } from '../../../shared/details/listNavigation'
+import { useUnsavedChanges } from '../../../shared/navigation/useUnsavedChanges'
+import { PageHeader } from '../../../shared/layout/PageHeader'
 import { ImageGallery } from '../../animals/evolution/ImageGallery'
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { isHttpError } from '../../../shared/http/httpErrors'
 import { listEspecies } from '../../species/services/speciesService'
 import { createVariedade, getVariedadeById, updateVariedade } from '../services/varietiesService'
@@ -32,7 +35,13 @@ async function loadActiveSpecies(): Promise<SpeciesOption[]> {
 export function VarietyFormPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const isEdit = id !== undefined
+  const returnTarget = formReturnTarget(location.state, '/variedades', id ? `/variedades/${id}` : undefined)
+  const listState = listReturnState(location.state, '/variedades')
+  const [dirty, setDirty] = useState(false)
+  const { markSaved } = useUnsavedChanges(dirty)
+  useEffect(() => setDirty(false), [id])
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [retryKey, setRetryKey] = useState(0)
   const [currentVariety, setCurrentVariety] = useState<Variedade | null>(null)
@@ -97,7 +106,7 @@ export function VarietyFormPage() {
     try {
       if (isEdit && id) await updateVariedade(id, request)
       else await createVariedade(request)
-      navigate('/variedades')
+      markSaved(); setDirty(false); navigate(returnTarget.to, { state: savedRecordState(returnTarget.state, returnTarget.to) })
     } catch (error: unknown) {
       if (isHttpError(error) && error.status === 409) setSaveError('Já existe uma variedade com esse nome para a espécie selecionada.')
       else if (isHttpError(error) && isEdit && error.status === 404) setSaveError('Variedade não encontrada.')
@@ -109,20 +118,19 @@ export function VarietyFormPage() {
   }
 
   const controlClassName = 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 disabled:cursor-not-allowed disabled:bg-slate-100'
-  const returnLink = <Link className="inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2" to="/variedades">Voltar para Variedades</Link>
+  const returnLink = <Link className="inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2" to={listState?.list.path ?? '/variedades'} state={listState}>Voltar para Variedades</Link>
 
   if (loadState === 'loading') return <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6"><p className="text-slate-600" role="status">{isEdit ? 'Carregando variedade…' : 'Carregando espécies…'}</p></main>
   if (isEdit && loadState === 'not-found') return <main className="min-h-screen bg-slate-50 px-4 py-8"><section className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm"><h1 className="text-2xl font-bold text-slate-900">Variedade não encontrada.</h1><div className="mt-6">{returnLink}</div></section></main>
   if (loadState === 'error') return <main className="min-h-screen bg-slate-50 px-4 py-8"><section className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm"><p className="font-medium text-red-700" role="alert">Não foi possível carregar {isEdit ? 'a variedade' : 'as espécies'}.</p><button className="mt-4 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2" onClick={() => setRetryKey((current) => current + 1)} type="button">Tentar novamente</button></section></main>
 
   return <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8"><div className="mx-auto max-w-2xl">
-    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">GenSW</p>
-    <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">{isEdit ? 'Editar variedade' : 'Nova variedade'}</h1>
-    <form className="mt-8 space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" noValidate onSubmit={handleSubmit}>
+    <PageHeader title={isEdit ? 'Editar variedade' : 'Nova variedade'} back={{to: returnTarget.to, state: returnTarget.state, label: id && returnTarget.to === `/variedades/${id}` ? 'Voltar para variedade' : 'Voltar para Variedades'}} />
+    <form className="mt-8 space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" noValidate onChangeCapture={() => setDirty(true)} onSubmit={handleSubmit}>
       <div><label className="text-sm font-medium text-slate-700" htmlFor="variety-species">Espécie</label><select aria-invalid={especieIdError} className={controlClassName} id="variety-species" onChange={(event) => { setEspecieId(event.target.value); setEspecieIdError(false) }} required value={especieId}><option value="">Selecione uma espécie</option>{speciesOptions.map((option) => <option key={option.id} value={option.id}>{option.nomeComum}{option.ativo ? '' : ' (inativa)'}</option>)}</select>{especieIdError ? <p className="mt-1 text-sm text-red-700">Selecione uma espécie ativa.</p> : null}</div>
       <div><label className="text-sm font-medium text-slate-700" htmlFor="variety-name">Nome</label><input aria-invalid={nomeError} className={controlClassName} id="variety-name" maxLength={200} minLength={1} onChange={(event) => { setNome(event.target.value); setNomeError(false) }} required type="text" value={nome} />{nomeError ? <p className="mt-1 text-sm text-red-700">Informe um nome entre 1 e 200 caracteres.</p> : null}</div>
       {saveError ? <p className="text-sm font-medium text-red-700" role="alert">{saveError}</p> : null}
-      <div className="flex flex-wrap gap-3"><button className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60" disabled={isSaving} type="submit">{isSaving ? 'Salvando…' : 'Salvar'}</button><Link className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2" to="/variedades">Cancelar</Link></div>
+      <div className="flex flex-wrap gap-3"><button className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60" disabled={isSaving} type="submit">{isSaving ? 'Salvando…' : 'Salvar'}</button><Link className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2" to={returnTarget.to} state={returnTarget.state}>Cancelar</Link></div>
     </form>{id && currentVariety && <ImageGallery ownerId={id} kind="variedades" />}
   </div></main>
 }

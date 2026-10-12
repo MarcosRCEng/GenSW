@@ -1,5 +1,8 @@
+import { formReturnTarget, listReturnState, savedRecordState } from '../../../shared/details/listNavigation'
+import { useUnsavedChanges } from '../../../shared/navigation/useUnsavedChanges'
+import { PageHeader } from '../../../shared/layout/PageHeader'
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { isHttpError } from '../../../shared/http/httpErrors'
 import {
   createPessoa,
@@ -17,7 +20,13 @@ function pessoaTypeLabel(tipoPessoa: TipoPessoa): string {
 export function PeopleFormPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const isEdit = id !== undefined
+  const returnTarget = formReturnTarget(location.state, '/pessoas', id ? `/pessoas/${id}` : undefined)
+  const listState = listReturnState(location.state, '/pessoas')
+  const [dirty, setDirty] = useState(false)
+  const { markSaved } = useUnsavedChanges(dirty)
+  useEffect(() => setDirty(false), [id])
 
   const [loadState, setLoadState] = useState<LoadState>(isEdit ? 'loading' : 'ready')
   const [retryKey, setRetryKey] = useState(0)
@@ -106,7 +115,7 @@ export function PeopleFormPage() {
           nomeFantasia: normalizedNomeFantasia,
         })
       }
-      navigate('/pessoas')
+      markSaved(); setDirty(false); navigate(returnTarget.to, { state: savedRecordState(returnTarget.state, returnTarget.to) })
     } catch (error: unknown) {
       if (isHttpError(error)) {
         if (error.status === 400) {
@@ -132,7 +141,7 @@ export function PeopleFormPage() {
   const returnLink = (
     <Link
       className="inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
-      to="/pessoas"
+      to={listState?.list.path ?? '/pessoas'} state={listState}
     >
       Voltar para Pessoas
     </Link>
@@ -189,15 +198,12 @@ export function PeopleFormPage() {
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-2xl">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">GenSW</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-          {isEdit ? 'Editar pessoa' : 'Nova pessoa'}
-        </h1>
+        <PageHeader title={isEdit ? 'Editar pessoa' : 'Nova pessoa'} back={{to: returnTarget.to, state: returnTarget.state, label: id && returnTarget.to === `/pessoas/${id}` ? 'Voltar para pessoa' : 'Voltar para Pessoas'}} />
 
         <form
           className="mt-8 space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
           noValidate
-          onSubmit={handleSubmit}
+          onChangeCapture={() => setDirty(true)} onSubmit={handleSubmit}
         >
           {isEdit ? (
             <div>
@@ -282,7 +288,7 @@ export function PeopleFormPage() {
             </button>
             <Link
               className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
-              to="/pessoas"
+              to={returnTarget.to} state={returnTarget.state}
             >
               Cancelar
             </Link>

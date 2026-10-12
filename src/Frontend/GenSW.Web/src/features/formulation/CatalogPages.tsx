@@ -8,10 +8,18 @@ import {
 import { useRecordDetails } from '../../shared/details/useRecordDetails'
 import {
   listReturnState,
+  formReturnTarget,
+  savedRecordState,
+  parentReturnState,
+  readParentReturnState,
+  useRestoredParentSection,
+  useRestoreParentSection,
   useRememberListState,
   useRestoredListState,
 } from '../../shared/details/listNavigation'
 import { decimal, display, message, page, read, send } from './api'
+import { useFormDraft } from './useFormDraft'
+import { useUnsavedChanges } from '../../shared/navigation/useUnsavedChanges'
 import {
   button,
   Check,
@@ -202,6 +210,10 @@ export function ItemsPage() {
 }
 export function ItemFormPage() {
   const { id } = useParams()
+  return <ItemForm key={id ?? 'novo'} />
+}
+function ItemForm() {
+  const { id } = useParams()
   const [data, setData] = useState<ItemData>(empty)
   const [revision, setRevision] = useState(0)
   const [loading, setLoading] = useState(Boolean(id))
@@ -212,6 +224,8 @@ export function ItemFormPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const back = listReturnState(location.state, '/itens')
+  const target = formReturnTarget(location.state, '/itens', id ? `/itens/${id}` : undefined)
+  const draft = useFormDraft(data, !loading)
   useEffect(() => {
     if (!id) return
     let live = true
@@ -220,7 +234,7 @@ export function ItemFormPage() {
     void getItem(id)
       .then((i) => {
         if (live) {
-          setData(i)
+          if (retry === 0) setData(i)
           setRevision(i.revisao)
           setFixed(i.unidadeFixada)
           setLoading(false)
@@ -245,7 +259,8 @@ export function ItemFormPage() {
         id ? { conteudo: data, versaoEsperada: revision } : data,
         id ? 'PUT' : 'POST',
       )
-      navigate(`/itens/${result.id}`, { state: back })
+      draft.markSaved()
+      navigate(`/itens/${result.id}`, { state: savedRecordState(back, `/itens/${result.id}`) })
     } catch (e) {
       setError(message(e))
     } finally {
@@ -254,8 +269,8 @@ export function ItemFormPage() {
   }
   return (
     <Frame title={id ? 'Editar item' : 'Novo item'}>
-      <Link className={button} to={back?.list.path ?? '/itens'} state={back}>
-        Voltar para Insumos e produtos
+      <Link className={button} to={target.to} state={target.state}>
+        {id ? 'Cancelar edição' : 'Cancelar criação'}
       </Link>
       <ErrorNotice error={error} />
       {loading ? (
@@ -355,12 +370,17 @@ export function CollectionPanel<T extends { id: string }>({
   path,
   title,
   render,
+  parentPath,
+  section,
 }: {
   path: string
   title: string
-  render: (item: T) => React.ReactNode
+  render: (item: T, page: number) => React.ReactNode
+  parentPath?: string
+  section?: string
 }) {
-  const [current, setCurrent] = useState(1)
+  const initial = useRestoredParentSection(parentPath ?? '/', section ?? 'collection', { page: 1 })
+  const [current, setCurrent] = useState(initial.page)
   const [data, setData] = useState<Page<T> | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [retry, setRetry] = useState(0)
@@ -380,6 +400,7 @@ export function CollectionPanel<T extends { id: string }>({
     }
   }, [path, current, retry])
   return (
+    <section id={section ? `record-${section}` : undefined} tabIndex={section ? -1 : undefined} className="rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-600">
     <Section title={title}>
       <ErrorNotice error={error} />
       {error && (
@@ -393,7 +414,7 @@ export function CollectionPanel<T extends { id: string }>({
           {data.items.length ? (
             <ul className="space-y-4">
               {data.items.map((i) => (
-                <li key={i.id}>{render(i)}</li>
+                <li key={i.id}>{render(i, current)}</li>
               ))}
             </ul>
           ) : (
@@ -407,6 +428,7 @@ export function CollectionPanel<T extends { id: string }>({
         </>
       )}
     </Section>
+    </section>
   )
 }
 export function AuditPanel({ path }: { path: string }) {
@@ -435,7 +457,9 @@ export function AuditPanel({ path }: { path: string }) {
 }
 export function ItemDetailsPage() {
   const { id } = useParams()
+  const location = useLocation()
   const { record: item, state, retry } = useRecordDetails(id, getItem)
+  useRestoreParentSection(id ? `/itens/${id}` : '/itens', Boolean(item))
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const status = async () => {
@@ -498,12 +522,13 @@ export function ItemDetailsPage() {
               </button>
               {item.ativo && (
                 <>
-                  <Link className={button} to={`/itens/${item.id}/perfis/novo`}>
+                  <Link className={button} to={`/itens/${item.id}/perfis/novo`} state={parentReturnState(location.state, `/itens/${item.id}`, { section: 'perfis' })}>
                     Novo perfil
                   </Link>
                   <Link
                     className={button}
                     to={`/itens/${item.id}/conversoes/nova`}
+                    state={parentReturnState(location.state, `/itens/${item.id}`, { section: 'conversoes' })}
                   >
                     Nova conversão
                   </Link>
@@ -514,8 +539,10 @@ export function ItemDetailsPage() {
           <CollectionPanel<Profile>
             path={`/itens/${item.id}/perfis-nutricionais`}
             title="Perfis nutricionais"
-            render={(p) => (
-              <Link className={button} to={`/producao/perfis/${p.id}`}>
+            parentPath={`/itens/${item.id}`}
+            section="perfis"
+            render={(p, current) => (
+              <Link className={button} to={`/producao/perfis/${p.id}`} state={parentReturnState(location.state, `/itens/${item.id}`, { section: 'perfis', page: current })}>
                 {p.conteudo.nome} · v{p.numero} · {p.estado}
               </Link>
             )}
@@ -523,6 +550,8 @@ export function ItemDetailsPage() {
           <CollectionPanel<Conversion>
             path={`/itens/${item.id}/conversoes`}
             title="Conversões publicadas"
+            parentPath={`/itens/${item.id}`}
+            section="conversoes"
             render={(c) => (
               <div>
                 <strong>
@@ -551,6 +580,8 @@ export function CategoriesPage() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [epoch, setEpoch] = useState(0)
+  const [initialActive, setInitialActive] = useState(true)
+  const draft = useUnsavedChanges(name !== (edit?.nome ?? '') || Boolean(edit && edit.ativo !== initialActive))
   const save = async (e: FormEvent) => {
     e.preventDefault()
     setBusy(true)
@@ -564,6 +595,7 @@ export function CategoriesPage() {
         },
         edit ? 'PUT' : 'POST',
       )
+      draft.markSaved()
       setEdit(null)
       setName('')
       setEpoch((v) => v + 1)
@@ -600,8 +632,7 @@ export function CategoriesPage() {
               type="button"
               className={`${button} ml-2`}
               onClick={() => {
-                setEdit(null)
-                setName('')
+                draft.confirmDiscard(() => { setEdit(null); setName('') })
               }}
             >
               Cancelar edição
@@ -621,8 +652,7 @@ export function CategoriesPage() {
             <button
               className={button}
               onClick={() => {
-                setEdit(c)
-                setName(c.nome)
+                draft.confirmDiscard(() => { setEdit(c); setName(c.nome); setInitialActive(c.ativo) })
               }}
             >
               Editar / alterar status
@@ -636,6 +666,8 @@ export function CategoriesPage() {
 export function ConversionFormPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const back = readParentReturnState(location.state, `/itens/${id}`)
   const [data, setData] = useState<ConversionData>({
     origem: 'L',
     destino: 'kg',
@@ -651,6 +683,7 @@ export function ConversionFormPage() {
   const [busy, setBusy] = useState(false)
   const change = (key: keyof ConversionData, value: string) =>
     setData((d) => ({ ...d, [key]: value }))
+  const draft = useFormDraft(data)
   const save = async (e: FormEvent) => {
     e.preventDefault()
     setBusy(true)
@@ -659,7 +692,8 @@ export function ConversionFormPage() {
         ...data,
         fator: decimal(data.fator),
       })
-      navigate(`/itens/${id}`)
+      draft.markSaved()
+      navigate(`/itens/${id}`, { state: savedRecordState(back, `/itens/${id}`) })
     } catch (e) {
       setError(message(e))
     } finally {
@@ -668,8 +702,8 @@ export function ConversionFormPage() {
   }
   return (
     <Frame title="Nova conversão explícita">
-      <Link className={button} to={`/itens/${id}`}>
-        Voltar ao item
+      <Link className={button} to={`/itens/${id}`} state={back}>
+        Cancelar criação e voltar para Item
       </Link>
       <form onSubmit={save}>
         <Section>

@@ -1,3 +1,4 @@
+import { useRestoreParentSection } from '../../../shared/details/listNavigation'
 import { useParams } from 'react-router-dom'
 import { DetailsPage, DetailField, DetailStatus } from '../../../shared/details/DetailsPage'
 import { useRecordDetails } from '../../../shared/details/useRecordDetails'
@@ -7,6 +8,7 @@ import { getVariedadeById } from '../services/varietiesService'
 export function VarietyDetailsPage() {
   const { id } = useParams<{ id: string }>()
   const { record: variedade, state, retry } = useRecordDetails(id, getVariedadeById)
+  useRestoreParentSection(`/variedades/${id}`, state === 'ready')
   return <DetailsPage title="Detalhes da variedade" listPath="/variedades" listLabel="Variedades" state={state} onRetry={retry} editPath={variedade ? `/variedades/${variedade.id}/editar` : undefined}>
     {variedade ? <>
       <dl className="grid gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:grid-cols-2">

@@ -1,8 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { parentReturnState, readParentReturnState, savedRecordState } from '../../shared/details/listNavigation'
 import { DetailField, DetailsPage } from '../../shared/details/DetailsPage'
 import { useRecordDetails } from '../../shared/details/useRecordDetails'
 import { decimal, display, message, read, send } from './api'
+import { useFormDraft } from './useFormDraft'
 import {
   button,
   Choice,
@@ -32,8 +34,15 @@ const empty: ProfileData = {
 export function ProfileFormPage() {
   const { id, profileId } = useParams()
   const [params] = useSearchParams()
+  return <ProfileForm key={`${id ?? ''}:${profileId ?? ''}:${params.get('origem') ?? ''}`} />
+}
+function ProfileForm() {
+  const { id, profileId } = useParams()
+  const [params] = useSearchParams()
   const source = params.get('origem')
   const navigate = useNavigate()
+  const location = useLocation()
+  const [parentId, setParentId] = useState(id)
   const [data, setData] = useState<ProfileData>(empty)
   const [revision, setRevision] = useState(0)
   const [components, setComponents] = useState<Component[]>([])
@@ -41,6 +50,8 @@ export function ProfileFormPage() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [retry, setRetry] = useState(0)
+  const back = readParentReturnState(location.state, `/itens/${parentId}`)
+  const draft = useFormDraft(data, !loading)
   useEffect(() => {
     let live = true
     void read<Component[]>('/componentes-nutricionais')
@@ -66,7 +77,8 @@ export function ProfileFormPage() {
             setError('Versão publicada é imutável; crie nova revisão.')
             return
           }
-          setData(p.conteudo)
+          if (retry === 0) setData(p.conteudo)
+          setParentId(p.itemId)
           setRevision(p.revisao)
           setLoading(false)
         }
@@ -125,7 +137,8 @@ export function ProfileFormPage() {
         profileId ? { conteudo: payload, versaoEsperada: revision } : payload,
         profileId ? 'PUT' : 'POST',
       )
-      navigate(`/producao/perfis/${p.id}`)
+      draft.markSaved()
+      navigate(`/producao/perfis/${p.id}`, { state: savedRecordState(back, `/producao/perfis/${p.id}`) })
     } catch (e) {
       setError(message(e))
     } finally {
@@ -145,8 +158,9 @@ export function ProfileFormPage() {
       <Link
         className={button}
         to={profileId ? `/producao/perfis/${profileId}` : `/itens/${id}`}
+        state={back}
       >
-        Voltar
+        {profileId ? 'Cancelar edição e voltar para Perfil' : 'Cancelar criação e voltar para Item'}
       </Link>
       <ErrorNotice error={error} />
       {loading ? (
@@ -374,6 +388,7 @@ export function ProfileFormPage() {
 }
 export function ProfileDetailsPage() {
   const { profileId } = useParams()
+  const location = useLocation()
   const { record: p, state, retry } = useRecordDetails(profileId, getProfile)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -444,6 +459,7 @@ export function ProfileDetailsPage() {
               <Link
                 className={button}
                 to={`/itens/${p.itemId}/perfis/novo?origem=${p.id}`}
+                state={readParentReturnState(location.state, `/itens/${p.itemId}`) ?? parentReturnState(location.state, `/itens/${p.itemId}`, { section: 'perfis' })}
               >
                 Criar nova revisão
               </Link>

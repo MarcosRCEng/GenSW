@@ -1,7 +1,10 @@
+import { formReturnTarget, listReturnState, savedRecordState } from '../../../shared/details/listNavigation'
+import { useUnsavedChanges } from '../../../shared/navigation/useUnsavedChanges'
+import { PageHeader } from '../../../shared/layout/PageHeader'
 import { WeightsPanel } from '../evolution/WeightsPanel'
 import { ImageGallery } from '../evolution/ImageGallery'
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { isHttpError } from '../../../shared/http/httpErrors'
 import { listRacas } from '../../breeds/services/breedsService'
 import type { Raca } from '../../breeds/types/breeds'
@@ -42,7 +45,13 @@ function appendCurrent<T extends { id: string; ativo: boolean }>(items: T[], cur
 export function AnimalFormPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const isEdit = id !== undefined
+  const returnTarget = formReturnTarget(location.state, '/animais', id ? `/animais/${id}` : undefined)
+  const listState = listReturnState(location.state, '/animais')
+  const [dirty, setDirty] = useState(false)
+  const { markSaved } = useUnsavedChanges(dirty)
+  useEffect(() => setDirty(false), [id])
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [retryKey, setRetryKey] = useState(0)
   const [currentAnimal, setCurrentAnimal] = useState<Animal | null>(null)
@@ -113,7 +122,7 @@ export function AnimalFormPage() {
     try {
       if (isEdit && id) await updateAnimal(id, request as Parameters<typeof updateAnimal>[1])
       else await createAnimal(request)
-      navigate('/animais')
+      markSaved(); setDirty(false); navigate(returnTarget.to, { state: savedRecordState(returnTarget.state, returnTarget.to) })
     } catch (error: unknown) {
       if (isHttpError(error) && error.status === 409) setSaveError(error.code ? error.detail || 'Alteração incompatível com filiação/pesagens existentes.' : 'Já existe um animal com esse código interno.')
       else if (isHttpError(error) && error.status === 404) setSaveError('Animal ou classificação não encontrada.')
@@ -123,12 +132,12 @@ export function AnimalFormPage() {
   }
 
   const control = 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 disabled:cursor-not-allowed disabled:bg-slate-100'
-  const backLink = <Link className="inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700" to="/animais">Voltar para Animais</Link>
+  const backLink = <Link className="inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700" to={listState?.list.path ?? '/animais'} state={listState}>Voltar para Animais</Link>
   if (loadState === 'loading') return <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6"><p role="status">Carregando {isEdit ? 'animal' : 'catálogos'}…</p></main>
   if (isEdit && loadState === 'not-found') return <main className="min-h-screen bg-slate-50 px-4 py-8"><section className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm"><h1>Animal não encontrado.</h1>{backLink}</section></main>
   if (loadState === 'error') return <main className="min-h-screen bg-slate-50 px-4 py-8"><section className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm"><p role="alert">Não foi possível carregar {isEdit ? 'o animal' : 'os catálogos'}.</p><button onClick={() => setRetryKey((key) => key + 1)} type="button">Tentar novamente</button></section></main>
 
-  return <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8"><div className="mx-auto max-w-2xl"><p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">GenSW</p><h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">{isEdit ? 'Editar animal' : 'Novo animal'}</h1><form className="mt-8 space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" noValidate onSubmit={handleSubmit}>
+  return <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8"><div className="mx-auto max-w-2xl"><PageHeader title={isEdit ? 'Editar animal' : 'Novo animal'} back={{to: returnTarget.to, state: returnTarget.state, label: id && returnTarget.to === `/animais/${id}` ? 'Voltar para animal' : 'Voltar para Animais'}} /><form className="mt-8 space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" noValidate onChangeCapture={() => setDirty(true)} onSubmit={handleSubmit}>
     <div><label className="text-sm font-medium text-slate-700" htmlFor="animal-code">Código interno</label><input aria-invalid={codigoError} className={control} id="animal-code" onChange={(event) => { setCodigoInterno(event.target.value); setCodigoTouched(true); setCodigoError(false) }} onFocus={() => setCodigoTouched(true)} type="text" value={codigoInterno} />{!isEdit && !codigoTouched && codigoInterno === '' ? <p className="mt-1 text-sm text-slate-600">O código será gerado automaticamente se permanecer vazio.</p> : null}{codigoError ? <p className="mt-1 text-sm text-red-700">Informe um código interno não vazio.</p> : null}</div>
     <div><label className="text-sm font-medium text-slate-700" htmlFor="animal-name">Nome</label><input className={control} id="animal-name" maxLength={200} onChange={(event) => setNome(event.target.value)} type="text" value={nome} /></div>
     <div><label className="text-sm font-medium text-slate-700" htmlFor="animal-species">Espécie</label><select aria-invalid={especieError} className={control} id="animal-species" onChange={(event) => { setEspecieId(event.target.value); setEspecieError(false); setClassificationError(false) }} required value={especieId}><option value="">Selecione uma espécie</option>{species.map((item) => <option key={item.id} value={item.id}>{label(item.nomeComum, item.ativo)}</option>)}</select>{especieError ? <p className="mt-1 text-sm text-red-700">Selecione uma espécie ativa.</p> : null}</div>
@@ -137,6 +146,6 @@ export function AnimalFormPage() {
     <div><label className="text-sm font-medium text-slate-700" htmlFor="animal-sex">Sexo</label><select className={control} id="animal-sex" onChange={(event) => setSexo(Number(event.target.value) as SexoAnimal)} value={sexo}><option value="1">Macho</option><option value="2">Fêmea</option><option value="3">Indeterminado</option></select></div>
     <div><label className="text-sm font-medium text-slate-700" htmlFor="animal-scope">Escopo</label><select className={control} id="animal-scope" onChange={(event) => setEscopo(Number(event.target.value) as EscopoAnimal)} value={escopo}><option value="1">Operacional</option><option value="2">Referência</option></select></div>
     <div><label className="text-sm font-medium text-slate-700" htmlFor="animal-birth-date">Data de nascimento</label><input className={control} id="animal-birth-date" onChange={(event) => setDataNascimento(event.target.value)} type="date" value={dataNascimento} /></div>
-    {!isEdit && <p className="text-sm text-slate-600">A propriedade é opcional. Após salvar, você pode vincular uma unidade física na edição do animal.</p>}{saveError ? <p className="text-sm font-medium text-red-700" role="alert">{saveError}</p> : null}<div className="flex flex-wrap gap-3"><button className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60" disabled={isSaving} type="submit">{isSaving ? 'Salvando…' : 'Salvar'}</button>{backLink}</div>
+    {!isEdit && <p className="text-sm text-slate-600">A propriedade é opcional. Após salvar, você pode vincular uma unidade física na edição do animal.</p>}{saveError ? <p className="text-sm font-medium text-red-700" role="alert">{saveError}</p> : null}<div className="flex flex-wrap gap-3"><button className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60" disabled={isSaving} type="submit">{isSaving ? 'Salvando…' : 'Salvar'}</button><Link className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold" to={returnTarget.to} state={returnTarget.state}>Cancelar</Link></div>
   </form>{id && currentAnimal && currentAnimal.id === id ? <><AnimalPropertiesPanel key={`properties-${currentAnimal.id}`} animalId={currentAnimal.id} /><AnimalIdentificationsPanel animalId={currentAnimal.id} /><AnimalRegistrationsPanel animalId={currentAnimal.id} /><WeightsPanel animalId={currentAnimal.id} birth={currentAnimal.dataNascimento} /><ImageGallery ownerId={currentAnimal.id} kind="animais" /><AnimalFiliationsPanel animalId={currentAnimal.id} pendingClassification={especieId !== currentAnimal.especieId || racaId !== (currentAnimal.racaId ?? '') || sexo !== currentAnimal.sexo} />{sexo === 2 && species.find((item) => item.id === especieId)?.ovipara === true ? <AnimalEggProductionPanel animalId={currentAnimal.id} /> : null}</> : null}</div></main>
 }

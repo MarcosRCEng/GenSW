@@ -22,7 +22,7 @@ const categories: Category[] = [
   },
 ]
 describe('Financeiro', () => {
-  it('identifica o módulo e a funcionalidade com retorno explícito à página inicial', async () => {
+  it('identifica o módulo e a funcionalidade sem duplicar o destino global do shell', async () => {
     mock.roles = []
     mock.request.mockImplementation((path: string) =>
       Promise.resolve(path.endsWith('/configuracao') ? null : []),
@@ -36,7 +36,7 @@ describe('Financeiro', () => {
     await screen.findByText('Um Admin precisa configurar o início do controle.')
     expect(screen.getByText('Financeiro')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Fluxo de caixa' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Voltar ao início/ })).toHaveAttribute('href', '/')
+    expect(screen.queryByRole('link', { name: /Voltar ao início/ })).not.toBeInTheDocument()
   })
 
   it('formats the decimal limit without float conversion and rejects excessive precision', () => {

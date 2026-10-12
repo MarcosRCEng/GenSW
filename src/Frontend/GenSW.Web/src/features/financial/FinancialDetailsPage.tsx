@@ -1,4 +1,5 @@
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
+import { listReturnState } from '../../shared/details/listNavigation'
 import { DetailField, DetailStatus, DetailsPage } from '../../shared/details/DetailsPage'
 import { useRecordDetails } from '../../shared/details/useRecordDetails'
 import { brl, dateLabel, finance, type Category, type EntryView } from './financial'
@@ -23,6 +24,7 @@ export function CategoryDetailsPage() {
 
 export function EntryDetailsPage() {
   const { id } = useParams<{ id: string }>()
+  const back = listReturnState(useLocation().state, '/financeiro')
   const { record, state, retry } = useRecordDetails(id, loadEntry)
   const entry = record?.lancamento
   return <DetailsPage title="Visualizar lançamento financeiro" listPath="/financeiro" listLabel="Financeiro" state={state} onRetry={retry}>
@@ -33,13 +35,13 @@ export function EntryDetailsPage() {
       <DetailField label="Valor">{brl(entry.valor)}</DetailField>
       <DetailField label="Data do movimento">{dateLabel(entry.dataMovimento)}</DetailField>
       <DetailField label="Forma de pagamento">{['', 'Dinheiro', 'Pix', 'Transferência', 'Cartão', 'Outro'][entry.formaPagamento]}</DetailField>
-      <DetailField label="Categoria"><Link className={linkClass} to={`/financeiro/categorias/${entry.categoriaId}`}>{record.categoriaNome}</Link></DetailField>
+      <DetailField label="Categoria"><Link className={linkClass} to={`/financeiro/categorias/${entry.categoriaId}`} state={back}>{record.categoriaNome}</Link></DetailField>
       <DetailField label="Pessoa">{entry.pessoaId && record.pessoaNome ? <Link className={linkClass} to={`/pessoas/${entry.pessoaId}`}>{record.pessoaNome}</Link> : null}</DetailField>
       <DetailField label="Animal">{entry.animalId && record.animalNome ? <Link className={linkClass} to={`/animais/${entry.animalId}`}>{record.animalNome}</Link> : null}</DetailField>
       <DetailField label="Origem">{entry.origem === 1 ? 'Lançamento manual' : entry.origem === 2 ? 'Ajuste de reversão' : 'Ajuste substituto'}</DetailField>
       <DetailField label="Observação">{entry.observacao}</DetailField>
       <DetailField label="Motivo do ajuste">{entry.motivoAjuste}</DetailField>
-      {entry.lancamentoOriginalId && <DetailField label="Lançamento original"><Link className={linkClass} to={`/financeiro/lancamentos/${entry.lancamentoOriginalId}`}>Visualizar lançamento original</Link></DetailField>}
+      {entry.lancamentoOriginalId && <DetailField label="Lançamento original"><Link className={linkClass} to={`/financeiro/lancamentos/${entry.lancamentoOriginalId}`} state={back}>Visualizar lançamento original</Link></DetailField>}
     </dl>}
   </DetailsPage>
 }

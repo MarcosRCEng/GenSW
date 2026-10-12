@@ -33,7 +33,7 @@ const varietyB = { ...varietyA, id: 'variety-b', especieId: speciesB.id, nome: '
 const savedAnimal = { id: 'animal-1', codigoInterno: 'AN-000001', nome: 'Bela', especieId: speciesA.id, racaId: breedA.id, variedadeId: varietyA.id, sexo: 2 as const, dataNascimento: '2020-02-29', escopo: 1 as const, ativo: true, createdAtUtc: '2026-09-08T12:00:00Z', updatedAtUtc: '2026-09-08T12:00:00Z', especie: { id: speciesA.id, nomeComum: speciesA.nomeComum, ativo: true }, raca: { id: breedA.id, nome: breedA.nome, ativo: true }, variedade: { id: varietyA.id, nome: varietyA.nome, ativo: true } }
 
 function renderPage(path = '/animais/nova') {
-  return render(<MemoryRouter initialEntries={[path]}><Routes><Route element={<AnimalFormPage />} path="/animais/nova" /><Route element={<AnimalFormPage />} path="/animais/:id/editar" /><Route element={<p>Lista de animais</p>} path="/animais" /></Routes></MemoryRouter>)
+  return render(<MemoryRouter initialEntries={[path]}><Routes><Route element={<AnimalFormPage />} path="/animais/nova" /><Route element={<AnimalFormPage />} path="/animais/:id/editar" /><Route element={<h1>Animal destino</h1>} path="/animais/:id" /><Route element={<p>Lista de animais</p>} path="/animais" /></Routes></MemoryRouter>)
 }
 
 function SwitchToSecondAnimal() {

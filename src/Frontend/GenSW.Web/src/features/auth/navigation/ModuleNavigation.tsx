@@ -1,13 +1,9 @@
 import { Link } from 'react-router-dom'
-import { functionalAreas, navigationModules, type NavigationModule } from './modules'
+import { modulePages, modulesForArea, sortedFunctionalAreas, type NavigationModule } from './modules'
 
 function ModuleCard({ module }: { module: NavigationModule }) {
   const available = module.state === 'available'
-  const features = available
-    ? module.route !== undefined
-      ? [{ id: module.id, name: module.name, route: module.route }]
-      : module.features
-    : []
+  const features = modulePages(module)
 
   return (
     <article
@@ -42,14 +38,14 @@ function ModuleCard({ module }: { module: NavigationModule }) {
 export function ModuleNavigation() {
   return (
     <div className="mt-8 space-y-10">
-      {functionalAreas.map((area) => (
+      {sortedFunctionalAreas.map((area) => (
         <section aria-labelledby={`area-${area.id}`} id={area.id} key={area.id}>
           <h2 className="text-2xl font-semibold tracking-tight text-slate-900" id={`area-${area.id}`}>
             {area.name}
           </h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">{area.description}</p>
           <nav aria-label={`Módulos de ${area.name}`} className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {navigationModules.filter((module) => module.area === area.id).map((module) => (
+            {modulesForArea(area.id).map((module) => (
               <ModuleCard key={module.id} module={module} />
             ))}
           </nav>

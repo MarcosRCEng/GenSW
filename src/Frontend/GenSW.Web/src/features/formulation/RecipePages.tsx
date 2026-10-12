@@ -14,10 +14,16 @@ import {
 import { useRecordDetails } from '../../shared/details/useRecordDetails'
 import {
   listReturnState,
+  formReturnTarget,
+  savedRecordState,
+  parentReturnState,
+  readParentReturnState,
+  useRestoreParentSection,
   useRememberListState,
   useRestoredListState,
 } from '../../shared/details/listNavigation'
 import { decimal, message, page, read, send } from './api'
+import { useFormDraft } from './useFormDraft'
 import { AuditPanel, CollectionPanel } from './CatalogPages'
 import {
   button,
@@ -158,6 +164,10 @@ export function RecipesPage() {
 }
 export function RecipeHeaderFormPage() {
   const { id } = useParams()
+  return <RecipeHeaderForm key={id ?? 'novo'} />
+}
+function RecipeHeaderForm() {
+  const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
   const back = listReturnState(location.state, '/producao/receitas')
@@ -171,6 +181,8 @@ export function RecipeHeaderFormPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [retry, setRetry] = useState(0)
+  const target = formReturnTarget(location.state, '/producao/receitas', id ? `/producao/receitas/${id}` : undefined)
+  const draft = useFormDraft(data, !loading)
   useEffect(() => {
     if (!id) return
     let live = true
@@ -178,7 +190,7 @@ export function RecipeHeaderFormPage() {
     void getRecipe(id)
       .then((r) => {
         if (live) {
-          setData(r)
+          if (retry === 0) setData(r)
           setRevision(r.revisao)
           setLoading(false)
         }
@@ -200,7 +212,8 @@ export function RecipeHeaderFormPage() {
         id ? { conteudo: data, versaoEsperada: revision } : data,
         id ? 'PUT' : 'POST',
       )
-      navigate(`/producao/receitas/${r.id}`, { state: back })
+      draft.markSaved()
+      navigate(`/producao/receitas/${r.id}`, { state: savedRecordState(back, `/producao/receitas/${r.id}`) })
     } catch (e) {
       setError(message(e))
     } finally {
@@ -211,10 +224,10 @@ export function RecipeHeaderFormPage() {
     <Frame title={id ? 'Editar receita' : 'Nova receita'}>
       <Link
         className={button}
-        to={back?.list.path ?? '/producao/receitas'}
-        state={back}
+        to={target.to}
+        state={target.state}
       >
-        Voltar para Receitas
+        {id ? 'Cancelar edição' : 'Cancelar criação'}
       </Link>
       <ErrorNotice error={error} />
       {loading ? (
@@ -257,7 +270,9 @@ export function RecipeHeaderFormPage() {
 }
 export function RecipeDetailsPage() {
   const { id } = useParams()
+  const location = useLocation()
   const { record: r, state, retry } = useRecordDetails(id, getRecipe)
+  useRestoreParentSection(id ? `/producao/receitas/${id}` : '/producao/receitas', Boolean(r))
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const status = async () => {
@@ -309,6 +324,7 @@ export function RecipeDetailsPage() {
                 <Link
                   className={primary}
                   to={`/producao/receitas/${r.id}/versoes/nova`}
+                  state={parentReturnState(location.state, `/producao/receitas/${r.id}`, { section: 'versoes' })}
                 >
                   Novo rascunho
                 </Link>
@@ -318,10 +334,13 @@ export function RecipeDetailsPage() {
           <CollectionPanel<RecipeVersion>
             path={`/receitas/${r.id}/versoes`}
             title="Versões"
-            render={(v) => (
+            parentPath={`/producao/receitas/${r.id}`}
+            section="versoes"
+            render={(v, current) => (
               <Link
                 className={button}
                 to={`/producao/receitas/versoes/${v.id}`}
+                state={parentReturnState(location.state, `/producao/receitas/${r.id}`, { section: 'versoes', page: current })}
               >
                 Versão {v.numero} · {v.estado} · {v.conteudo.tipo}
               </Link>
@@ -336,9 +355,15 @@ export function RecipeDetailsPage() {
 export function RecipeVersionFormPage() {
   const { id, versionId } = useParams()
   const [params] = useSearchParams()
+  return <RecipeVersionForm key={`${id ?? ''}:${versionId ?? ''}:${params.get('origem') ?? ''}`} />
+}
+function RecipeVersionForm() {
+  const { id, versionId } = useParams()
+  const [params] = useSearchParams()
   const source = params.get('origem')
   const location = useLocation()
   const navigate = useNavigate()
+  const [parentId, setParentId] = useState(id)
   const [data, setData] = useState<RecipeData>(
     () =>
       (location.state as { variacao?: RecipeData } | null)?.variacao ??
@@ -349,6 +374,8 @@ export function RecipeVersionFormPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [retry, setRetry] = useState(0)
+  const back = readParentReturnState(location.state, `/producao/receitas/${parentId}`)
+  const draft = useFormDraft(data, !loading)
   useEffect(() => {
     const target = versionId ?? source
     if (!target) return
@@ -361,7 +388,8 @@ export function RecipeVersionFormPage() {
             setError('Versão imutável; crie outro rascunho.')
             return
           }
-          setData(v.conteudo)
+          if (retry === 0) setData(v.conteudo)
+          setParentId(v.receitaId)
           setRevision(v.revisao)
           setLoading(false)
         }
@@ -386,7 +414,8 @@ export function RecipeVersionFormPage() {
         versionId ? { conteudo: payload, versaoEsperada: revision } : payload,
         versionId ? 'PUT' : 'POST',
       )
-      navigate(`/producao/receitas/versoes/${v.id}`)
+      draft.markSaved()
+      navigate(`/producao/receitas/versoes/${v.id}`, { state: savedRecordState(back, `/producao/receitas/versoes/${v.id}`) })
     } catch (e) {
       setError(message(e))
     } finally {
@@ -406,8 +435,9 @@ export function RecipeVersionFormPage() {
             ? `/producao/receitas/versoes/${versionId}`
             : `/producao/receitas/${id}`
         }
+        state={back}
       >
-        Voltar
+        {versionId ? 'Cancelar edição e voltar para Versão' : 'Cancelar criação e voltar para Receita'}
       </Link>
       <ErrorNotice error={error} />
       {loading ? (
@@ -430,6 +460,7 @@ export function RecipeVersionFormPage() {
 }
 export function RecipeVersionDetailsPage() {
   const { versionId } = useParams()
+  const location = useLocation()
   const { record: v, state, retry } = useRecordDetails(versionId, getVersion)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -515,6 +546,7 @@ export function RecipeVersionDetailsPage() {
               <Link
                 className={button}
                 to={`/producao/receitas/${v.receitaId}/versoes/nova?origem=${v.id}`}
+                state={readParentReturnState(location.state, `/producao/receitas/${v.receitaId}`) ?? parentReturnState(location.state, `/producao/receitas/${v.receitaId}`, { section: 'versoes' })}
               >
                 Criar nova revisão
               </Link>

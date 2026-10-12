@@ -1,4 +1,5 @@
-import { Link, useParams } from 'react-router-dom'
+import { parentReturnState } from '../../shared/details/listNavigation'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { DetailField, DetailsPage } from '../../shared/details/DetailsPage'
 import { useRecordDetails } from '../../shared/details/useRecordDetails'
 import { getBreeding } from './breedingsService'
@@ -7,6 +8,7 @@ import type { BreedingStatus } from './types'
 const labels: Record<BreedingStatus, string> = { 1: 'Planejado', 2: 'Em andamento', 3: 'Concluído', 4: 'Cancelado' }
 const date = (value: string | null) => value?.split('-').reverse().join('/')
 export function BreedingDetailsPage() {
+  const location = useLocation()
   const { id } = useParams<{ id: string }>()
   const { record: item, state, retry } = useRecordDetails(id, getBreeding)
   return <DetailsPage title="Visualizar cruzamento" listPath="/cruzamentos" listLabel="Cruzamentos" state={state} onRetry={retry} editPath={id ? `/cruzamentos/${id}/editar` : undefined}>
@@ -20,7 +22,7 @@ export function BreedingDetailsPage() {
         <DetailField label="Objetivo">{item.objetivo}</DetailField>
         <DetailField label="Observação">{item.observacao}</DetailField>
       </dl>
-      <Link className="mt-6 inline-flex rounded-lg border px-4 py-2 font-semibold text-emerald-700" to={`/ciclos-reprodutivos?cruzamentoId=${item.id}`}>Visualizar ciclos reprodutivos</Link>
+      <Link className="mt-6 inline-flex rounded-lg border px-4 py-2 font-semibold text-emerald-700" state={parentReturnState(location.state, `/cruzamentos/${item.id}`, { section: 'ciclos' })} to={`/ciclos-reprodutivos?cruzamentoId=${item.id}`}>Visualizar ciclos reprodutivos</Link>
       <p className="mt-4 text-sm text-slate-600">A filiação continua sendo a fonte de verdade do pedigree.</p>
     </section>}
   </DetailsPage>

@@ -1,9 +1,11 @@
-import { Link, useParams } from 'react-router-dom'
+import { readParentReturnState, listReturnState } from '../../shared/details/listNavigation'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { DetailField, DetailsPage } from '../../shared/details/DetailsPage'
 import { useRecordDetails } from '../../shared/details/useRecordDetails'
 import { getOffspring } from './offspringService'
 
 export function OffspringDetailsPage() {
+  const location = useLocation()
   const { id } = useParams<{ id: string }>()
   const { record: item, state, retry } = useRecordDetails(id, getOffspring)
   return <DetailsPage title="Visualizar prole" listPath="/proles" listLabel="Proles" state={state} onRetry={retry} editPath={id ? `/proles/${id}/editar` : undefined}>
@@ -17,8 +19,8 @@ export function OffspringDetailsPage() {
       <DetailField label="Sexo">{item.sexo === 1 ? 'Macho' : item.sexo === 2 ? 'Fêmea' : 'Indeterminado'}</DetailField>
       <DetailField label="Condição">{item.condicao}</DetailField>
       <DetailField label="Observação">{item.observacao}</DetailField>
-      <DetailField label="Ciclo reprodutivo"><Link className="font-semibold text-emerald-700 underline" to={`/ciclos-reprodutivos/${item.cicloReprodutivoId}`}>Visualizar ciclo reprodutivo</Link></DetailField>
-      {item.loteOrigemId && <DetailField label="Lote de origem"><Link className="font-semibold text-emerald-700 underline" to={`/proles/${item.loteOrigemId}`}>Visualizar lote</Link></DetailField>}
+      <DetailField label="Ciclo reprodutivo"><Link className="font-semibold text-emerald-700 underline" state={readParentReturnState(location.state, `/ciclos-reprodutivos/${item.cicloReprodutivoId}`)?.parentReturn.origin} to={`/ciclos-reprodutivos/${item.cicloReprodutivoId}`}>Visualizar ciclo reprodutivo</Link></DetailField>
+      {item.loteOrigemId && <DetailField label="Lote de origem"><Link className="font-semibold text-emerald-700 underline" state={listReturnState(location.state, '/proles')} to={`/proles/${item.loteOrigemId}`}>Visualizar lote</Link></DetailField>}
       <DetailField label="Animal resultante">{item.animalId ? <Link className="font-semibold text-emerald-700 underline" to={`/animais/${item.animalId}`}>Visualizar animal</Link> : 'Ainda não convertido'}</DetailField>
     </dl></section>}
   </DetailsPage>

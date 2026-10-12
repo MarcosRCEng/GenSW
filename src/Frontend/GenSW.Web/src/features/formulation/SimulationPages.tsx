@@ -2,6 +2,10 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { DetailField, DetailsPage } from '../../shared/details/DetailsPage'
 import { useRecordDetails } from '../../shared/details/useRecordDetails'
+import { useUnsavedChanges } from '../../shared/navigation/useUnsavedChanges'
+import { savedRecordState } from '../../shared/details/listNavigation'
+import { TableRegion } from '../../shared/layout/TableRegion'
+import { useFormDraft } from './useFormDraft'
 import { decimal, display, message, read, send } from './api'
 import { CollectionPanel } from './CatalogPages'
 import {
@@ -48,6 +52,7 @@ export function FormulationPage() {
   const [busy, setBusy] = useState(false)
   const navigate = useNavigate()
   const key = useRequestKey()
+  const draft = useFormDraft({ ids, basis })
   const compare = async () => {
     const body = { simulacaoIds: ids, base: basis }
     setBusy(true)
@@ -59,7 +64,8 @@ export function FormulationPage() {
         'POST',
         key(body),
       )
-      navigate(`/producao/formulacao/comparacoes/${result.id}`)
+      draft.markSaved()
+      navigate(`/producao/formulacao/comparacoes/${result.id}`, { state: savedRecordState(undefined, `/producao/formulacao/comparacoes/${result.id}`) })
     } catch (e) {
       setError(message(e))
     } finally {
@@ -131,6 +137,10 @@ export function FormulationPage() {
 }
 export function SimulationFormPage() {
   const [params] = useSearchParams()
+  return <SimulationForm key={`${params.get('anterior') ?? ''}:${params.get('receita') ?? ''}`} />
+}
+function SimulationForm() {
+  const [params] = useSearchParams()
   const prior = params.get('anterior')
   const initialVersion = params.get('receita')
   const navigate = useNavigate()
@@ -146,6 +156,8 @@ export function SimulationFormPage() {
   const [components, setComponents] = useState<Component[]>([])
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [dirty, setDirty] = useState(false)
+  const draft = useUnsavedChanges(dirty)
   useEffect(() => {
     let live = true
     void read<Component[]>('/componentes-nutricionais')
@@ -206,8 +218,9 @@ export function SimulationFormPage() {
       live = false
     }
   }, [prior])
+  const changeGoals = (change: (goals: Goal[]) => Goal[]) => { setDirty(true); setGoals(change) }
   const goal = (index: number, patch: Partial<Goal>) =>
-    setGoals((g) => g.map((v, i) => (i === index ? { ...v, ...patch } : v)))
+    changeGoals((g) => g.map((v, i) => (i === index ? { ...v, ...patch } : v)))
   const save = async (e: FormEvent) => {
     e.preventDefault()
     if (!recipeId) {
@@ -237,7 +250,8 @@ export function SimulationFormPage() {
         'POST',
         key(payload),
       )
-      navigate(`/producao/formulacao/${result.id}`)
+      draft.markSaved()
+      navigate(`/producao/formulacao/${result.id}`, { state: savedRecordState(undefined, `/producao/formulacao/${result.id}`) })
     } catch (e) {
       setError(message(e))
     } finally {
@@ -246,7 +260,8 @@ export function SimulationFormPage() {
   }
   return (
     <Frame title={prior ? 'Nova variação da simulação' : 'Nova simulação'}>
-      <form className="space-y-6" onSubmit={save}>
+      <Link className={button} to={prior ? `/producao/formulacao/${prior}` : '/producao/formulacao'}>Cancelar simulação</Link>
+      <form className="space-y-6" onSubmit={save} onChangeCapture={() => setDirty(true)}>
         <Section title="Receita e contexto">
           <ServerSelect<RecipeVersion>
             label="Versão da receita"
@@ -298,7 +313,7 @@ export function SimulationFormPage() {
             />
           )}
         </Section>
-        {variation && <RecipeEditor data={variation} onChange={setVariation} />}
+        {variation && <RecipeEditor data={variation} onChange={value => { setDirty(true); setVariation(value) }} />}
         <Section title="Metas informadas">
           {goals.map((g, index) => (
             <fieldset key={index} className="space-y-3 rounded-xl border p-4">
@@ -379,7 +394,7 @@ export function SimulationFormPage() {
                 type="button"
                 className={button}
                 onClick={() =>
-                  setGoals((gs) => gs.filter((_, i) => i !== index))
+                  changeGoals((gs) => gs.filter((_, i) => i !== index))
                 }
               >
                 Remover meta {index + 1}
@@ -390,7 +405,7 @@ export function SimulationFormPage() {
             type="button"
             className={button}
             onClick={() =>
-              setGoals((g) => [
+              changeGoals((g) => [
                 ...g,
                 {
                   componente: 'PB',
@@ -628,16 +643,11 @@ export function ComparisonDetailsPage() {
             Dados ausentes ou contexto incompatível são identificados como não
             comparáveis; o snapshot mantém os resultados originais.
           </p>
-          <p className="text-sm text-slate-600 sm:hidden">
-            Deslize a tabela para consultar todas as simulações.
-          </p>
-          <div
-            role="region"
-            aria-label="Tabela comparativa de simulações"
-            tabIndex={0}
+          <TableRegion
+            label="Tabela comparativa de simulações"
             className="max-w-full overflow-x-auto rounded focus:ring-2 focus:ring-emerald-600"
           >
-            <table className="w-full text-left text-sm">
+            <table aria-label="Tabela comparativa de simulações" className="w-full text-left text-sm">
               <thead>
                 <tr>
                   <th className="p-3">Componente / método / contexto</th>
@@ -684,7 +694,7 @@ export function ComparisonDetailsPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableRegion>
         </Section>
       )}
     </DetailsPage>

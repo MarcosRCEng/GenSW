@@ -420,9 +420,9 @@ describe('AppRoutes', () => {
     fireEvent.click(await screen.findByRole('link', { name: 'Fluxo de caixa' }))
 
     expect(await screen.findByRole('heading', { name: 'Fluxo de caixa' })).toBeInTheDocument()
-    expect(screen.getByText('Financeiro')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Financeiro' })).toHaveClass('is-active')
     await screen.findByText('Um Admin precisa configurar o início do controle.')
-    const homeLink = screen.getByRole('link', { name: /Voltar ao início/ })
+    const homeLink = screen.getByRole('link', { name: 'Ir para Início' })
     expect(homeLink).toHaveAttribute('href', '/')
     fireEvent.click(homeLink)
 
@@ -498,9 +498,7 @@ describe('AppRoutes', () => {
 
     expect(await screen.findByRole('heading', { name })).toBeInTheDocument()
     if (emptyMessage) await screen.findByText(emptyMessage)
-    const homeLink = screen.getByRole('link', {
-      name: name === 'Cruzamentos' ? 'Início' : /Voltar ao início/,
-    })
+    const homeLink = screen.getByRole('link', { name: 'Ir para Início' })
     expect(homeLink).toHaveAttribute('href', '/')
     fireEvent.click(homeLink)
     expect(await screen.findByRole('region', { name: 'Produção e operações' })).toBeInTheDocument()
@@ -526,10 +524,10 @@ describe('AppRoutes', () => {
         expect(module.querySelector('[href], [tabindex]')).not.toBeInTheDocument()
       }
     }
-    expect(screen.getAllByRole('link').map((link) => link.getAttribute('href')).sort()).toEqual([
+    expect(within(screen.getByRole('main')).getAllByRole('link').map((link) => link.getAttribute('href')).sort()).toEqual([
       '/animais', '/ciclos-reprodutivos', '/cruzamentos', '/especies',
-      '/estoque/locais', '/estoque/lotes', '/estoque/movimentos', '/estoque/saldos',
-      '/financeiro', '/itens', '/pessoas', '/producao/formulacao', '/producao/receitas', '/proles', '/propriedades', '/racas', '/variedades',
+      '/estoque/locais', '/estoque/lotes', '/estoque/movimentos', '/estoque/reconciliacao', '/estoque/saldos',
+      '/financeiro', '/itens', '/itens/categorias', '/pessoas', '/producao/formulacao', '/producao/receitas', '/proles', '/propriedades', '/racas', '/variedades',
     ])
   })
   it('disponibiliza Estoque na home e abre Saldos autenticado', async () => {

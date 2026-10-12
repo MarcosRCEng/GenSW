@@ -1,3 +1,5 @@
+import { TableRegion } from '../../../shared/layout/TableRegion'
+import { PageHeader } from '../../../shared/layout/PageHeader'
 import { useRememberListState, useRestoredListState } from '../../../shared/details/listNavigation'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
@@ -31,12 +33,12 @@ function sexoLabel(sexo: SexoAnimal) { return sexo === 1 ? 'Macho' : sexo === 2 
 function escopoLabel(escopo: EscopoAnimal) { return escopo === 1 ? 'Operacional' : 'Referência' }
 
 function AnimalsTable({ items, changingStatusId, onChangeStatus, listState }: { items: Animal[]; changingStatusId: string | null; onChangeStatus: (animal: Animal) => void; listState: unknown }) {
-  return <div className="overflow-x-auto"><table className="min-w-full divide-y divide-slate-200 text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600"><tr>
+  return <TableRegion label="Tabela de animais" className="overflow-x-auto"><table className="min-w-full divide-y divide-slate-200 text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600"><tr>
     <th className="px-4 py-3 font-semibold" scope="col">Código interno</th><th className="px-4 py-3 font-semibold" scope="col">Nome</th><th className="px-4 py-3 font-semibold" scope="col">Espécie</th><th className="px-4 py-3 font-semibold" scope="col">Raça</th><th className="px-4 py-3 font-semibold" scope="col">Variedade</th><th className="px-4 py-3 font-semibold" scope="col">Sexo</th><th className="px-4 py-3 font-semibold" scope="col">Escopo</th><th className="px-4 py-3 font-semibold" scope="col">Status</th><th className="px-4 py-3 font-semibold" scope="col">Ações</th>
   </tr></thead><tbody className="divide-y divide-slate-100 bg-white text-slate-700">{items.map((animal) => <tr key={animal.id}>
     <td className="whitespace-nowrap px-4 py-4 font-medium text-slate-900">{animal.codigoInterno}</td><td className="whitespace-nowrap px-4 py-4">{animal.nome ?? '—'}</td><td className="whitespace-nowrap px-4 py-4">{animal.especie.nomeComum}</td><td className="whitespace-nowrap px-4 py-4">{animal.raca?.nome ?? '—'}</td><td className="whitespace-nowrap px-4 py-4">{animal.variedade?.nome ?? '—'}</td><td className="whitespace-nowrap px-4 py-4">{sexoLabel(animal.sexo)}</td><td className="whitespace-nowrap px-4 py-4">{escopoLabel(animal.escopo)}</td><td className="whitespace-nowrap px-4 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${animal.ativo ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}`}>{animal.ativo ? 'Ativo' : 'Inativo'}</span></td>
     <td className="whitespace-nowrap px-4 py-4"><div className="flex gap-3"><Link className="font-semibold text-emerald-700 hover:text-emerald-900" state={listState} to={`/animais/${animal.id}`}>Visualizar</Link><Link className="font-semibold text-emerald-700 hover:text-emerald-900" state={listState} to={`/animais/${animal.id}/editar`}>Editar</Link><button className="font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60" disabled={changingStatusId === animal.id} onClick={() => onChangeStatus(animal)} type="button">{changingStatusId === animal.id ? (animal.ativo ? 'Inativando…' : 'Reativando…') : (animal.ativo ? 'Inativar' : 'Reativar')}</button></div></td>
-  </tr>)}</tbody></table></div>
+  </tr>)}</tbody></table></TableRegion>
 }
 
 export function AnimalsListPage() {
@@ -98,7 +100,7 @@ export function AnimalsListPage() {
   }
   const control = 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100'
 
-  return <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8"><div className="mx-auto max-w-7xl"><header className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">GenSW</p><h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">Animais</h1><p className="mt-2 text-slate-600">Consulta do cadastro base de animais</p></div><div className="flex gap-3"><Link className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white" to="/animais/nova">Novo animal</Link><Link className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700" to="/">Voltar ao início</Link></div></header>
+  return <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8"><div className="mx-auto max-w-7xl"><PageHeader title="Animais" description="Consulta do cadastro base de animais" actions={<Link className="gensw-primary-action" to="/animais/nova" state={listState}>Novo animal</Link>} />
     <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><form className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" onSubmit={applySearch}>
       <div className="md:col-span-2"><label className="text-sm font-medium text-slate-700" htmlFor="animals-search">Buscar por código ou nome</label><input className={control} disabled={isLoading} id="animals-search" onChange={(event) => setSearchDraft(event.target.value)} type="search" value={searchDraft} /></div>
       <div><label className="text-sm font-medium text-slate-700" htmlFor="animals-species">Espécie</label><select className={control} disabled={isLoading || catalogError} id="animals-species" onChange={(event) => { resetPage(); setEspecieId(event.target.value || undefined) }} value={especieId ?? ''}><option value="">Todas</option>{species.map((item) => <option key={item.id} value={item.id}>{optionLabel(item.nomeComum, item.ativo)}</option>)}</select></div>
