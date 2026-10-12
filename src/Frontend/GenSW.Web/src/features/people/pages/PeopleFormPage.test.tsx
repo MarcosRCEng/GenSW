@@ -33,6 +33,7 @@ function renderPage(path = '/pessoas/nova') {
         <Route element={<PeopleFormPage />} path="/pessoas/nova" />
         <Route element={<PeopleFormPage />} path="/pessoas/:id/editar" />
         <Route element={<h1>Pessoas destino</h1>} path="/pessoas" />
+        <Route element={<h1>Pessoa destino</h1>} path="/pessoas/:id" />
       </Routes>
     </MemoryRouter>,
   )
@@ -163,7 +164,7 @@ describe('PeopleFormPage - edição', () => {
         nomeFantasia: 'Empresa Nova',
       }),
     )
-    expect(await screen.findByRole('heading', { name: 'Pessoas destino' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Pessoa destino' })).toBeInTheDocument()
   })
 
   it('bloqueia edição de pessoa inativa', async () => {
@@ -230,6 +231,6 @@ describe('PeopleFormPage - edição', () => {
     expect(updatePessoa).toHaveBeenCalledTimes(1)
 
     resolveSave(activeCompany)
-    expect(await screen.findByRole('heading', { name: 'Pessoas destino' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Pessoa destino' })).toBeInTheDocument()
   })
 })

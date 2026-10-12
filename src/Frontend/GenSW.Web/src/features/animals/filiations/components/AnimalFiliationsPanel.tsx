@@ -1,10 +1,13 @@
 import { useEffect, useId, useState, type FormEvent } from 'react'
+import { useUnsavedChanges } from '../../../../shared/navigation/useUnsavedChanges'
 import { createFiliation, listFiliations, type Filiation, type FiliationType } from '../services/filiationsService'
 import { api, message, type Page, type Candidate } from '../../evolution/api'
 import { AnimalTree } from '../../evolution/AnimalTree'
 import '../../evolution/evolution.css'
 
 export function AnimalFiliationsPanel({ animalId, pendingClassification = false, readOnly = false }: { animalId: string; pendingClassification?: boolean; readOnly?: boolean }) {
+  const [dirty, setDirty] = useState(false)
+  const { markSaved } = useUnsavedChanges(dirty)
   const [items, setItems] = useState<Filiation[]>([]), [type, setType] = useState<FiliationType>(1)
   const [search, setSearch] = useState(''), [selected, setSelected] = useState<Candidate | null>(null), [index, setIndex] = useState(-1)
   const [candidates, setCandidates] = useState<Page<Candidate> | null>(null), [page, setPage] = useState(1), [revision, setRevision] = useState(0)
@@ -24,12 +27,12 @@ export function AnimalFiliationsPanel({ animalId, pendingClassification = false,
   async function submit(e: FormEvent) {
     e.preventDefault(); if (readOnly || !selected || pendingClassification) return
     setBusy(true); setError('')
-    try { await createFiliation(animalId, { progenitorId: selected.id, tipoFiliacao: type, dataRegistro: null }); setSelected(null); setSearch(''); setRevision(x => x + 1) }
+    try { await createFiliation(animalId, { progenitorId: selected.id, tipoFiliacao: type, dataRegistro: null }); markSaved(); setDirty(false); setSelected(null); setSearch(''); setRevision(x => x + 1) }
     catch (e) { setError(message(e)); setSelected(null); setRevision(x => x + 1) } finally { setBusy(false) }
   }
-  function choose(candidate: Candidate) { setSelected(candidate); setIndex(-1) }
+  function choose(candidate: Candidate) { setDirty(true); setSelected(candidate); setIndex(-1) }
   return <section className="animal-panel" aria-label="Genealogia"><h2>Genealogia</h2><p>A correção preserva a filiação anterior no histórico.</p>{pendingClassification && <p className="animal-notice">Salve as alterações de espécie, raça ou sexo antes de pesquisar e definir progenitores.</p>}{error && <div><p role="alert">{error}</p><button onClick={() => setRevision(value => value + 1)} type="button">Recarregar filiações</button></div>}
-    {!readOnly && <form onSubmit={e => void submit(e)}><fieldset disabled={busy || pendingClassification}><div className="animal-fields"><label>Papel do progenitor<select value={type} onChange={e => { setType(Number(e.target.value) as FiliationType); setSelected(null); setPage(1) }}><option value="1">Pai</option><option value="2">Mãe</option></select></label><label>Pesquisar progenitor por nome ou código<input role="combobox" aria-autocomplete="list" aria-expanded={!!candidates && !selected} aria-controls={listId} aria-activedescendant={index >= 0 ? `${listId}-${index}` : undefined} value={search} onChange={e => { setSearch(e.target.value); setSelected(null); setPage(1) }} onKeyDown={e => {
+    {!readOnly && <form onChangeCapture={() => setDirty(true)} onSubmit={e => void submit(e)}><fieldset disabled={busy || pendingClassification}><div className="animal-fields"><label>Papel do progenitor<select value={type} onChange={e => { setType(Number(e.target.value) as FiliationType); setSelected(null); setPage(1) }}><option value="1">Pai</option><option value="2">Mãe</option></select></label><label>Pesquisar progenitor por nome ou código<input role="combobox" aria-autocomplete="list" aria-expanded={!!candidates && !selected} aria-controls={listId} aria-activedescendant={index >= 0 ? `${listId}-${index}` : undefined} value={search} onChange={e => { setSearch(e.target.value); setSelected(null); setPage(1) }} onKeyDown={e => {
       if (e.key === 'ArrowDown') { e.preventDefault(); setIndex(x => Math.min((candidates?.items.length ?? 0) - 1, x + 1)) }
       if (e.key === 'ArrowUp') { e.preventDefault(); setIndex(x => Math.max(0, x - 1)) }
       if (e.key === 'Enter' && index >= 0 && candidates?.items[index]) { e.preventDefault(); choose(candidates.items[index]) }

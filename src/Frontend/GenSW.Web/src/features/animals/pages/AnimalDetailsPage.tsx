@@ -1,3 +1,4 @@
+import { useRestoreParentSection } from '../../../shared/details/listNavigation'
 import { Link, useParams } from 'react-router-dom'
 import { DetailField, DetailStatus, DetailsPage } from '../../../shared/details/DetailsPage'
 import { useRecordDetails } from '../../../shared/details/useRecordDetails'
@@ -21,6 +22,7 @@ function EggProduction({ animalId, speciesId }: { animalId: string; speciesId: s
 export function AnimalDetailsPage() {
   const { id } = useParams<{ id: string }>()
   const { record: animal, state, retry } = useRecordDetails(id, getAnimalById)
+  useRestoreParentSection(`/animais/${id}`, state === 'ready')
   return <DetailsPage title="Visualizar animal" listPath="/animais" listLabel="Animais" state={state} onRetry={retry} editPath={id ? `/animais/${id}/editar` : undefined}>
     {animal && <>
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

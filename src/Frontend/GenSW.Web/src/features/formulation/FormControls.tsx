@@ -1,13 +1,14 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useId, useState, type ReactNode } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import { PageHeader } from '../../shared/layout/PageHeader'
 import { message, page } from './api'
 import type { Page } from './types'
 
 export const control =
   'mt-1 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 disabled:bg-slate-100'
-export const button =
-  'inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600 disabled:opacity-50'
-export const primary = `${button} border-emerald-700 bg-emerald-700 text-white`
+const buttonBase = 'inline-flex min-h-11 items-center rounded-lg border px-4 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600 disabled:opacity-50'
+export const button = `${buttonBase} border-slate-300 bg-white text-slate-800`
+export const primary = `${buttonBase} border-emerald-700 bg-emerald-700 text-white`
 export function Frame({
   title,
   children,
@@ -15,45 +16,25 @@ export function Frame({
   title: string
   children: ReactNode
 }) {
-  const heading = useRef<HTMLHeadingElement>(null)
-  useEffect(() => {
-    heading.current?.focus()
-  }, [title])
+  const location = useLocation()
+  const catalog = location.pathname.startsWith('/itens') || location.pathname.startsWith('/producao/perfis')
+  const pages = catalog ? [['Categorias', '/itens/categorias'], ['Insumos e produtos', '/itens']] : [['Formulação e comparação', '/producao/formulacao'], ['Receitas', '/producao/receitas']]
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6">
+    <main className="gensw-page px-4 py-6 sm:px-6">
       <div className="mx-auto max-w-6xl">
-        <header className="mb-6">
-          <p className="text-sm font-semibold text-emerald-700">GenSW</p>
-          <h1
-            ref={heading}
-            tabIndex={-1}
-            className="my-2 rounded text-3xl font-bold focus:ring-2 focus:ring-emerald-600"
-          >
-            {title}
-          </h1>
+        <PageHeader title={title} />
           <nav
             aria-label="Catálogo e formulação"
             className="flex flex-wrap gap-3"
           >
-            <Link className={button} to="/">
-              Início
-            </Link>
-            <Link className={button} to="/itens">
-              Insumos e produtos
-            </Link>
-            <Link className={button} to="/producao/receitas">
-              Receitas
-            </Link>
-            <Link className={button} to="/producao/formulacao">
-              Formulação e comparação
-            </Link>
+            {pages.map(([label, path]) => <Link key={path} className={button} to={path} aria-current={location.pathname === path ? 'page' : undefined}>{label}</Link>)}
           </nav>
-        </header>
         <div className="space-y-6">{children}</div>
       </div>
     </main>
   )
 }
+
 export function Section({
   title,
   children,

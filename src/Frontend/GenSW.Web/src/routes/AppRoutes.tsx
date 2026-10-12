@@ -39,6 +39,7 @@ import { FormulationPage, SimulationFormPage, SimulationDetailsPage, ComparisonD
 import { InventoryListPage, LocalDetailsPage, LoteDetailsPage, EventDetailsPage } from '../features/inventory/InventoryPages'
 import { LocalFormPage, LoteFormPage, InventoryStatePage } from '../features/inventory/InventoryForms'
 import { InventoryOperationPage } from '../features/inventory/InventoryOperationPage'
+import { AppShell } from '../shared/layout/AppShell'
 
 function ApplicationLoading() {
   return (
@@ -51,7 +52,7 @@ function ApplicationLoading() {
 function ProtectedRoute() {
   const { isAuthenticated } = useAuth()
 
-  return isAuthenticated ? <Outlet /> : <Navigate replace to="/login" />
+  return isAuthenticated ? <AppShell /> : <Navigate replace to="/login" />
 }
 
 function AnonymousRoute() {

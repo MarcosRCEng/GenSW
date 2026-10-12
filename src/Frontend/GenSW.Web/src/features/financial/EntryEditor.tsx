@@ -17,14 +17,20 @@ export function EntryEditor({
   categories,
   initial,
   adjustment = false,
+  hideHeading = false,
   onDone,
   onCancel,
+  onDirtyChange,
+  onBusyChange,
 }: {
   categories: Category[]
   initial?: EntryView
   adjustment?: boolean
+  hideHeading?: boolean
   onDone: () => void
   onCancel: () => void
+  onDirtyChange?: (dirty: boolean) => void
+  onBusyChange?: (busy: boolean) => void
 }) {
   const original = initial?.lancamento
   const [form, setForm] = useState<EntryInput>(
@@ -61,9 +67,16 @@ export function EntryEditor({
   const sending = useRef(false),
     attempt = useRef<{ payload: string; key: string } | null>(null)
   const heading = useRef<HTMLHeadingElement>(null)
+  const editorForm = useRef<HTMLFormElement>(null)
+  const initialDraft = useRef(JSON.stringify({ form, reason: '', adjustKind: 'substituicao' }))
+  const dirty = JSON.stringify({ form, reason, adjustKind }) !== initialDraft.current
+  useEffect(() => { onDirtyChange?.(dirty) }, [dirty, onDirtyChange])
+  useEffect(() => { onBusyChange?.(busy) }, [busy, onBusyChange])
   useEffect(() => {
-    heading.current?.focus()
-  }, [preview])
+    if (hideHeading && !preview)
+      editorForm.current?.querySelector<HTMLElement>('input, select, textarea')?.focus()
+    else heading.current?.focus()
+  }, [preview, hideHeading])
   const monetary = !adjustment || adjustKind === 'substituicao'
   const set = <K extends keyof EntryInput>(key: K, value: EntryInput[K]) => {
     setPreview(false)
@@ -129,13 +142,13 @@ export function EntryEditor({
   }
   return (
     <section className="finance-panel" aria-label="Formulário de lançamento">
-      <h2 tabIndex={-1} ref={preview ? undefined : heading}>
+      {!hideHeading && <h2 tabIndex={-1} ref={preview ? undefined : heading}>
         {adjustment
           ? 'Ajustar lançamento'
           : original
             ? 'Corrigir lançamento'
             : 'Novo lançamento'}
-      </h2>
+      </h2>}
       {error && (
         <p role="alert" className="finance-error">
           {error} Confira os dados. Para conflito de versão, volte e recarregue
@@ -196,7 +209,7 @@ export function EntryEditor({
           </div>
         </div>
       ) : (
-        <form onSubmit={prepare}>
+        <form ref={editorForm} onSubmit={prepare}>
           <div className="finance-grid">
             {adjustment && (
               <label>
@@ -356,7 +369,7 @@ export function EntryEditor({
         className="secondary"
         onClick={onCancel}
       >
-        Voltar ao caixa
+        Cancelar edição
       </button>
     </section>
   )

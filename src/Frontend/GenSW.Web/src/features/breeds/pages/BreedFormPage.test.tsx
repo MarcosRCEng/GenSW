@@ -41,7 +41,7 @@ const breedWithInactiveSpecies: Raca = {
 function renderPage(path = '/racas/nova') {
   return render(<MemoryRouter initialEntries={[path]}><Routes>
     <Route element={<BreedFormPage />} path="/racas/nova" />
-    <Route element={<BreedFormPage />} path="/racas/:id/editar" />
+    <Route element={<BreedFormPage />} path="/racas/:id/editar" /><Route element={<h1>Raça destino</h1>} path="/racas/:id" />
     <Route element={<h1>Raças destino</h1>} path="/racas" />
   </Routes></MemoryRouter>)
 }

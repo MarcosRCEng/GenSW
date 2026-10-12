@@ -1,4 +1,6 @@
+import { TableRegion } from '../../shared/layout/TableRegion'
 import { useEffect, useState, type FormEvent } from 'react'
+import { useUnsavedChanges } from '../../shared/navigation/useUnsavedChanges'
 import { Link } from 'react-router-dom'
 import { isHttpError } from '../../shared/http/httpErrors'
 import { desvincularAnimalPropriedade, getAnimalPropriedades, listPropriedades, transferirAnimalPropriedade } from './propertiesService'
@@ -24,6 +26,8 @@ async function activeProperties() {
 }
 
 export function AnimalPropertiesPanel({ animalId, readOnly = false }: { animalId: string; readOnly?: boolean }) {
+  const [dirty, setDirty] = useState(false)
+  const { markSaved } = useUnsavedChanges(dirty)
   const [result, setResult] = useState<AnimalPropriedades | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
@@ -72,7 +76,7 @@ export function AnimalPropertiesPanel({ animalId, readOnly = false }: { animalId
       const response = unlink && currentLink
         ? await desvincularAnimalPropriedade(animalId, { dataFim: date, vinculoAtualIdEsperado: currentLink.id })
         : await transferirAnimalPropriedade(animalId, { propriedadeId: destination, dataInicio: date, vinculoAtualIdEsperado: currentLink?.id ?? null, observacao: notes.trim() || null })
-      setResult(response); setDestination(''); setNotes('')
+      markSaved(); setDirty(false); setResult(response); setDestination(''); setNotes('')
       setSuccess(unlink ? 'Vínculo encerrado. O animal está sem propriedade e seu histórico foi preservado.' : 'Propriedade atualizada. Histórico preservado.')
     } catch (failure: unknown) {
       if (isHttpError(failure) && failure.status === 409) {
@@ -89,14 +93,14 @@ export function AnimalPropertiesPanel({ animalId, readOnly = false }: { animalId
     {loading ? <p role="status">Carregando histórico de propriedades…</p> : loadError ? <p role="alert">Não foi possível carregar o histórico de propriedades.</p> : result && <>
       <p><strong>Propriedade atual: </strong>{currentLink ? <><Link className="font-semibold text-emerald-700 underline" to={`/propriedades/${currentLink.propriedadeId}`}>{currentLink.propriedadeNome}</Link>{!currentLink.propriedadeAtiva && ' (inativa)'} — desde {formatDate(currentLink.dataInicio)}</> : 'Sem propriedade'}</p>
       {currentLink && !currentLink.propriedadeAtiva && <p className="animal-notice">A propriedade atual está inativa. O vínculo permanece válido e pode ser transferido ou encerrado na edição do animal.</p>}
-      {result.historico.length === 0 ? <p>Nenhuma movimentação de propriedade registrada.</p> : <div className="animal-table"><table><caption className="mb-2 text-left font-semibold">Histórico de propriedades</caption><thead><tr><th scope="col">Propriedade</th><th scope="col">Início</th><th scope="col">Fim</th><th scope="col">Observação</th></tr></thead><tbody>{result.historico.map((item) => <tr key={item.id}>
+      {result.historico.length === 0 ? <p>Nenhuma movimentação de propriedade registrada.</p> : <TableRegion label="Histórico de propriedades do animal" className="animal-table"><table><caption className="mb-2 text-left font-semibold">Histórico de propriedades</caption><thead><tr><th scope="col">Propriedade</th><th scope="col">Início</th><th scope="col">Fim</th><th scope="col">Observação</th></tr></thead><tbody>{result.historico.map((item) => <tr key={item.id}>
         <td><Link className="text-emerald-700 underline" to={`/propriedades/${item.propriedadeId}`}>{item.propriedadeNome}</Link>{!item.propriedadeAtiva && ' (inativa)'}</td>
         <td>{formatDate(item.dataInicio)}</td><td>{item.dataFim ? formatDate(item.dataFim) : 'Atual'}</td><td className="max-w-sm whitespace-pre-wrap break-words">{item.observacao || '—'}</td>
-      </tr>)}</tbody></table></div>}
+      </tr>)}</tbody></table></TableRegion>}
     </>}
     {error && <p role="alert">{error}</p>}
     {success && <p role="status">{success}</p>}
-    {!readOnly && result && !loadError && !loading && <form noValidate onSubmit={transfer}>
+    {!readOnly && result && !loadError && !loading && <form noValidate onChangeCapture={() => setDirty(true)} onSubmit={transfer}>
       <h3 className="mt-6 font-semibold">{currentLink ? 'Transferir ou encerrar vínculo' : 'Vincular propriedade'}</h3>
       <p className="text-sm text-slate-600">Uma transferência encerra o vínculo anterior na data informada e inicia o próximo no mesmo dia.</p>
       {catalogLoading && <p role="status">Carregando propriedades ativas…</p>}

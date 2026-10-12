@@ -20,7 +20,7 @@ const activeSpecies: Especie = {
 function renderPage(path = '/especies/nova') {
   return render(<MemoryRouter initialEntries={[path]}><Routes>
     <Route element={<SpeciesFormPage />} path="/especies/nova" />
-    <Route element={<SpeciesFormPage />} path="/especies/:id/editar" />
+    <Route element={<SpeciesFormPage />} path="/especies/:id/editar" /><Route element={<h1>Espécie destino</h1>} path="/especies/:id" />
     <Route element={<h1>Espécies destino</h1>} path="/especies" />
   </Routes></MemoryRouter>)
 }

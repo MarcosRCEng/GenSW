@@ -17,7 +17,7 @@ export const functionalAreas = [
 ] as const
 
 type FunctionalArea = (typeof functionalAreas)[number]['id']
-type AvailableFeature = { id: string; name: string; route: string }
+export type AvailableFeature = { id: string; name: string; route: string }
 type ModuleInfo = {
   id: string
   name: string
@@ -55,7 +55,11 @@ export const navigationModules: readonly NavigationModule[] = [
   },
   {
     id: 'produtos', name: 'Insumos e produtos', area: 'cadastros', state: 'available',
-    description: 'Catálogo único de materiais, conversões e perfis nutricionais.', route: '/itens',
+    description: 'Catálogo único de materiais, conversões e perfis nutricionais.',
+    features: [
+      { id: 'catalogo', name: 'Catálogo', route: '/itens' },
+      { id: 'categorias-itens', name: 'Categorias', route: '/itens/categorias' },
+    ],
   },
   {
     id: 'propriedades', name: 'Propriedades', area: 'cadastros', state: 'available',
@@ -98,6 +102,7 @@ export const navigationModules: readonly NavigationModule[] = [
       { id: 'locais-estoque', name: 'Locais', route: '/estoque/locais' },
       { id: 'lotes-materiais', name: 'Lotes', route: '/estoque/lotes' },
       { id: 'movimentos-estoque', name: 'Movimentos', route: '/estoque/movimentos' },
+      { id: 'reconciliacao-estoque', name: 'Reconciliação', route: '/estoque/reconciliacao' },
     ],
   },
   {
@@ -130,3 +135,37 @@ export const navigationModules: readonly NavigationModule[] = [
     description: 'Análise e indicadores gerenciais do negócio.',
   },
 ]
+
+const alphabetic = new Intl.Collator('pt-BR', { sensitivity: 'base', numeric: true })
+
+export const sortedFunctionalAreas = [...functionalAreas].sort((a, b) => alphabetic.compare(a.name, b.name))
+
+export function modulesForArea(area: FunctionalArea, availableOnly = false) {
+  return navigationModules
+    .filter((module) => module.area === area && (!availableOnly || module.state === 'available'))
+    .sort((a, b) => alphabetic.compare(a.name, b.name))
+}
+
+export function modulePages(module: NavigationModule): AvailableFeature[] {
+  if (module.state === 'planned') return []
+  return (module.route !== undefined
+    ? [{ id: module.id, name: module.name, route: module.route }]
+    : [...module.features]).sort((a, b) => alphabetic.compare(a.name, b.name))
+}
+
+// Match whole route segments; a profile belongs to its Item, not the production area.
+export function activeNavigation(pathname: string) {
+  if (pathname === '/producao/perfis' || pathname.startsWith('/producao/perfis/')) {
+    const module = navigationModules.find((entry) => entry.id === 'produtos')!
+    return { module, page: modulePages(module).find((entry) => entry.id === 'catalogo')! }
+  }
+  const matches = navigationModules.flatMap((module) => modulePages(module)
+    .filter((page) => pathname === page.route || pathname.startsWith(`${page.route}/`))
+    .map((page) => ({ module, page })))
+    .sort((a, b) => b.page.route.length - a.page.route.length)
+  if (matches[0]) return matches[0]
+  if (pathname === '/estoque' || pathname.startsWith('/estoque/')) {
+    return { module: navigationModules.find((entry) => entry.id === 'estoque')!, page: undefined }
+  }
+  return undefined
+}

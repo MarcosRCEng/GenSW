@@ -1,3 +1,5 @@
+import { TableRegion } from '../../../shared/layout/TableRegion'
+import { PageHeader } from '../../../shared/layout/PageHeader'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useRememberListState, useRestoredListState } from '../../../shared/details/listNavigation'
@@ -35,7 +37,7 @@ interface PessoasTableProps {
 
 function PessoasTable({ changingStatusId, items, onChangeStatus, navigationState }: PessoasTableProps) {
   return (
-    <div className="overflow-x-auto">
+    <TableRegion label="Tabela de pessoas" className="overflow-x-auto">
       <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
         <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
           <tr>
@@ -107,7 +109,7 @@ function PessoasTable({ changingStatusId, items, onChangeStatus, navigationState
           ))}
         </tbody>
       </table>
-    </div>
+    </TableRegion>
   )
 }
 
@@ -204,27 +206,7 @@ export function PeopleListPage() {
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <header className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">GenSW</p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">Pessoas</h1>
-            <p className="mt-2 text-slate-600">Consulta do cadastro mestre de pessoas</p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
-              to="/pessoas/nova"
-            >
-              Nova pessoa
-            </Link>
-            <Link
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
-              to="/"
-            >
-              Voltar ao início
-            </Link>
-          </div>
-        </header>
+        <PageHeader title="Pessoas" description="Consulta do cadastro mestre de pessoas" actions={<Link className="gensw-primary-action" to="/pessoas/nova" state={navigationState}>Nova pessoa</Link>} />
 
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <form className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" onSubmit={applySearch}>

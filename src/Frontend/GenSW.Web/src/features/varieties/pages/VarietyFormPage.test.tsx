@@ -42,7 +42,7 @@ const varietyWithInactiveSpecies: Variedade = {
 function renderPage(path = '/variedades/nova') {
   return render(<MemoryRouter initialEntries={[path]}><Routes>
     <Route element={<VarietyFormPage />} path="/variedades/nova" />
-    <Route element={<VarietyFormPage />} path="/variedades/:id/editar" />
+    <Route element={<VarietyFormPage />} path="/variedades/:id/editar" /><Route element={<h1>Variedade destino</h1>} path="/variedades/:id" />
     <Route element={<h1>Variedades destino</h1>} path="/variedades" />
   </Routes></MemoryRouter>)
 }

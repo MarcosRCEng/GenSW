@@ -1,4 +1,7 @@
-import { Link } from 'react-router-dom'
+import { TableRegion } from '../../../../shared/layout/TableRegion'
+import { parentReturnState, useRestoredParentSection } from '../../../../shared/details/listNavigation'
+import { useUnsavedChanges } from '../../../../shared/navigation/useUnsavedChanges'
+import { Link, useLocation } from 'react-router-dom'
 import { useEffect, useState, type FormEvent } from 'react'
 import { isHttpError } from '../../../../shared/http/httpErrors'
 import {
@@ -47,9 +50,14 @@ interface AnimalIdentificationsPanelProps { animalId: string; readOnly?: boolean
 interface MetadataDirtyState { dataAplicacao: boolean; observacao: boolean }
 
 export function AnimalIdentificationsPanel({ animalId, readOnly = false }: AnimalIdentificationsPanelProps) {
+  const location = useLocation()
+  const parentPath = `/animais/${animalId}`
+  const initial = useRestoredParentSection(parentPath, 'identificacoes', { page: 1 })
+  const [dirty, setDirty] = useState(false)
+  const { markSaved, confirmDiscard } = useUnsavedChanges(dirty)
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [retryKey, setRetryKey] = useState(0)
-  const [pageNumber, setPageNumber] = useState(1)
+  const [pageNumber, setPageNumber] = useState(initial.page)
   const [result, setResult] = useState<AnimalIdentificationPage | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [tipo, setTipo] = useState<AnimalIdentificationType>(1)
@@ -80,7 +88,7 @@ export function AnimalIdentificationsPanel({ animalId, readOnly = false }: Anima
 
   const refresh = () => setRetryKey((key) => key + 1)
   const resetCreate = () => {
-    setShowCreate(false); setTipo(1); setDescricaoTipo(''); setValor(''); setPrincipal(false)
+    markSaved(); setDirty(false); setShowCreate(false); setTipo(1); setDescricaoTipo(''); setValor(''); setPrincipal(false)
     setDataAplicacao(''); setObservacao(''); setFormError(null)
   }
   const openCreate = () => {
@@ -136,25 +144,25 @@ export function AnimalIdentificationsPanel({ animalId, readOnly = false }: Anima
     const request: UpdateAnimalIdentificationMetadataRequest = {}
     if (metadataDirty.dataAplicacao) request.dataAplicacao = dataAplicacao || null
     if (metadataDirty.observacao) request.observacao = observacao.trim() || null
-    void runMutation(id, () => updateAnimalIdentificationMetadata(animalId, id, request), () => setSelectedRow(null))
+    void runMutation(id, () => updateAnimalIdentificationMetadata(animalId, id, request), () => { markSaved(); setDirty(false); setSelectedRow(null) })
   }
 
   const anyPending = pendingMutationId !== null
 
   return (
-    <section aria-labelledby="animal-identifications-heading" className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section id="record-identificacoes" tabIndex={-1} aria-labelledby="animal-identifications-heading" className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900" id="animal-identifications-heading">Identificações físicas</h2>
           <p className="mt-1 text-sm text-slate-600">Marcadores físicos de manejo. Não representam SISBOV, UELN ou registro de associação.</p>
         </div>
-        {!readOnly && <button className={primaryButton} disabled={anyPending} onClick={openCreate} type="button">Adicionar identificação</button>}
+        {!readOnly && <button className={primaryButton} disabled={anyPending} onClick={() => confirmDiscard(() => { setDirty(false); openCreate() })} type="button">Adicionar identificação</button>}
       </div>
 
       {requestError ? <p className="mt-4 text-sm font-medium text-red-700" role="alert">{requestError}</p> : null}
 
       {!readOnly && showCreate ? (
-        <form className="mt-6 space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/40 p-4" noValidate onSubmit={handleCreate}>
+        <form onChangeCapture={() => setDirty(true)} className="mt-6 space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/40 p-4" noValidate onSubmit={handleCreate}>
           <h3 className="font-semibold text-slate-900">Nova identificação</h3>
           <div className="grid gap-4 sm:grid-cols-2">
             <div><label className="text-sm font-medium text-slate-700" htmlFor="identification-type">Tipo</label><select className={control} disabled={anyPending} id="identification-type" onChange={(event) => { const next = Number(event.target.value) as AnimalIdentificationType; setTipo(next); if (next !== 6) setDescricaoTipo(''); setFormError(null) }} value={tipo}>{TYPES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></div>
@@ -165,17 +173,17 @@ export function AnimalIdentificationsPanel({ animalId, readOnly = false }: Anima
           <div><label className="text-sm font-medium text-slate-700" htmlFor="identification-observation-create">Observação</label><textarea className={control} disabled={anyPending} id="identification-observation-create" onChange={(event) => setObservacao(event.target.value)} value={observacao} /></div>
           <label className="flex items-center gap-2 text-sm font-medium text-slate-700"><input checked={principal} disabled={anyPending} onChange={(event) => setPrincipal(event.target.checked)} type="checkbox" />Definir como principal</label>
           {formError ? <p className="text-sm font-medium text-red-700">{formError}</p> : null}
-          <div className="flex gap-3"><button className={primaryButton} disabled={anyPending} type="submit">{pendingMutationId === 'create' ? 'Cadastrando…' : 'Cadastrar identificação'}</button><button className={secondaryButton} disabled={anyPending} onClick={resetCreate} type="button">Cancelar</button></div>
+          <div className="flex gap-3"><button className={primaryButton} disabled={anyPending} type="submit">{pendingMutationId === 'create' ? 'Cadastrando…' : 'Cadastrar identificação'}</button><button className={secondaryButton} disabled={anyPending} onClick={() => confirmDiscard(resetCreate)} type="button">Cancelar</button></div>
         </form>
       ) : null}
 
       {!readOnly && selectedRow ? (
-        <form className="mt-6 space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4" noValidate onSubmit={handleMetadata}>
+        <form onChangeCapture={() => setDirty(true)} className="mt-6 space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4" noValidate onSubmit={handleMetadata}>
           <h3 className="font-semibold text-slate-900">Editar metadados</h3>
           <dl className="grid gap-3 text-sm sm:grid-cols-2"><div><dt className="font-medium text-slate-600">Tipo</dt><dd>{typeLabel(selectedRow.tipo)}{selectedRow.descricaoTipo ? ` — ${selectedRow.descricaoTipo}` : ''}</dd></div><div><dt className="font-medium text-slate-600">Valor</dt><dd>{selectedRow.valor}</dd></div></dl>
           <div><label className="text-sm font-medium text-slate-700" htmlFor="identification-application-date-edit">Data de aplicação</label><input className={control} disabled={anyPending} id="identification-application-date-edit" onChange={(event) => { setDataAplicacao(event.target.value); setMetadataDirty((state) => ({ ...state, dataAplicacao: true })) }} type="date" value={dataAplicacao} /></div>
           <div><label className="text-sm font-medium text-slate-700" htmlFor="identification-observation-edit">Observação</label><textarea className={control} disabled={anyPending} id="identification-observation-edit" onChange={(event) => { setObservacao(event.target.value); setMetadataDirty((state) => ({ ...state, observacao: true })) }} value={observacao} /></div>
-          <div className="flex gap-3"><button className={primaryButton} disabled={anyPending} type="submit">{pendingMutationId === selectedRow.id ? 'Salvando…' : 'Salvar metadados'}</button><button className={secondaryButton} disabled={anyPending} onClick={() => setSelectedRow(null)} type="button">Cancelar</button></div>
+          <div className="flex gap-3"><button className={primaryButton} disabled={anyPending} type="submit">{pendingMutationId === selectedRow.id ? 'Salvando…' : 'Salvar metadados'}</button><button className={secondaryButton} disabled={anyPending} onClick={() => confirmDiscard(() => { setDirty(false); setSelectedRow(null) })} type="button">Cancelar</button></div>
         </form>
       ) : null}
 
@@ -183,7 +191,7 @@ export function AnimalIdentificationsPanel({ animalId, readOnly = false }: Anima
       {loadState === 'error' ? <div className="mt-6"><p className="text-sm font-medium text-red-700" role="alert">Não foi possível carregar as identificações físicas.</p><button className={`${secondaryButton} mt-3`} onClick={() => setRetryKey((key) => key + 1)} type="button">Tentar novamente</button></div> : null}
       {loadState === 'ready' && result?.items.length === 0 ? <p className="mt-6 text-sm text-slate-600">Nenhuma identificação física cadastrada.</p> : null}
       {loadState === 'ready' && result && result.items.length > 0 ? (
-        <div className="mt-6 overflow-x-auto">
+        <TableRegion label="Identificações físicas" className="mt-6 overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
             <thead className="bg-slate-50 text-slate-700"><tr><th className="px-3 py-2" scope="col">Tipo</th><th className="px-3 py-2" scope="col">Valor</th><th className="px-3 py-2" scope="col">Aplicação</th><th className="px-3 py-2" scope="col">Estado</th><th className="px-3 py-2" scope="col">Ações</th></tr></thead>
             <tbody className="divide-y divide-slate-100">
@@ -194,9 +202,9 @@ export function AnimalIdentificationsPanel({ animalId, readOnly = false }: Anima
                   <td className="px-3 py-3">{displayDate(item.dataAplicacao)}</td>
                   <td className="px-3 py-3">{item.ativo ? <><span>Ativa</span>{item.principal ? <span className="ml-2 rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-800">Principal</span> : null}</> : <span className="rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold">Histórico (inativa)</span>}</td>
                   <td className="px-3 py-3"><div className="flex flex-wrap gap-2">
-                    <Link className={secondaryButton} to={`/animais/${animalId}/identificacoes/${item.id}`}>Visualizar</Link>
+                    <Link className={secondaryButton} state={parentReturnState(location.state, parentPath, { section: 'identificacoes', page: pageNumber })} to={`/animais/${animalId}/identificacoes/${item.id}`}>Visualizar</Link>
                     {!readOnly && <>
-                    <button className={secondaryButton} disabled={anyPending} onClick={() => openMetadata(item)} type="button">Editar metadados</button>
+                    <button className={secondaryButton} disabled={anyPending} onClick={() => confirmDiscard(() => { setDirty(false); openMetadata(item) })} type="button">Editar metadados</button>
                     {item.ativo ? <button className={secondaryButton} disabled={anyPending} onClick={() => void runMutation(item.id, () => setAnimalIdentificationPrincipal(animalId, item.id, !item.principal))} type="button">{item.principal ? 'Remover principal' : 'Definir como principal'}</button> : null}
                     <button className={secondaryButton} disabled={anyPending} onClick={() => void runMutation(item.id, () => setAnimalIdentificationAtivo(animalId, item.id, !item.ativo))} type="button">{item.ativo ? 'Inativar' : 'Reativar'}</button>
                   </>}</div></td>
@@ -204,7 +212,7 @@ export function AnimalIdentificationsPanel({ animalId, readOnly = false }: Anima
               ))}
             </tbody>
           </table>
-        </div>
+        </TableRegion>
       ) : null}
 
       {loadState === 'ready' && result && result.totalPages > 1 ? <nav aria-label="Paginação das identificações físicas" className="mt-4 flex items-center justify-between gap-3"><button className={secondaryButton} disabled={pageNumber <= 1 || anyPending} onClick={() => setPageNumber((value) => Math.max(1, value - 1))} type="button">Página anterior</button><span className="text-sm text-slate-600">Página {result.page} de {result.totalPages}</span><button className={secondaryButton} disabled={pageNumber >= result.totalPages || anyPending} onClick={() => setPageNumber((value) => value + 1)} type="button">Próxima página</button></nav> : null}

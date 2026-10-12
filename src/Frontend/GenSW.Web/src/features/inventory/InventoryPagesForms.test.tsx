@@ -177,12 +177,15 @@ describe('Cadastros e consultas de estoque', () => {
     if (flow !== 'detalhe') {
       fireEvent.click(await screen.findByRole('link', { name: 'Editar' }))
       await screen.findByDisplayValue(lot.codigo)
-      expect(screen.getByRole('link', { name: 'Voltar para Saldos' })).toHaveAttribute('href', '/estoque/saldos')
+      expect(screen.getByRole('link', { name: 'Cancelar edição' })).toHaveAttribute('href', '/estoque/lotes/lot-1')
       if (flow === 'salvar edição') {
         fireEvent.change(screen.getByLabelText('Código externo'), { target: { value: 'DOC-FILTRO' } })
         fireEvent.change(screen.getByLabelText('Motivo do cadastro ou alteração'), { target: { value: 'Conferência documental' } })
         await waitFor(() => expect(screen.getByRole('button', { name: 'Salvar lote' })).toBeEnabled())
         fireEvent.click(screen.getByRole('button', { name: 'Salvar lote' }))
+        await screen.findByRole('heading', { name: 'Visualizar lote de material' })
+      } else {
+        fireEvent.click(screen.getByRole('link', { name: 'Cancelar edição' }))
         await screen.findByRole('heading', { name: 'Visualizar lote de material' })
       }
     }
@@ -196,6 +199,19 @@ describe('Cadastros e consultas de estoque', () => {
     app('/estoque/lotes/lot-1', { list: { path, filters: { localId: local.id } } })
     await screen.findByRole('heading', { name: 'Visualizar lote de material' })
     expect(screen.getByRole('link', { name: 'Voltar para Lotes' })).toHaveAttribute('href', '/estoque/lotes')
+  })
+  it.each([['locais', local.id], ['lotes', lot.id]])('mantém origem de Saldos através do comando administrativo de %s', async (kind, id) => {
+    app(`/estoque/${kind}/${id}/comandos/ativo`, { list: { path: '/estoque/saldos', filters: { localId: local.id, page: 1, pageSize: 25, sortBy: 'loteCodigo', sortDirection: 'desc' } } })
+    await screen.findByRole('button', { name: 'Confirmar comando' })
+    fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'Conferência' } })
+    fireEvent.change(screen.getByLabelText('Evidência da conferência'), { target: { value: 'Documento conferido' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar comando' }))
+    fireEvent.click(await screen.findByRole('link', { name: 'Voltar para Saldos' }))
+    await screen.findByRole('heading', { name: 'Saldos de estoque' })
+    await waitFor(() => expect(screen.getByLabelText('Selecionar Local')).toHaveValue(local.id))
+    expect(screen.getByLabelText('Ordenar por')).toHaveValue('loteCodigo')
+    expect(screen.getByLabelText('Direção')).toHaveValue('desc')
+    expect(writes()).toHaveLength(1)
   })
   it.each([404, 403, 500])('usa erro de detalhe compartilhado no status %i', async status => {
     vi.mocked(httpRequest).mockRejectedValue(new HttpError(status))

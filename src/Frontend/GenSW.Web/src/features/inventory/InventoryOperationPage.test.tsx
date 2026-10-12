@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { vi } from 'vitest'
 import { useAuth } from '../auth/hooks/useAuth'
 import { httpRequest } from '../../shared/http/httpClient'
@@ -7,13 +7,18 @@ import { HttpError, NetworkError } from '../../shared/http/httpErrors'
 import { InventoryOperationPage } from './InventoryOperationPage'
 import { destination, event, local, lot, page, preview, responsible, stock } from './inventoryFixtures'
 import { operationInfo, type MovementCommand, type Operation } from './types'
+import { EventDetailsPage } from './InventoryPages'
 
 vi.mock('../../shared/http/httpClient', () => ({ httpRequest: vi.fn() }))
 vi.mock('../auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 const auth = (roles = ['Admin']) => ({ user: { userId: responsible.id, pessoaId: 'p', nome: responsible.nome, userName: 'marina', roles }, isAuthenticated: true, isInitializing: false, bootstrap: vi.fn(), login: vi.fn(), logout: vi.fn() })
 const writes = () => vi.mocked(httpRequest).mock.calls.filter(([, options]) => options?.method && options.method !== 'GET')
-function renderOperation(operation: Operation) {
-  return render(<MemoryRouter initialEntries={[`/estoque/operacoes/${operation}?lote=${lot.id}`]}><Routes><Route path="/estoque/operacoes/:type" element={<InventoryOperationPage />} /><Route path="/estoque/movimentos/:id" element={<h1>Movimento registrado</h1>} /></Routes></MemoryRouter>)
+function ReturnedOrigin() {
+  const location = useLocation()
+  return <p data-testid="returned-origin">{JSON.stringify(location.state)}</p>
+}
+function renderOperation(operation: Operation, state?: unknown) {
+  return render(<MemoryRouter initialEntries={[{ pathname: `/estoque/operacoes/${operation}`, search: `?lote=${lot.id}`, state }]}><Routes><Route path="/estoque/operacoes/:type" element={<InventoryOperationPage />} /><Route path="/estoque/movimentos/:id" element={state ? <EventDetailsPage /> : <h1>Movimento registrado</h1>} />{['locais', 'lotes', 'saldos', 'movimentos', 'reconciliacao'].map(path => <Route key={path} path={`/estoque/${path}`} element={<ReturnedOrigin />} />)}</Routes></MemoryRouter>)
 }
 async function fill(operation: Operation) {
   await screen.findByText(/Lote MIL-01/)
@@ -40,6 +45,8 @@ describe('Apontamentos físicos F01', () => {
         return { ...preview, operacao: body.operacao, versoesEsperadas: body.comando.versoesEsperadas }
       }
       if (options?.method) return { evento: event, previa: preview }
+      if (path === `/estoque/movimentos/${event.id}`) return event
+      if (path === `/estoque/locais/${local.id}`) return local
       if (path === `/estoque/lotes/${lot.id}`) return lot
       if (path.startsWith('/estoque/saldos/')) return path.endsWith(destination.id) ? { ...stock, localId: destination.id, localRevisao: 4, revisao: 0 } : stock
       if (path.startsWith('/estoque/lotes?')) return page([lot])
@@ -49,6 +56,16 @@ describe('Apontamentos físicos F01', () => {
       if (path === `/estoque/responsaveis/${responsible.id}`) return responsible
       throw new Error(`Requisição inesperada: ${path}`)
     })
+  })
+  it.each([['locais', 'Locais'], ['lotes', 'Lotes'], ['saldos', 'Saldos'], ['movimentos', 'Movimentos'], ['reconciliacao', 'Reconciliação']])('encadeia a origem %s até o movimento confirmado e retorno, preservando filtros', async (path, label) => {
+    const state = { list: { path: `/estoque/${path}`, filters: { page: 2, pageSize: 25, localId: local.id, sortBy: 'codigo', sortDirection: 'desc' } } }
+    renderOperation('entrada', state)
+    await fill('entrada')
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar movimento' }))
+    await screen.findByRole('heading', { name: 'Visualizar movimento de estoque' })
+    fireEvent.click(screen.getByRole('link', { name: `Voltar para ${label}` }))
+    expect(JSON.parse((await screen.findByTestId('returned-origin')).textContent!)).toEqual(state)
+    expect(writes().map(([path]) => path)).toEqual(['/estoque/previas', '/estoque/entradas'])
   })
   it.each(Object.keys(operationInfo) as Operation[])('confirma %s só depois de prévia server e envia versões e strings exatas', async operation => {
     renderOperation(operation)

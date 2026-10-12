@@ -1,10 +1,12 @@
-import { Link, useParams } from 'react-router-dom'
+import { parentReturnState, readParentReturnState } from '../../shared/details/listNavigation'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { DetailField, DetailsPage } from '../../shared/details/DetailsPage'
 import { useRecordDetails } from '../../shared/details/useRecordDetails'
 import { getReproductiveCycle } from './reproductiveCyclesService'
 
 const date = (value: string | null) => value?.split('-').reverse().join('/')
 export function ReproductiveCycleDetailsPage() {
+  const location = useLocation()
   const { id } = useParams<{ id: string }>()
   const { record: item, state, retry } = useRecordDetails(id, getReproductiveCycle)
   return <DetailsPage title="Visualizar ciclo reprodutivo" listPath="/ciclos-reprodutivos" listLabel="Ciclos reprodutivos" state={state} onRetry={retry} editPath={id ? `/ciclos-reprodutivos/${id}/editar` : undefined}>
@@ -12,7 +14,7 @@ export function ReproductiveCycleDetailsPage() {
       <dl className="grid gap-5 sm:grid-cols-2">
         <DetailField label="Fluxo">{item.tipo === 1 ? 'Ovíparo' : 'Gestacional'}</DetailField>
         <DetailField label="Status">{['', 'Em andamento', 'Concluído', 'Cancelado'][item.status]}</DetailField>
-        <DetailField label="Cruzamento"><Link className="font-semibold text-emerald-700 underline" to={`/cruzamentos/${item.cruzamentoId}`}>Visualizar cruzamento</Link></DetailField>
+        <DetailField label="Cruzamento"><Link className="font-semibold text-emerald-700 underline" state={readParentReturnState(location.state, `/cruzamentos/${item.cruzamentoId}`)?.parentReturn.origin} to={`/cruzamentos/${item.cruzamentoId}`}>Visualizar cruzamento</Link></DetailField>
         {item.tipo === 1 ? <>
           <DetailField label="Data da postura">{date(item.dataPostura)}</DetailField>
           <DetailField label="Início da incubação">{date(item.dataInicioIncubacao)}</DetailField>
@@ -38,7 +40,7 @@ export function ReproductiveCycleDetailsPage() {
         </>}
         <DetailField label="Observação">{item.observacao}</DetailField>
       </dl>
-      <Link className="mt-6 inline-flex rounded-lg border px-4 py-2 font-semibold text-emerald-700" to={`/proles?cicloReprodutivoId=${item.id}`}>Visualizar proles</Link>
+      <Link className="mt-6 inline-flex rounded-lg border px-4 py-2 font-semibold text-emerald-700" state={parentReturnState(location.state, `/ciclos-reprodutivos/${item.id}`, { section: 'proles' })} to={`/proles?cicloReprodutivoId=${item.id}`}>Visualizar proles</Link>
       <p className="mt-4 text-sm text-slate-600">A filiação permanece a fonte de verdade do pedigree; este ciclo não confirma descendentes.</p>
     </section>}
   </DetailsPage>

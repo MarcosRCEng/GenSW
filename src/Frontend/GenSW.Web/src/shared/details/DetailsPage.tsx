@@ -1,7 +1,8 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { listReturnState } from './listNavigation'
+import { listReturnState, readParentReturnState, recordEditState } from './listNavigation'
 import type { DetailLoadState } from './useRecordDetails'
+import { PageHeader } from '../layout/PageHeader'
 
 interface DetailsPageProps {
   title: string
@@ -10,30 +11,23 @@ interface DetailsPageProps {
   state: DetailLoadState
   onRetry: () => void
   editPath?: string
+  backState?: unknown
   children?: ReactNode
 }
 
 const linkClassName = 'inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2'
 
-export function DetailsPage({ title, listPath, listLabel, state, onRetry, editPath, children }: DetailsPageProps) {
+export function DetailsPage({ title, listPath, listLabel, state, onRetry, editPath, backState, children }: DetailsPageProps) {
   const location = useLocation()
-  const heading = useRef<HTMLHeadingElement>(null)
-  const returnState = listReturnState(location.state, listPath)
-  useEffect(() => { heading.current?.focus() }, [location.pathname])
+  const parentState = readParentReturnState(location.state, listPath)
+  const returnState = parentState ?? listReturnState(location.state, listPath)
 
   return <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
     <div className="mx-auto max-w-5xl">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">GenSW</p>
-          <h1 className="mt-2 rounded text-3xl font-bold tracking-tight text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600" ref={heading} tabIndex={-1}>{title}</h1>
-          <p className="mt-2 text-slate-600">Consulta dos dados do registro</p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Link className={linkClassName} to={returnState?.list.path ?? listPath} state={returnState}>Voltar para {listLabel}</Link>
-          {state === 'ready' && editPath ? <Link className={linkClassName} to={editPath} state={returnState}>Editar</Link> : null}
-        </div>
-      </header>
+      <PageHeader title={title} description="Consulta dos dados do registro"
+        back={{ to: parentState || backState !== undefined ? listPath : returnState?.list?.path ?? listPath, label: `Voltar para ${listLabel}`, state: backState ?? returnState }}
+        actions={state === 'ready' && editPath ? <Link className="button-primary" to={editPath}
+          state={recordEditState(location.state, listPath, location.pathname)}>Editar</Link> : null} />
       {state === 'loading' ? <p className="mt-8 rounded-2xl border border-slate-200 bg-white p-8 text-slate-600" role="status">Carregando detalhes…</p> : null}
       {state === 'not-found' || state === 'forbidden' || state === 'error' ? <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" role="alert">
         <p className="font-medium text-red-700">{state === 'not-found' ? 'Registro não encontrado.' : state === 'forbidden' ? 'Você não tem permissão para visualizar este registro.' : 'Não foi possível carregar os detalhes.'}</p>

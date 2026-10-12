@@ -1,3 +1,5 @@
+import { TableRegion } from '../../../shared/layout/TableRegion'
+import { PageHeader } from '../../../shared/layout/PageHeader'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useRememberListState, useRestoredListState } from '../../../shared/details/listNavigation'
@@ -19,7 +21,7 @@ interface VarietiesTableProps {
 
 function VarietiesTable({ changingStatusId, items, onChangeStatus, navigationState }: VarietiesTableProps) {
   return (
-    <div className="overflow-x-auto">
+    <TableRegion label="Tabela de variedades" className="overflow-x-auto">
       <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
         <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600"><tr>
           <th className="px-4 py-3 font-semibold" scope="col">Nome</th>
@@ -46,7 +48,7 @@ function VarietiesTable({ changingStatusId, items, onChangeStatus, navigationSta
           ))}
         </tbody>
       </table>
-    </div>
+    </TableRegion>
   )
 }
 
@@ -150,7 +152,7 @@ export function VarietiesListPage() {
   const controlClassName = 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 disabled:cursor-not-allowed disabled:bg-slate-100'
 
   return <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8"><div className="mx-auto max-w-7xl">
-    <header className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">GenSW</p><h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">Variedades</h1><p className="mt-2 text-slate-600">Consulta do cadastro mestre de variedades</p></div><div className="flex flex-wrap gap-3"><Link className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800" to="/variedades/nova">Nova variedade</Link><Link className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" to="/">Voltar ao início</Link></div></header>
+    <PageHeader title="Variedades" description="Consulta do cadastro mestre de variedades" actions={<Link className="gensw-primary-action" to="/variedades/nova" state={navigationState}>Nova variedade</Link>} />
     <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><form className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" onSubmit={applySearch}>
       <div className="md:col-span-2"><label className="text-sm font-medium text-slate-700" htmlFor="varieties-search">Buscar por nome</label><input className={controlClassName} disabled={isLoading} id="varieties-search" onChange={(event) => setSearchDraft(event.target.value)} type="search" value={searchDraft} /></div>
       <div><label className="text-sm font-medium text-slate-700" htmlFor="varieties-species">Espécie</label><select className={controlClassName} disabled={isLoading || speciesLoadError} id="varieties-species" onChange={(event) => { setPage(1); setEspecieId(event.target.value || undefined) }} value={especieId ?? ''}><option value="">Todas</option>{species.map((item) => <option key={item.id} value={item.id}>{item.nomeComum}{item.ativo ? '' : ' (inativa)'}</option>)}</select></div>

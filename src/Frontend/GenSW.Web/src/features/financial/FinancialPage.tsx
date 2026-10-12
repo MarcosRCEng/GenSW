@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useRememberListState, useRestoredListState } from '../../shared/details/listNavigation'
+import { PageHeader } from '../../shared/layout/PageHeader'
+import { ModalDialog } from '../../shared/layout/ModalDialog'
+import { TableRegion } from '../../shared/layout/TableRegion'
+import { useUnsavedChanges } from '../../shared/navigation/useUnsavedChanges'
 import { useAuth } from '../auth/hooks/useAuth'
 import { EntryEditor } from './EntryEditor'
 import {
@@ -55,8 +59,23 @@ export function FinancialPage() {
     [reason, setReason] = useState(''),
     [checkedBalance, setCheckedBalance] = useState(''),
     [audits, setAudits] = useState<Audit[]>([])
-  const sending = useRef(false),
-    panelRef = useRef<HTMLElement>(null)
+  const sending = useRef(false)
+  const [editorDirty, setEditorDirty] = useState(false)
+  const [editorBusy, setEditorBusy] = useState(false)
+  const [administrativeDirty, setAdministrativeDirty] = useState(false)
+  const [configurationDirty, setConfigurationDirty] = useState(false)
+  const [savedNature, setSavedNature] = useState(2)
+  const panelDirty = editorDirty || administrativeDirty
+  const configurationChanged = configurationDirty || Boolean(config && (start !== config.dataInicio || balance !== config.saldoInicial))
+  const configurationChangedRef = useRef(configurationChanged)
+  configurationChangedRef.current = configurationChanged
+  const configurationDraft = useUnsavedChanges(configurationChanged)
+  const categoryDraft = useUnsavedChanges(Boolean(categoryName) || natureza !== savedNature)
+  const panelDraft = useUnsavedChanges(panelDirty)
+  const closePanel = () => {
+    if (panel?.kind !== 'history' && (busy || editorBusy)) return
+    panelDraft.confirmDiscard(() => { setPanel(null); setEditorDirty(false); setAdministrativeDirty(false) })
+  }
   const detailsState = useRememberListState('/financeiro', { month, page, filters })
   const reload = useCallback(() => setRevision((x) => x + 1), [])
   useEffect(() => {
@@ -74,8 +93,10 @@ export function FinancialPage() {
           setCategories(cats)
           setClosings(snapshots)
           if (c) {
-            setStart(c.dataInicio)
-            setBalance(c.saldoInicial)
+            if (!configurationChangedRef.current) {
+              setStart(c.dataInicio)
+              setBalance(c.saldoInicial)
+            }
             if (month < c.dataInicio.slice(0, 7))
               setMonth(c.dataInicio.slice(0, 7))
           }
@@ -124,7 +145,9 @@ export function FinancialPage() {
   }, [config, month, page, filters, revision])
   useEffect(() => {
     if (!panel) return
-    panelRef.current?.focus()
+    setEditorDirty(false)
+    setEditorBusy(false)
+    setAdministrativeDirty(false)
     setReason('')
     setCheckedBalance('')
     setAudits([])
@@ -150,6 +173,7 @@ export function FinancialPage() {
     setError('')
     try {
       await action()
+      panelDraft.markSaved()
       setPanel(null)
       setNotice('Operação registrada com sucesso.')
       reload()
@@ -172,7 +196,11 @@ export function FinancialPage() {
         saldoInicial: decimal(balance),
         versaoEsperada: config?.versao,
       })
+      configurationDraft.markSaved()
+      setConfigurationDirty(false)
       setConfig(c)
+      setStart(c.dataInicio)
+      setBalance(c.saldoInicial)
       setMonth(c.dataInicio.slice(0, 7))
     })
   }
@@ -180,6 +208,8 @@ export function FinancialPage() {
     e.preventDefault()
     void run(async () => {
       await finance('categorias', 'POST', { nome: categoryName, natureza })
+      categoryDraft.markSaved()
+      setSavedNature(natureza)
       setCategoryName('')
     })
   }
@@ -189,17 +219,9 @@ export function FinancialPage() {
     )
   return (
     <main className="finance">
-      <header className="finance-header">
-        <div>
-          <Link to="/">← Voltar ao início</Link>
-          <p className="finance-eyebrow">Financeiro</p>
-          <h1>Fluxo de caixa</h1>
-          <p>Recebimentos e pagamentos realizados · Caixa único em BRL</p>
-        </div>
-        <button className="secondary" onClick={reload} disabled={busy}>
+      <PageHeader title="Fluxo de caixa" context="Financeiro" description="Recebimentos e pagamentos realizados · Caixa único em BRL" actions={<button className="secondary" onClick={reload} disabled={busy}>
           Recarregar caixa
-        </button>
-      </header>
+        </button>} />
       {error && (
         <p role="alert" className="finance-error">
           {error}{' '}
@@ -222,7 +244,7 @@ export function FinancialPage() {
             não gera uma receita.
           </p>
           {admin ? (
-            <form onSubmit={configure}>
+            <form onSubmit={configure} onChangeCapture={() => setConfigurationDirty(true)}>
               <div className="finance-grid">
                 <label>
                   Mês inicial
@@ -327,20 +349,23 @@ export function FinancialPage() {
             </>
           )}
           {panel && (
-            <section
-              ref={panelRef}
-              tabIndex={-1}
-              className="finance-panel"
-              aria-label="Operação selecionada"
-            >
+            <ModalDialog open title={panel.kind === 'history' ? 'Histórico do lançamento' : panel.kind === 'close' ? 'Fechamento do mês' : panel.kind === 'cancel' ? 'Cancelar lançamento' : panel.kind === 'adjust' ? 'Ajustar lançamento' : panel.entry ? 'Corrigir lançamento' : 'Novo lançamento'} onClose={closePanel} className="gensw-drawer finance-drawer" closeLabel="Fechar painel financeiro">
+            <div className="finance finance-drawer-content">
+              {error && <p role="alert" className="finance-error">{error} Confira os dados; o preenchimento foi conservado.</p>}
               {panel.kind === 'entry' || panel.kind === 'adjust' ? (
                 <EntryEditor
                   key={`${panel.kind}/${panel.entry?.lancamento.id ?? 'new'}`}
                   categories={categories}
                   initial={panel.entry}
                   adjustment={panel.kind === 'adjust'}
-                  onCancel={() => setPanel(null)}
+                  hideHeading
+                  onCancel={closePanel}
+                  onDirtyChange={setEditorDirty}
+                  onBusyChange={setEditorBusy}
                   onDone={() => {
+                    panelDraft.markSaved()
+                    setEditorDirty(false)
+                    setEditorBusy(false)
                     setPanel(null)
                     setNotice('Lançamento registrado.')
                     reload()
@@ -348,6 +373,7 @@ export function FinancialPage() {
                 />
               ) : panel.kind === 'close' ? (
                 <form
+                  onChangeCapture={() => setAdministrativeDirty(true)}
                   onSubmit={(e) => {
                     e.preventDefault()
                     void run(() =>
@@ -417,13 +443,14 @@ export function FinancialPage() {
                     type="button"
                     className="secondary"
                     disabled={busy}
-                    onClick={() => setPanel(null)}
+                    onClick={closePanel}
                   >
-                    Voltar
+                    Cancelar fechamento
                   </button>
                 </form>
               ) : panel.kind === 'cancel' ? (
                 <form
+                  onChangeCapture={() => setAdministrativeDirty(true)}
                   onSubmit={(e) => {
                     e.preventDefault()
                     void run(() =>
@@ -438,7 +465,6 @@ export function FinancialPage() {
                     )
                   }}
                 >
-                  <h2>Cancelar lançamento</h2>
                   <p>
                     {panel.entry!.lancamento.descricao} ·{' '}
                     {brl(panel.entry!.lancamento.valor)}. O registro permanecerá
@@ -457,14 +483,13 @@ export function FinancialPage() {
                   <button
                     type="button"
                     className="secondary"
-                    onClick={() => setPanel(null)}
+                    onClick={closePanel}
                   >
-                    Voltar
+                    Cancelar edição
                   </button>
                 </form>
               ) : (
                 <>
-                  <h2>Histórico do lançamento</h2>
                   <p>
                     {panel.entry!.lancamento.descricao} · Versão{' '}
                     {panel.entry!.lancamento.versao}
@@ -493,12 +518,13 @@ export function FinancialPage() {
                   ) : (
                     audits.map((a) => <AuditRow key={a.id} audit={a} />)
                   )}
-                  <button className="secondary" onClick={() => setPanel(null)}>
-                    Voltar
+                  <button className="secondary" onClick={closePanel}>
+                    Fechar histórico
                   </button>
                 </>
               )}
-            </section>
+            </div>
+            </ModalDialog>
           )}
           <section className="finance-panel">
             <h2>Lançamentos do mês</h2>
@@ -573,11 +599,9 @@ export function FinancialPage() {
                 escolhidos.
               </p>
             ) : (
-              <div
+              <TableRegion
                 className="finance-table"
-                tabIndex={0}
-                role="region"
-                aria-label="Tabela de lançamentos, rolagem horizontal"
+                label="Tabela de lançamentos"
               >
                 <table>
                   <caption>{list.totalItems} lançamentos encontrados</caption>
@@ -686,7 +710,7 @@ export function FinancialPage() {
                     })}
                   </tbody>
                 </table>
-              </div>
+              </TableRegion>
             )}
             {list && (
               <nav
@@ -757,7 +781,7 @@ export function FinancialPage() {
                 {brl(config.saldoInicial)}. A API bloqueia alterações após o
                 primeiro lançamento ou fechamento.
               </p>
-              <form onSubmit={configure}>
+              <form onSubmit={configure} onChangeCapture={() => setConfigurationDirty(true)}>
                 <div className="finance-grid">
                   <label>
                     Mês inicial
@@ -848,7 +872,13 @@ function CategoryRow({
   onSave: (nome: string, ativa: boolean) => void
 }) {
   const [name, setName] = useState(category.nome)
-  useEffect(() => setName(category.nome), [category.nome])
+  useUnsavedChanges(name !== category.nome)
+  const initialName = useRef(category.nome)
+  useEffect(() => {
+    const previous = initialName.current
+    initialName.current = category.nome
+    setName(current => current === previous ? category.nome : current)
+  }, [category.nome])
   return (
     <form
       className="finance-category"

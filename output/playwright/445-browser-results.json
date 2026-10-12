@@ -1,0 +1,49 @@
+{
+  "task": 445,
+  "date": "2026-10-12",
+  "browser": "Chrome via Playwright CLI",
+  "environment": "Isolated synthetic review data, authenticated common user",
+  "menuMatrix": [
+    { "width": 390, "mode": "drawer", "availableModules": 9, "areasAlphabetical": true, "modulesAlphabeticalWithinArea": true, "stockPages": ["Locais", "Lotes", "Movimentos", "Reconciliação", "Saldos"], "actionsInMenu": false, "plannedInMenu": false, "focusContained": true, "escapeRestoresOpener": true },
+    { "width": 768, "mode": "drawer", "availableModules": 9, "areasAlphabetical": true, "modulesAlphabeticalWithinArea": true, "stockPages": ["Locais", "Lotes", "Movimentos", "Reconciliação", "Saldos"], "actionsInMenu": false, "plannedInMenu": false, "focusContained": true, "escapeRestoresOpener": true },
+    { "width": 1024, "mode": "drawer", "availableModules": 9, "areasAlphabetical": true, "modulesAlphabeticalWithinArea": true, "stockPages": ["Locais", "Lotes", "Movimentos", "Reconciliação", "Saldos"], "actionsInMenu": false, "plannedInMenu": false, "focusContained": true, "escapeRestoresOpener": true },
+    { "width": 1440, "mode": "fixed rail and module sidebar, temporary secondary dialog", "availableModules": 9, "areasAlphabetical": true, "modulesAlphabeticalWithinArea": true, "stockPages": ["Locais", "Lotes", "Movimentos", "Reconciliação", "Saldos"], "actionsInMenu": false, "plannedInMenu": false, "focusContained": true, "escapeRestoresOpener": true }
+  ],
+  "peopleTableMatrix": [
+    { "width": 390, "documentScrollWidth": 375, "regionClientWidth": 341, "regionScrollWidth": 812, "globalOverflow": false, "regionName": "Tabela de pessoas", "tabIndex": 0, "scrollNotice": true },
+    { "width": 768, "documentScrollWidth": 753, "regionClientWidth": 703, "regionScrollWidth": 812, "globalOverflow": false, "regionName": "Tabela de pessoas", "tabIndex": 0, "scrollNotice": true },
+    { "width": 1024, "documentScrollWidth": 1009, "regionClientWidth": 943, "regionScrollWidth": 943, "globalOverflow": false, "extraTabStop": false, "scrollNotice": false },
+    { "width": 1440, "documentScrollWidth": 1425, "regionClientWidth": 1095, "regionScrollWidth": 1095, "globalOverflow": false, "extraTabStop": false, "scrollNotice": false }
+  ],
+  "financialTableMatrix": [
+    { "width": 390, "documentScrollWidth": 375, "regionClientWidth": 317, "regionScrollWidth": 760, "globalOverflow": false, "regionName": "Tabela de lançamentos", "tabIndex": 0, "scrollNotice": true },
+    { "width": 768, "documentScrollWidth": 753, "regionClientWidth": 655, "regionScrollWidth": 655, "globalOverflow": false, "extraTabStop": false, "scrollNotice": false },
+    { "width": 1024, "documentScrollWidth": 1009, "regionClientWidth": 911, "regionScrollWidth": 911, "globalOverflow": false, "extraTabStop": false, "scrollNotice": false },
+    { "width": 1440, "documentScrollWidth": 1425, "regionClientWidth": 1063, "regionScrollWidth": 1063, "globalOverflow": false, "extraTabStop": false, "scrollNotice": false }
+  ],
+  "keyboard": {
+    "menuAt390": { "initial": "Início", "backward": ["Fechar navegação", "Reprodução"], "forwardWrap": "Fechar navegação", "allFocusWithinDialog": true, "escapeReturn": "Abrir navegação" },
+    "peopleTableAt390": { "arrowRightExecuted": true, "scrollLeftBefore": 0, "scrollLeftAfterSample": 10, "regionFocused": true, "descriptionPresent": true },
+    "financialHistoryAt390": { "dialogWidth": 337, "clientWidth": 335, "scrollWidth": 335, "initialFocusContained": true, "shiftTabWrapTarget": "Fechar histórico", "shiftTabContained": true, "escapeRestoresHistoryButton": true }
+  },
+  "recordReturnAt390": {
+    "flow": "Animal detail -> weight detail -> Voltar para Animal",
+    "focusedSection": "record-pesagens",
+    "sectionTop": 107.5625,
+    "stickyHeaderBottom": 64,
+    "scrollMarginTop": "80px",
+    "focusUnobscured": true
+  },
+  "directedChecks": { "tableRegionTestsPassed": 3, "pageHeaderTestsPassed": 4, "typecheckExitCode": 0, "tableRegionEslintExitCode": 0 },
+  "artifacts": [
+    "445-menu-390.png", "445-menu-768.png", "445-menu-1024.png", "445-menu-1440.png",
+    "445-pessoas-390.png", "445-pessoas-768.png", "445-pessoas-1024.png", "445-pessoas-1440.png",
+    "445-financeiro-390.png", "445-financeiro-768.png", "445-financeiro-1024.png", "445-financeiro-1440.png",
+    "445-table-keyboard-390.png", "445-financeiro-historico-390.png", "445-animal-retorno-pesagem-390.png"
+  ],
+  "limitations": [
+    "Responsive measurements used desktop Chrome viewport emulation, without a physical mobile device.",
+    "Screen reader and real browser zoom were not exercised in this agent's checks.",
+    "This evidence covers visual navigation, table containment and focus; full domain and backend validation are recorded separately."
+  ]
+}

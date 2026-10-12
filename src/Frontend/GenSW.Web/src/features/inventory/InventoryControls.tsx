@@ -1,21 +1,22 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
+import { PageHeader } from '../../shared/layout/PageHeader'
+import { TableRegion } from '../../shared/layout/TableRegion'
 import { httpRequest } from '../../shared/http/httpClient'
 import { InvalidApiResponseError } from '../../shared/http/httpErrors'
 import { inventoryError, queryPath } from './inventoryService'
 
 export const inputClass = 'mt-1 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 disabled:bg-slate-100'
-const buttonBase = 'inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-semibold focus:outline-none focus:ring-2 disabled:opacity-50'
+const buttonBase = 'inline-flex min-h-11 items-center justify-center rounded-lg border px-4 py-2 text-sm font-semibold focus:outline-none focus:ring-2 disabled:opacity-50'
 export const buttonClass = `${buttonBase} border-slate-300 bg-white text-slate-800 hover:bg-slate-100 focus:ring-emerald-600`
 export const primaryClass = `${buttonBase} border-emerald-700 bg-emerald-700 text-white hover:bg-emerald-800 focus:ring-emerald-600`
 
 export function InventoryFrame({ title, children }: { title: string; children: ReactNode }) {
-  const heading = useRef<HTMLHeadingElement>(null)
-  useEffect(() => { heading.current?.focus() }, [title])
-  return <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6"><div className="mx-auto max-w-6xl space-y-6">
-    <header className="space-y-3"><p className="font-semibold text-emerald-700">GenSW · Estoque</p><h1 className="rounded text-3xl font-bold focus:ring-2 focus:ring-emerald-600" ref={heading} tabIndex={-1}>{title}</h1>
-      <nav className="flex flex-wrap gap-2" aria-label="Estoque"><Link className={buttonClass} to="/">Início</Link>{[['Saldos', 'saldos'], ['Locais', 'locais'], ['Lotes', 'lotes'], ['Movimentos', 'movimentos'], ['Reconciliação', 'reconciliacao']].map(([label, path]) => <Link key={path} className={buttonClass} to={`/estoque/${path}`}>{label}</Link>)}</nav>
-    </header>{children}
+  const location = useLocation()
+  return <main className="gensw-page px-4 py-6 sm:px-6"><div className="mx-auto max-w-6xl space-y-6">
+    <PageHeader title={title} context="Estoque" />
+      <nav className="flex flex-wrap gap-2" aria-label="Estoque">{[['Locais', 'locais'], ['Lotes', 'lotes'], ['Movimentos', 'movimentos'], ['Reconciliação', 'reconciliacao'], ['Saldos', 'saldos']].map(([label, path]) => <Link key={path} className={buttonClass} to={`/estoque/${path}`} aria-current={location.pathname === `/estoque/${path}` ? 'page' : undefined}>{label}</Link>)}</nav>
+    {children}
   </div></main>
 }
 
@@ -44,7 +45,7 @@ export function Pagination({ page, totalPages, onChange }: { page: number; total
 }
 
 export function ScrollTable({ children, label }: { children: ReactNode; label: string }) {
-  return <div role="region" aria-label={label} tabIndex={0} className="max-w-full overflow-x-auto rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-600"><table className="min-w-full text-left text-sm [&_th]:whitespace-nowrap [&_th]:border-b [&_th]:p-3 [&_td]:border-b [&_td]:p-3">{children}</table></div>
+  return <TableRegion label={label} className="max-w-full overflow-x-auto rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-600"><table aria-label={label} className="min-w-full text-left text-sm [&_th]:whitespace-nowrap [&_th]:border-b [&_th]:p-3 [&_td]:border-b [&_td]:p-3">{children}</table></TableRegion>
 }
 
 // Resolve selected IDs separately: pagination never hides a historical reference.
