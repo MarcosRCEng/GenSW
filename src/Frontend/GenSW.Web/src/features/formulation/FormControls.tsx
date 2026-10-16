@@ -20,8 +20,8 @@ export function Frame({
   const catalog = location.pathname.startsWith('/itens') || location.pathname.startsWith('/producao/perfis')
   const pages = catalog ? [['Categorias', '/itens/categorias'], ['Insumos e produtos', '/itens']] : [['Formulação e comparação', '/producao/formulacao'], ['Receitas', '/producao/receitas']]
   return (
-    <main className="gensw-page px-4 py-6 sm:px-6">
-      <div className="mx-auto max-w-6xl">
+    <main className="gensw-page px-4 py-8 sm:px-6">
+      <div className="mx-auto max-w-6xl space-y-8">
         <PageHeader title={title} />
           <nav
             aria-label="Catálogo e formulação"
