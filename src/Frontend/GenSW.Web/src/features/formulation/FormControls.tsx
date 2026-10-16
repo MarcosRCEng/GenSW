@@ -21,7 +21,7 @@ export function Frame({
   const pages = catalog ? [['Categorias', '/itens/categorias'], ['Insumos e produtos', '/itens']] : [['Formulação e comparação', '/producao/formulacao'], ['Receitas', '/producao/receitas']]
   return (
     <main className="gensw-page px-4 py-6 sm:px-6">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-6xl space-y-6">
         <PageHeader title={title} />
           <nav
             aria-label="Catálogo e formulação"
