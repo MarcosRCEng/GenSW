@@ -1,0 +1,70 @@
+name: Homologation backup tools
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - tools/operations/homologation-backup/**
+      - .github/workflows/homologation-backup.yml
+  push:
+    branches:
+      - main
+    paths:
+      - tools/operations/homologation-backup/**
+      - .github/workflows/homologation-backup.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: homologation-backup-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  synthetic-tests:
+    name: Homologation backup synthetic tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Prepare pinned age tools for synthetic fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/age-v1.3.2-linux-amd64.tar.gz"
+          curl --fail --location --proto '=https' --tlsv1.2 --retry 3 --connect-timeout 20 --max-time 120 \
+            'https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-amd64.tar.gz' \
+            --output "$archive"
+          # Digest checked against the official release asset metadata.
+          printf 'cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10  %s\n' "$archive" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/gensw-test-age"
+          tar -xzf "$archive" -C "$RUNNER_TEMP/gensw-test-age"
+          "$RUNNER_TEMP/gensw-test-age/age/age" --version
+          printf 'GENSW_TEST_AGE_EXE=%s/gensw-test-age/age/age\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'GENSW_TEST_AGE_KEYGEN_EXE=%s/gensw-test-age/age/age-keygen\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          # Tests generate ephemeral X25519 fixture keys. They do not read or
+          # certify the operational hybrid identity, custody, or real backups.
+
+      - name: Parse PowerShell operational scripts
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Get-ChildItem -LiteralPath 'tools/operations/homologation-backup' -Filter '*.ps1' -Recurse | ForEach-Object {
+            $parseTokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$parseTokens, [ref]$parseErrors) | Out-Null
+            if ($parseErrors.Count -gt 0) {
+              $parseErrors | ForEach-Object { Write-Error $_.Message }
+              throw 'PowerShell operational script syntax failed'
+            }
+          }
+
+      - name: Run isolated receiver, archive and retention tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tools/operations/homologation-backup -p 'test_*.py' -v

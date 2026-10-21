@@ -1,0 +1,54 @@
+{
+  "Task": 475,
+  "Environment": "Homologation",
+  "Enabled": false,
+  "SourceAlias": "PILOT-472-CLEAN",
+  "DestinationAlias": "DEVOPS-GENSW-MAIN",
+  "PrivateRoot": "<PHYSICAL_LOCAL_APP_DATA>\\GenSW\\pilot-475",
+  "StagingRoot": "<PRIVATE_ROOT>\\staging",
+  "LogRoot": "<PRIVATE_ROOT>\\logs",
+  "SourceConfig": "<PRIVATE_ROOT>\\homologation.config.json",
+  "CryptoConfig": "<PRIVATE_ROOT>\\crypto.config.json",
+  "CaptureMaintenance": "<PRIVATE_ROOT>\\capture-maintenance.ps1",
+  "DailyRunner": "<PRIVATE_ROOT>\\ops\\daily-backup.ps1",
+  "Tools": {
+    "PowerShellExe": "<POWERSHELL_7_EXECUTABLE>",
+    "SshExe": "<OPENSSH_EXECUTABLE>",
+    "TarExe": "<TAR_EXECUTABLE>",
+    "PythonExe": "<PYTHON_EXECUTABLE>"
+  },
+  "Custody": {
+    "Responsible": "<HOMOLOGATION_OPERATOR>",
+    "Copies": ["Windows private", "DevOPS private outside backup sets"],
+    "Scope": "Homologation",
+    "DependsOnDpapi": false
+  },
+  "TaskContext": {
+    "LocalAppData": "<PHYSICAL_LOCAL_APP_DATA>",
+    "PreviousDailyRunner": "",
+    "PreviousConfigPath": "",
+    "PathEntries": ["<GIT_DIRECTORY>", "<DOTNET_DIRECTORY>"],
+    "Scope": "ProcessOnly"
+  },
+  "Schedule": {
+    "Enabled": false,
+    "TaskName": "GenSW-Homologation-Backup",
+    "Time": "03:00",
+    "TimeZone": "America/Sao_Paulo",
+    "PrincipalMode": "InteractiveToken",
+    "RequiresLoggedOnUser": true,
+    "StartWhenAvailable": true
+  },
+  "Retention": {
+    "Enabled": true,
+    "Daily": 7,
+    "Weekly": 4,
+    "Monthly": 12,
+    "ProtectLatestVerifiedRestore": true
+  },
+  "Recovery": {
+    "InitialRestoreVerified": false,
+    "LastRestoredBackupId": "",
+    "IndependentHostAlias": "DEVOPS-RESTORE-475"
+  }
+}

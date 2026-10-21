@@ -1,0 +1,23 @@
+{
+  "task": 475,
+  "phase": "after-actions",
+  "capturedUtc": "2026-10-20T21:49:09.444289+00:00",
+  "sourceAlias": "PILOT-472-CLEAN",
+  "environment": "Homologation",
+  "legacyAlias": "LOCAL-REAL-SOURCE",
+  "legacyTableCount": 49,
+  "legacyChangedTables": [],
+  "legacyAllTablesUnchanged": true,
+  "legacyImageHashesUnchanged": true,
+  "homologationTableCount": 49,
+  "homologationChangedTables": [],
+  "homologationDomainUnchanged": true,
+  "homologationImageHashesUnchanged": true,
+  "homologationMigrations": 18,
+  "homologationUnvalidatedForeignKeys": 0,
+  "homologationImageFiles": 12,
+  "homologationReferencedImageRows": 6,
+  "homologationReferencedDerivatives": 12,
+  "allImageReferencesPresent": true,
+  "diagnosticReadOnly": true
+}

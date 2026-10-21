@@ -1,0 +1,15 @@
+{
+  "task": 475,
+  "backupId": "gensw-20261020T214638Z-e8414237",
+  "restoreAnchor": "gensw-20261018T134551Z-5048a088",
+  "applied": {
+    "deleted": [
+      "gensw-20261020T214510Z-aec71f48"
+    ],
+    "deletedCount": 1,
+    "keepCount": 2,
+    "ok": true,
+    "planSha256": "69b29e62b0026614f34e54689e38f5568b2b772fce5ef85fb301f9326fa3347a",
+    "task": 475
+  }
+}

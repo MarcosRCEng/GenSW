@@ -70,6 +70,10 @@ npm run lint
 npm run build
 ```
 
+## Backup da homologação
+
+A rotina local de backup conjunto do banco e das imagens, criptografia, retenção e recuperação independente está descrita no [runbook operacional](docs/operations/homologation-backup.md). As ferramentas e testes sintéticos ficam em [tools/operations/homologation-backup](tools/operations/homologation-backup/README.md); configurações e identidades privadas ficam fora do repositório. O aceite funcional do piloto continua sendo uma validação humana própria.
+
 ## Cruzamentos (NA-07)
 
 O módulo autenticado de cruzamentos está disponível em `/api/v1/cruzamentos` e na interface em `/cruzamentos`. Ele registra macho, fêmea, status, período, objetivo e observação; os participantes devem ter respectivamente sexo Macho e Fêmea, não podem ser o mesmo animal, e a data final não pode preceder a inicial. Cruzamentos entre espécies são permitidos. O registro não cria nem associa descendentes: Filiação permanece a fonte de verdade do pedigree.

@@ -1,0 +1,19 @@
+# Revisão independente #475
+
+**PASS para a configuração de backup e recuperação da homologação em 20/10/2026.** Não há bloqueio técnico restante no escopo da #475. O revisor leu scripts, configurações protegidas, estado do Agendador e recibos, sem executar captura, acionar o agendador, alterar banco ou ler valores de identidade/senha.
+
+O backup manual real e a recuperação no DevOPS passaram: 49 tabelas, 18 migrations e 12 arquivos foram comparados antes de autenticação. O restore PostgreSQL 18 usou container novo sem rede ou portas publicadas; a decriptação usou a cópia da identidade no DevOPS, sem perfil Windows ou DPAPI. A custódia operacional da homologação está documentada para o solicitante, com cópias privadas no Windows e no DevOPS fora dos conjuntos.
+
+O ensaio local separado também passou na API: login com credencial exclusiva da cópia descartável, certificado confiável sem bypass e 12 respostas autenticadas `200 image/png`, todas `401` sem sessão. A igualdade dos dados antecedeu a alteração dessa credencial. Isso não concede aceite de interface ou dos fluxos reais do piloto.
+
+A revisão encontrou a diferença entre a visão virtualizada do aplicativo Windows e os caminhos vistos pelo Agendador. A correção normaliza referências para os mesmos arquivos físicos, preserva ACLs privadas e limita `LOCALAPPDATA` e `PATH` ao processo da rotina e seus filhos. O instalador usa usuário limitado com `InteractiveToken`, horário diário 03h, `StartWhenAvailable` e uma única instância.
+
+O revisor observou a primeira execução real do Agendador terminar com resultado zero, conjunto `gensw-20261020T214510Z-aec71f48`. Os recibos confirmam 49 tabelas, 12 arquivos, integridade, decriptação no destino e retenção aplicada. A API estava inicialmente parada: a rotina conferiu o destino e as 18 migrations em leitura, iniciou somente a homologação aprovada e comprovou a cadeia PID/socket/PostgreSQL antes e depois da captura, com zero sessões da API no legado. Esse conjunto intradiário de teste foi depois substituído pela política de retenção aprovada.
+
+A guarda de identidade do listener também foi acrescentada imediatamente antes do verificador após reinício. Os scripts atuais passam no parser e o runner privado confere com o público. A segunda execução real, conjunto `gensw-20261020T214638Z-e8414237`, passou com a API já ativa e essa guarda adicional. O revisor conferiu seu preflight e a cadeia efetiva após reinício: destino aprovado, 18 migrations, uma sessão da API na homologação e nenhuma no legado.
+
+Foram conferidos o recibo desse segundo backup, a retenção e o plano final: o backup atual e a âncora de recuperação de 18/10 permanecem protegidos; houve remoção somente do primeiro conjunto intradiário redundante criado pelo teste. Uma nova chamada normal no mesmo dia terminou com resultado zero, mantendo ID e horário do último sucesso e sem nova captura. A ação persistida está sem `-Force`, com próxima execução em 21/10 às 03h.
+
+A comparação final de 20/10 às 21:49:09 UTC confirma as 49 tabelas e hashes de imagens da homologação e do legado inalterados em relação ao checkpoint inicial da #475, que preserva o estado pós-incidente já registrado na #473. A normalização de caminhos não moveu dados, alterou conexões ou ampliou ACLs. Frontend 5175 e saúde da API 7003 respondem 200 com TLS confiável; a API descartável 7004 foi encerrada. A documentação final distingue corretamente esse resultado técnico do aceite do piloto.
+
+A rotina exige computador ligado, usuário Windows conectado e destino DevOPS acessível. A sessão humana em 5175, o aceite dos fluxos reais e a conferência de saldos/inventário continuam pendentes nas tarefas anteriores; esta revisão não concede esses aceites. Cabe ao coordenador registrar a entrega no Redmine e mover a #475 para `Em validação`.
