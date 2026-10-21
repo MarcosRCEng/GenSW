@@ -1,0 +1,21 @@
+{
+  "task": 475,
+  "ok": true,
+  "backupId": "gensw-20261020T214638Z-e8414237",
+  "sourceAlias": "PILOT-472-CLEAN",
+  "destinationAlias": "DEVOPS-GENSW-MAIN",
+  "localDate": "2026-10-20",
+  "executionMode": "Scheduled",
+  "tableCount": 49,
+  "imageCount": 12,
+  "sourceUnchanged": true,
+  "transportIntegrity": true,
+  "decryptionVerified": true,
+  "packageIntegrityVerified": true,
+  "ciphertextSha256": "04a299eb44960e663c5027e06e8fe0617609d0998be1a2d4fdf867716c629960",
+  "plaintextStagingRemoved": true,
+  "localCiphertextStagingRemoved": true,
+  "retentionApplied": true,
+  "fullDatabaseRestoreThisRun": false,
+  "finishedAtUtc": "2026-10-20T21:47:29.7255591Z"
+}

@@ -1,0 +1,16 @@
+# Runtime configuration and recovery material belong outside this repository.
+config.local.json
+homologation.config.json
+crypto.config.json
+runtime.json
+api-process.json
+identity*
+recipients.txt
+*.private.json
+*.age
+*.dump
+*.tar
+*.log
+staging/
+logs/
+__pycache__/

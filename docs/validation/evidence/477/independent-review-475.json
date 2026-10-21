@@ -1,0 +1,179 @@
+{
+  "task": 475,
+  "review": "Independent",
+  "capturedUtc": "2026-10-20T21:47:29.0508008Z",
+  "status": "PASS_HOMOLOGATION_BACKUP_RECOVERY",
+  "sourceAlias": "PILOT-472-CLEAN",
+  "legacyAlias": "LOCAL-REAL-SOURCE",
+  "destinationAlias": "DEVOPS-GENSW-MAIN",
+  "reviewerPerformedSourceWrites": false,
+  "reviewerExecutedCaptureOrScheduler": false,
+  "reviewerReadOrExportedSecretValues": false,
+  "localPrivateAclChecks": [
+    {
+      "inheritanceDisabled": true,
+      "alias": "MasterConfiguration",
+      "onlyAllowedPrincipals": true
+    },
+    {
+      "inheritanceDisabled": true,
+      "alias": "SourceConfiguration",
+      "onlyAllowedPrincipals": true
+    },
+    {
+      "inheritanceDisabled": true,
+      "alias": "CryptoConfiguration",
+      "onlyAllowedPrincipals": true
+    },
+    {
+      "inheritanceDisabled": true,
+      "alias": "Identity",
+      "onlyAllowedPrincipals": true
+    },
+    {
+      "inheritanceDisabled": true,
+      "alias": "DailyRunner",
+      "onlyAllowedPrincipals": true
+    },
+    {
+      "inheritanceDisabled": true,
+      "alias": "CaptureMaintenance",
+      "onlyAllowedPrincipals": true
+    }
+  ],
+  "scriptParseAndHashes": [
+    {
+      "sha256": "95332a99fc5ddc701d8bebc6b70fb1badb7fac9f76e79b1eb65bc0dc2c50c935",
+      "artifact": "daily-backup.ps1",
+      "parseErrors": 0
+    },
+    {
+      "sha256": "c31a5e107d2bb3fa240089311ac3f03e28b706c4f0928ed148f5b484cb3a88e1",
+      "artifact": "install-scheduled-task.ps1",
+      "parseErrors": 0
+    },
+    {
+      "sha256": "0b8159ebffd0ceaa736b3f2f96911a6db8eaa03fcb678b6616916e0ff95433fc",
+      "artifact": "capture-maintenance.ps1",
+      "parseErrors": 0
+    }
+  ],
+  "deployedDailyRunnerMatchesPublic": true,
+  "physicalContext": {
+    "processOnly": true,
+    "filesMoved": false,
+    "privateRootMatchesContext": true
+  },
+  "custody": {
+    "operator": "Solicitante, operador da homologacao",
+    "windowsAndSeparateDevopsIdentityCopiesDocumented": true,
+    "decryptionWithoutWindowsProfileOrDpapiPassed": true
+  },
+  "independentDatabaseRestore": {
+    "migrationCount": 18,
+    "postgres18NetworkIsolated": true,
+    "imageFiles": 12,
+    "evidence": "devops-postgres-restore.json",
+    "existingContainersModified": false,
+    "tableCount": 49,
+    "allTablesAndImagesComparedBeforeAuth": true
+  },
+  "isolatedApiRestore": {
+    "uiOrHumanAcceptanceGranted": false,
+    "tlsCertificateBypassUsed": false,
+    "anonymous401ForEveryImage": true,
+    "evidence": "restore-api-images.json",
+    "authenticatedPngImages": 12,
+    "credentialChangedOnlyInDisposableRestore": true,
+    "loginStatus": 200
+  },
+  "firstRealScheduledRun": {
+    "executionMode": "Scheduled",
+    "sourceAutostartBranchTested": true,
+    "readonlyMigrationPreflightPassed": true,
+    "imageCount": 12,
+    "backupId": "gensw-20261020T214510Z-aec71f48",
+    "transportDecryptionAndPackageIntegrityPassed": true,
+    "tableCount": 49,
+    "apiSessionsInLegacy": 0,
+    "retentionApplied": true,
+    "independentlyObservedTaskResult": 0,
+    "beforeAndAfterApiPidSocketPostgresChainsPassed": true
+  },
+  "pending": [],
+  "finalizedUtc": "2026-10-20T21:51:24.4451348Z",
+  "latestRealScheduledRun": {
+    "tableCount": 49,
+    "fullPostgresRestoreRepeatedDuringDailyRun": false,
+    "executionMode": "Scheduled",
+    "plaintextAndLocalCiphertextStagingRemoved": true,
+    "readonly18MigrationPreflightPassed": true,
+    "afterRestartApiPidSocketPostgresChainPassed": true,
+    "evidence": "scheduled-backup.json",
+    "apiSessionsInLegacy": 0,
+    "backupId": "gensw-20261020T214638Z-e8414237",
+    "transportDecryptionAndPackageIntegrityPassed": true,
+    "postRestartListenerIdentityCheckedBeforeProbe": true,
+    "apiInitiallyRunningBranchTested": true,
+    "imageCount": 12
+  },
+  "retention": {
+    "independentFullRestoreAnchorProtected": true,
+    "finalPlanAdditionalRemovals": 0,
+    "currentBackupProtected": true,
+    "anchorBackupId": "gensw-20261018T134551Z-5048a088",
+    "evidence": "retention-application.json",
+    "sourceDataDeletionPerformed": false,
+    "redundantSameDayTestSetRemoved": 1,
+    "applied": true
+  },
+  "schedulerFinal": {
+    "newCaptureDuringDeduplication": false,
+    "nextRunLocal": "2026-10-21T03:00:00-03:00",
+    "multipleInstances": "IgnoreNew",
+    "runLevel": "Limited",
+    "readOnlyCurrentTaskResult": 0,
+    "timeZone": "America/Sao_Paulo",
+    "state": "Ready",
+    "evidence": "scheduler-verification.json",
+    "dailyTime": "03:00",
+    "normalActionWithoutForce": true,
+    "actualSameDayDeduplicationPassed": true,
+    "credentialsInArguments": false,
+    "physicalWorkingDirectory": true,
+    "principal": "InteractiveToken",
+    "startWhenAvailable": true
+  },
+  "finalPreservation": {
+    "servedHomologation49TablesAndImageHashesUnchanged": true,
+    "normalizationDatabaseConnectionChanged": false,
+    "allReferencesPresent": true,
+    "legacy49TablesAndImageHashesUnchanged": true,
+    "normalizationDataMoved": false,
+    "baseline": "Initial task475 checkpoint, preserving previously recorded postincident473 state",
+    "evidence": "after-actions-integrity.json",
+    "evidenceUtc": "2026-10-20T21:49:09.444289+00:00",
+    "normalizationAclChanged": false
+  },
+  "runtime": {
+    "disposableApi7004Stopped": true,
+    "p0StatusPreservedFromSessionStart": true,
+    "frontend5175Status": 200,
+    "evidence": "current-runtime.json",
+    "trustedTlsWithoutBypass": true,
+    "api7003HealthStatus": 200
+  },
+  "operationalConditions": [
+    "Computer on",
+    "Windows operator logged on",
+    "DevOPS destination reachable"
+  ],
+  "remainingHumanAcceptance": [
+    "Human session in served5175",
+    "Pilot business flow acceptance by area",
+    "Real balances and inventory confirmation"
+  ],
+  "pilotReadinessGranted": false,
+  "noTechnicalBlockerWithinTask475Scope": true,
+  "finalDocumentationReviewed": true
+}

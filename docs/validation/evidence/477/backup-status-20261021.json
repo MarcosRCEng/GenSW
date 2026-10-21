@@ -1,0 +1,21 @@
+{
+  "task": 477,
+  "checkpointUtc": "2026-10-21T22:03:52.7812877Z",
+  "taskState": "Ready",
+  "lastTaskResult": 0,
+  "lastInvocationLocal": "2026-10-21T18:10:25.0000000-03:00",
+  "nextRunLocal": "2026-10-22T03:00:00.0000000-03:00",
+  "lastSuccessfulBackupId": "gensw-20261021T211027Z-d3bdc4b9",
+  "mode": "Scheduled",
+  "finishedUtc": "2026-10-21T21:11:06.04386Z",
+  "tableCount": 49,
+  "imageCount": 12,
+  "sourceUnchanged": true,
+  "transportIntegrity": true,
+  "decryptionVerified": true,
+  "packageIntegrityVerified": true,
+  "retentionApplied": true,
+  "requiresLoggedOnUser": true,
+  "requiresComputerOn": true,
+  "requiresDevopsReachable": true
+}

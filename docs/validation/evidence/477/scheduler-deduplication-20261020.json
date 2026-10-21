@@ -1,0 +1,11 @@
+{
+  "task": 475,
+  "test": "second normal scheduled invocation after success on the same Sao Paulo date",
+  "lastTaskResult": 0,
+  "state": "Ready",
+  "sameBackupId": true,
+  "sameSuccessTimestamp": true,
+  "noNewMaintenanceCapture": true,
+  "normalActionHasNoForce": true,
+  "passed": true
+}

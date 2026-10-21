@@ -1,0 +1,99 @@
+{
+  "api": "https://localhost:7004",
+  "restoreAlias": "RESTORE-475-ISOLATED",
+  "credentialsReadOnlyFromPrivateFile": true,
+  "authenticatedPngImages": 12,
+  "task": 475,
+  "httpsTrustedWithoutBypass": true,
+  "loginStatus": 200,
+  "servedHomologationOrLegacyLoginPerformed": false,
+  "restoreCredentialOnly": true,
+  "currentUserStatus": 200,
+  "passwordOrTokenExported": false,
+  "checks": [
+    {
+      "contentType": "image/png",
+      "authenticatedStatus": 200,
+      "anonymousStatus": 401,
+      "pngSignature": true,
+      "path": "/api/v1/animais/<id>/imagens/<id>/conteudo?versao=miniatura"
+    },
+    {
+      "contentType": "image/png",
+      "authenticatedStatus": 200,
+      "anonymousStatus": 401,
+      "pngSignature": true,
+      "path": "/api/v1/animais/<id>/imagens/<id>/conteudo?versao=visualizacao"
+    },
+    {
+      "contentType": "image/png",
+      "authenticatedStatus": 200,
+      "anonymousStatus": 401,
+      "pngSignature": true,
+      "path": "/api/v1/animais/<id>/imagens/<id>/conteudo?versao=miniatura"
+    },
+    {
+      "contentType": "image/png",
+      "authenticatedStatus": 200,
+      "anonymousStatus": 401,
+      "pngSignature": true,
+      "path": "/api/v1/animais/<id>/imagens/<id>/conteudo?versao=visualizacao"
+    },
+    {
+      "contentType": "image/png",
+      "authenticatedStatus": 200,
+      "anonymousStatus": 401,
+      "pngSignature": true,
+      "path": "/api/v1/animais/<id>/imagens/<id>/conteudo?versao=miniatura"
+    },
+    {
+      "contentType": "image/png",
+      "authenticatedStatus": 200,
+      "anonymousStatus": 401,
+      "pngSignature": true,
+      "path": "/api/v1/animais/<id>/imagens/<id>/conteudo?versao=visualizacao"
+    },
+    {
+      "contentType": "image/png",
+      "authenticatedStatus": 200,
+      "anonymousStatus": 401,
+      "pngSignature": true,
+      "path": "/api/v1/animais/<id>/imagens/<id>/conteudo?versao=miniatura"
+    },
+    {
+      "contentType": "image/png",
+      "authenticatedStatus": 200,
+      "anonymousStatus": 401,
+      "pngSignature": true,
+      "path": "/api/v1/animais/<id>/imagens/<id>/conteudo?versao=visualizacao"
+    },
+    {
+      "contentType": "image/png",
+      "authenticatedStatus": 200,
+      "anonymousStatus": 401,
+      "pngSignature": true,
+      "path": "/api/v1/animais/<id>/imagens/<id>/conteudo?versao=miniatura"
+    },
+    {
+      "contentType": "image/png",
+      "authenticatedStatus": 200,
+      "anonymousStatus": 401,
+      "pngSignature": true,
+      "path": "/api/v1/animais/<id>/imagens/<id>/conteudo?versao=visualizacao"
+    },
+    {
+      "contentType": "image/png",
+      "authenticatedStatus": 200,
+      "anonymousStatus": 401,
+      "pngSignature": true,
+      "path": "/api/v1/animais/<id>/imagens/<id>/conteudo?versao=miniatura"
+    },
+    {
+      "contentType": "image/png",
+      "authenticatedStatus": 200,
+      "anonymousStatus": 401,
+      "pngSignature": true,
+      "path": "/api/v1/animais/<id>/imagens/<id>/conteudo?versao=visualizacao"
+    }
+  ]
+}
