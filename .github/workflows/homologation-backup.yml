@@ -27,10 +27,6 @@ jobs:
     name: Homologation backup synthetic tests
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    env:
-      GENSW_TEST_AGE_EXE: ${{ runner.temp }}/gensw-test-age/age/age
-      GENSW_TEST_AGE_KEYGEN_EXE: ${{ runner.temp }}/gensw-test-age/age/age-keygen
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -47,7 +43,9 @@ jobs:
           printf 'cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10  %s\n' "$archive" | sha256sum --check
           mkdir -p "$RUNNER_TEMP/gensw-test-age"
           tar -xzf "$archive" -C "$RUNNER_TEMP/gensw-test-age"
-          "$GENSW_TEST_AGE_EXE" --version
+          "$RUNNER_TEMP/gensw-test-age/age/age" --version
+          printf 'GENSW_TEST_AGE_EXE=%s/gensw-test-age/age/age\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'GENSW_TEST_AGE_KEYGEN_EXE=%s/gensw-test-age/age/age-keygen\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
           # Tests generate ephemeral X25519 fixture keys. They do not read or
           # certify the operational hybrid identity, custody, or real backups.
 
