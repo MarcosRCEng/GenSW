@@ -1,0 +1,298 @@
+{
+  "task": 478,
+  "baseline": "322a008414a112c7d2f1ce066e73875357342bd7",
+  "branch": "codex/478-p1-caixa-contexto",
+  "environment": {
+    "task": 478,
+    "alias": "P1-478-SYNTHETIC-ONLY",
+    "requiredMigrations": 18,
+    "appliedMigrations": 18,
+    "users": 2,
+    "allAccountsSynthetic": true,
+    "sourceOrPilotConnectionsUsed": false,
+    "sourceOrPilotDataCopied": false,
+    "images": 0,
+    "volumeCreatedExact": true,
+    "august": {
+      "Mes": "2026-08-01",
+      "Fechado": false,
+      "Versao": 3,
+      "SaldoAbertura": "1000.00",
+      "Receitas": "100.00",
+      "Despesas": "40.00",
+      "Resultado": "60.00",
+      "SaldoFinal": "1060.00",
+      "QuantidadeReceitas": 1,
+      "QuantidadeDespesas": 1
+    },
+    "september": {
+      "Mes": "2026-09-01",
+      "Fechado": false,
+      "Versao": 3,
+      "SaldoAbertura": "1060.00",
+      "Receitas": "250.00",
+      "Despesas": "35.50",
+      "Resultado": "214.50",
+      "SaldoFinal": "1274.50",
+      "QuantidadeReceitas": 1,
+      "QuantidadeDespesas": 1
+    }
+  },
+  "migrations": {
+    "alias": "P1-478-SYNTHETIC-ONLY",
+    "historyInserts": 18,
+    "reviewedBeforeApply": true,
+    "baseline": "322a008",
+    "onlyInstitutionalCategoriesSeededByMigration": true,
+    "task": 478,
+    "targetWasEmpty": true,
+    "requiredMigrations": 18,
+    "destructiveStatementCount": 0,
+    "createIndexes": 103,
+    "createTables": 49,
+    "sourceOrPilotMigrationsApplied": false,
+    "sqlSha256": "72508A964C272B8E9CEC47AA866AE8098C077CB80FAEDCF140697D3E6067034D",
+    "personBackfillHadNoExistingRows": true
+  },
+  "backend": {
+    "command": "dotnet test GenSW.sln --logger trx --results-directory output/validation/p1-478/test-results",
+    "notExecuted": 0.0,
+    "sourceOrPilotDatabaseUsed": false,
+    "total": 608.0,
+    "postgresqlReal": true,
+    "passed": 608.0,
+    "testPostgresBinConfiguredInProcess": true,
+    "postgresqlVersion": "18.1",
+    "baseline": "322a008",
+    "suites": [
+      {
+        "outcome": "Completed",
+        "failed": 0,
+        "passed": 165,
+        "errors": 0,
+        "notExecuted": 0,
+        "file": "p1-478_net8.0_20261021204259.trx",
+        "total": 165,
+        "sampleTestClass": "GenSW.Domain.Tests.InventoryTests"
+      },
+      {
+        "outcome": "Completed",
+        "failed": 0,
+        "passed": 147,
+        "errors": 0,
+        "notExecuted": 0,
+        "file": "p1-478_net8.0_20261021204300.trx",
+        "total": 147,
+        "sampleTestClass": "GenSW.Application.Tests.InventoryServiceTests"
+      },
+      {
+        "outcome": "Completed",
+        "failed": 0,
+        "passed": 114,
+        "errors": 0,
+        "notExecuted": 0,
+        "file": "p1-478_net8.0_20261021204752.trx",
+        "total": 114,
+        "sampleTestClass": "GenSW.Infrastructure.Tests.EspecieRepositoryTests"
+      },
+      {
+        "outcome": "Completed",
+        "failed": 0,
+        "passed": 182,
+        "errors": 0,
+        "notExecuted": 0,
+        "file": "p1-478_net8.0_20261021204922.trx",
+        "total": 182,
+        "sampleTestClass": "GenSW.API.Tests.EspeciesApiTests"
+      }
+    ],
+    "task": 478,
+    "errors": 0.0,
+    "failed": 0.0
+  },
+  "frontend": {
+    "files": 52,
+    "build": "PASS",
+    "baselineRegressionsFailed": 3,
+    "knownBundleWarningKB": 637.39,
+    "failed": 0,
+    "passed": 569,
+    "newRegressionTests": 11,
+    "command": "npm test",
+    "lint": "PASS"
+  },
+  "browserMonthly": {
+    "task": 478,
+    "alias": "P1-478-SYNTHETIC-ONLY",
+    "cases": [
+      {
+        "width": 1440,
+        "pendingProtected": true,
+        "failureDistinctFromEmptyAndLoading": true,
+        "retryContextPreserved": true,
+        "oldResponseIgnored": true,
+        "detailReturnPreserved": true,
+        "viewportOverflow": false,
+        "tlsBypass": false
+      },
+      {
+        "width": 390,
+        "pendingProtected": true,
+        "failureDistinctFromEmptyAndLoading": true,
+        "retryContextPreserved": true,
+        "oldResponseIgnored": true,
+        "detailReturnPreserved": true,
+        "viewportOverflow": false,
+        "tlsBypass": false
+      }
+    ]
+  },
+  "browserClosing": {
+    "task": 478,
+    "alias": "P1-478-SYNTHETIC-ONLY",
+    "modalRetryReachable": true,
+    "fieldsPreserved": true,
+    "keyboardFocusContained": true,
+    "renewedReviewRequired": true,
+    "correction": {
+      "entryVersionBefore": 1,
+      "entryVersionAfter": 2
+    },
+    "conflictStatus": 409,
+    "successStatus": 200,
+    "oneSnapshot": true,
+    "snapshotTotalPreserved": true,
+    "nextMonthTotalPreserved": true,
+    "tlsBypass": false
+  },
+  "browserRolesAndAdjacent": {
+    "task": 478,
+    "alias": "P1-478-SYNTHETIC-ONLY",
+    "ordinaryUserHasNoClosingAction": true,
+    "api": {
+      "anonymous": 401,
+      "forbidden": 403,
+      "missing": 404
+    },
+    "modules": [
+      {
+        "path": "/animais",
+        "heading": "Animais",
+        "alerts": 0,
+        "syntheticEmpty": true
+      },
+      {
+        "path": "/propriedades",
+        "heading": "Propriedades",
+        "alerts": 0,
+        "syntheticEmpty": true
+      },
+      {
+        "path": "/cruzamentos",
+        "heading": "Cruzamentos",
+        "alerts": 0,
+        "syntheticEmpty": true
+      },
+      {
+        "path": "/itens",
+        "heading": "Insumos e produtos",
+        "alerts": 0,
+        "syntheticEmpty": true
+      },
+      {
+        "path": "/producao/receitas",
+        "heading": "Receitas",
+        "alerts": 0,
+        "syntheticEmpty": true
+      },
+      {
+        "path": "/estoque",
+        "heading": "Saldos de estoque",
+        "alerts": 0,
+        "syntheticEmpty": true
+      }
+    ],
+    "tlsBypass": false
+  },
+  "independentCodeReview": "PASS - no blocking finding; read only; gates executed by validation",
+  "pilotHumanAcceptance": "Pending in472/473; no human login attempted or acceptance inferred",
+  "mergePerformed": false,
+  "financialFinalDelta": {
+    "sourceOrPilotTouched": false,
+    "alias": "P1-478-SYNTHETIC-ONLY",
+    "allObservedChangesLimitedToAuthorizedFixtures": true,
+    "tableDeltas": [
+      {
+        "afterCount": 1,
+        "countDelta": 0,
+        "beforeCount": 1,
+        "digestUnchanged": true,
+        "table": "ConfiguracoesCaixa"
+      },
+      {
+        "afterCount": 7,
+        "countDelta": 0,
+        "beforeCount": 7,
+        "digestUnchanged": true,
+        "table": "CategoriasFinanceiras"
+      },
+      {
+        "afterCount": 4,
+        "countDelta": 0,
+        "beforeCount": 4,
+        "digestUnchanged": false,
+        "table": "LancamentosCaixa"
+      },
+      {
+        "afterCount": 5,
+        "countDelta": 1,
+        "beforeCount": 4,
+        "digestUnchanged": false,
+        "table": "AuditoriasLancamento"
+      },
+      {
+        "afterCount": 2,
+        "countDelta": 0,
+        "beforeCount": 2,
+        "digestUnchanged": false,
+        "table": "MesesCaixa"
+      },
+      {
+        "afterCount": 1,
+        "countDelta": 1,
+        "beforeCount": 0,
+        "digestUnchanged": false,
+        "table": "FechamentosCaixa"
+      },
+      {
+        "afterCount": 4,
+        "countDelta": 0,
+        "beforeCount": 4,
+        "digestUnchanged": true,
+        "table": "IdempotenciasFinanceiras"
+      }
+    ],
+    "checks": {
+      "amountsDatesAndNaturePreserved": true,
+      "exactlyOneDescriptionChanged": true,
+      "changedDescriptionHasVersionTwo": true,
+      "closureSnapshotMatchesOriginalSyntheticValues": true,
+      "augustVersionFive": true,
+      "septemberVersionThree": true
+    },
+    "intentionalMutations": [
+      "one description correction with version 1 to 2 and one added audit",
+      "one August closure snapshot after stale-version 409 and retry"
+    ],
+    "task": 478
+  },
+  "servicePreservation": {
+    "pilotApiOwnerPreserved": true,
+    "sourceOrPilotMutationsPerformed": false,
+    "ownTestClusterProcessesRemaining": 0,
+    "validationServicesLeftAvailable": true,
+    "pilotFrontendOwnerPreserved": true,
+    "task": 478,
+    "ownTestClusterDirectoriesRemaining": 0
+  }
+}

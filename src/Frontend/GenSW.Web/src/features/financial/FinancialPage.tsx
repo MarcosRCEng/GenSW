@@ -29,8 +29,13 @@ import './financial.css'
 
 type Panel =
   | { kind: 'entry' | 'adjust' | 'cancel' | 'history'; entry?: EntryView }
-  | { kind: 'close' }
+  | { kind: 'close'; summary: Summary }
   | null
+type CashRead =
+  | { context: string; state: 'loading' }
+  | { context: string; state: 'error'; error: string }
+  | { context: string; state: 'ready'; summary: Summary; list: EntryPage }
+type CashFilters = { search: string; tipo: string; categoriaId: string; cancelado: string; de: string; ate: string }
 export function FinancialPage() {
   const initial = useRestoredListState('/financeiro', {
     month: today().slice(0, 7), page: 1,
@@ -41,8 +46,6 @@ export function FinancialPage() {
   const [config, setConfig] = useState<Config | null>(),
     [categories, setCategories] = useState<Category[]>([]),
     [month, setMonth] = useState(initial.month),
-    [summary, setSummary] = useState<Summary | null>(null),
-    [list, setList] = useState<EntryPage | null>(null),
     [closings, setClosings] = useState<Closing[]>([])
   const [filters, setFilters] = useState(initial.filters),
     [page, setPage] = useState(initial.page),
@@ -52,6 +55,15 @@ export function FinancialPage() {
     [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
     [revision, setRevision] = useState(0)
+  const context = JSON.stringify({ month, page, filters, revision })
+  const [cashRead, setCashRead] = useState<CashRead>({ context: '', state: 'loading' })
+  const currentRead = cashRead.context === context ? cashRead : null
+  const summary = currentRead?.state === 'ready' ? currentRead.summary : null
+  const list = currentRead?.state === 'ready' ? currentRead.list : null
+  const readError = currentRead?.state === 'error' ? currentRead.error : ''
+  const displayedError = error || readError
+  const [reviewedClosing, setReviewedClosing] = useState<string | null>(null)
+  const closingReview = summary ? JSON.stringify(summary) : null
   const [start, setStart] = useState(`${today().slice(0, 7)}-01`),
     [balance, setBalance] = useState('0'),
     [categoryName, setCategoryName] = useState(''),
@@ -115,34 +127,34 @@ export function FinancialPage() {
   useEffect(() => {
     if (!config) return
     let active = true
-    setList(null)
-    setError('')
-    const [year, mon] = month.split('-'),
+    setCashRead({ context, state: 'loading' })
+    setReviewedClosing(null)
+    const query = JSON.parse(context) as { month: string; page: number; filters: CashFilters }
+    const [year, mon] = query.month.split('-'),
       q = new URLSearchParams({
         ano: year,
         mes: String(Number(mon)),
-        page: String(page),
+        page: String(query.page),
       })
-    Object.entries(filters).forEach(([k, v]) => {
+    Object.entries(query.filters).forEach(([k, v]) => {
       if (v) q.set(k, v)
     })
     void Promise.all([
-      finance<Summary>(monthPath(month)),
+      finance<Summary>(monthPath(query.month)),
       finance<EntryPage>(`lancamentos?${q}`),
     ])
       .then(([s, rows]) => {
         if (active) {
-          setSummary(s)
-          setList(rows)
+          setCashRead({ context, state: 'ready', summary: s, list: rows })
         }
       })
       .catch((e) => {
-        if (active) setError(errorMessage(e))
+        if (active) setCashRead({ context, state: 'error', error: errorMessage(e) })
       })
     return () => {
       active = false
     }
-  }, [config, month, page, filters, revision])
+  }, [config, context])
   useEffect(() => {
     if (!panel) return
     setEditorDirty(false)
@@ -150,6 +162,7 @@ export function FinancialPage() {
     setAdministrativeDirty(false)
     setReason('')
     setCheckedBalance('')
+    setReviewedClosing(null)
     setAudits([])
     let active = true
     if (panel.kind === 'history')
@@ -222,9 +235,9 @@ export function FinancialPage() {
       <PageHeader title="Fluxo de caixa" context="Financeiro" description="Recebimentos e pagamentos realizados · Caixa único em BRL" actions={<button className="secondary" onClick={reload} disabled={busy}>
           Recarregar caixa
         </button>} />
-      {error && (
+      {displayedError && (
         <p role="alert" className="finance-error">
-          {error}{' '}
+          {displayedError}{' '}
           <button onClick={reload} className="secondary">
             Recarregar
           </button>
@@ -299,7 +312,7 @@ export function FinancialPage() {
                 ? summary.fechado
                   ? 'Fechado · imutável'
                   : 'Aberto'
-                : 'Carregando…'}
+                : readError ? 'Consulta indisponível' : 'Carregando…'}
             </span>
             <div className="finance-actions">
               <button
@@ -317,7 +330,7 @@ export function FinancialPage() {
                     month >= today().slice(0, 7) ||
                     busy
                   }
-                  onClick={() => setPanel({ kind: 'close' })}
+                  onClick={() => { if (summary) setPanel({ kind: 'close', summary }) }}
                 >
                   Fechar mês
                 </button>
@@ -351,7 +364,7 @@ export function FinancialPage() {
           {panel && (
             <ModalDialog open title={panel.kind === 'history' ? 'Histórico do lançamento' : panel.kind === 'close' ? 'Fechamento do mês' : panel.kind === 'cancel' ? 'Cancelar lançamento' : panel.kind === 'adjust' ? 'Ajustar lançamento' : panel.entry ? 'Corrigir lançamento' : 'Novo lançamento'} onClose={closePanel} className="gensw-drawer finance-drawer" closeLabel="Fechar painel financeiro">
             <div className="finance finance-drawer-content">
-              {error && <p role="alert" className="finance-error">{error} Confira os dados; o preenchimento foi conservado.</p>}
+              {displayedError && <p role="alert" className="finance-error">{displayedError} Confira os dados; o preenchimento foi conservado.{panel.kind === 'close' && <button type="button" className="secondary" onClick={reload} disabled={busy}>Recarregar resumo</button>}</p>}
               {panel.kind === 'entry' || panel.kind === 'adjust' ? (
                 <EntryEditor
                   key={`${panel.kind}/${panel.entry?.lancamento.id ?? 'new'}`}
@@ -376,9 +389,13 @@ export function FinancialPage() {
                   onChangeCapture={() => setAdministrativeDirty(true)}
                   onSubmit={(e) => {
                     e.preventDefault()
+                    if (!summary || summary.fechado || reviewedClosing !== closingReview) {
+                      setError('Consulte o resumo atual e confira os totais antes de confirmar o fechamento.')
+                      return
+                    }
                     void run(() =>
                       finance(`${monthPath(month)}/fechamento`, 'POST', {
-                        versaoEsperada: summary!.versao,
+                        versaoEsperada: summary.versao,
                         observacao: reason,
                         saldoConferido: checkedBalance
                           ? decimal(checkedBalance)
@@ -392,11 +409,11 @@ export function FinancialPage() {
                     Essa ação é definitiva, sem reabertura. Feche todos os meses
                     em sequência, inclusive meses vazios.
                   </p>
-                  <p>
-                    Receitas {brl(summary!.receitas)} · Despesas{' '}
-                    {brl(summary!.despesas)} · Saldo final{' '}
-                    <strong>{brl(summary!.saldoFinal)}</strong>
-                  </p>
+                  {summary ? <>
+                    <p>Receitas {brl(summary.receitas)} · Despesas {brl(summary.despesas)} · Saldo final <strong>{brl(summary.saldoFinal)}</strong></p>
+                    {closingReview !== JSON.stringify(panel.summary) && <p role="status">O resumo foi atualizado. Confira os totais e confirme a conferência novamente.</p>}
+                    {summary.fechado && <p>Este mês já está fechado e não pode ser fechado novamente.</p>}
+                  </> : !readError && <p role="status">Atualizando o resumo para conferência…</p>}
                   <label>
                     Observação obrigatória
                     <textarea
@@ -414,7 +431,7 @@ export function FinancialPage() {
                       onChange={(e) => setCheckedBalance(e.target.value)}
                     />
                   </label>
-                  {checkedBalance && (
+                  {checkedBalance && summary && (
                     <p>
                       Diferença:{' '}
                       {(() => {
@@ -422,7 +439,7 @@ export function FinancialPage() {
                           return brl(
                             fromCents(
                               cents(decimal(checkedBalance)) -
-                                cents(summary!.saldoFinal),
+                                cents(summary.saldoFinal),
                             ),
                           )
                         } catch {
@@ -433,10 +450,10 @@ export function FinancialPage() {
                     </p>
                   )}
                   <label className="finance-checkbox">
-                    <input type="checkbox" required />
+                    <input type="checkbox" required disabled={!summary || summary.fechado || busy} checked={Boolean(summary && reviewedClosing === closingReview)} onChange={e => setReviewedClosing(e.target.checked ? closingReview : null)} />
                     Conferi os totais e entendo que o mês ficará imutável.
                   </label>
-                  <button disabled={busy}>
+                  <button disabled={busy || !summary || summary.fechado || reviewedClosing !== closingReview}>
                     {busy ? 'Fechando…' : 'Confirmar fechamento definitivo'}
                   </button>
                   <button
@@ -592,7 +609,7 @@ export function FinancialPage() {
               </label>
             </fieldset>
             {!list ? (
-              <p role="status">Carregando lançamentos…</p>
+              !readError && <p role="status">Carregando lançamentos…</p>
             ) : list.items.length === 0 ? (
               <p>
                 Nenhum lançamento encontrado neste mês com os filtros
