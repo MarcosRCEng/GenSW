@@ -12,6 +12,8 @@ Categorias possuem natureza imutável. As sete categorias iniciais são criadas 
 
 Os indicadores consideram todos os lançamentos efetivos do mês. Pesquisa, período, categoria, natureza, situação e paginação restringem apenas a lista. Cancelados continuam consultáveis e deixam de compor saldos. O resultado é movimento de caixa, não lucro contábil.
 
+Ao trocar o mês ou recarregar a consulta, aguarde o resumo atual antes de registrar ou fechar. Durante a consulta, os indicadores anteriores são retirados e as ações que dependem deles ficam indisponíveis. Se a leitura falhar, use **Recarregar**: a falha não significa mês sem lançamentos. Mês e filtros são conservados. Uma recarga com o fechamento aberto conserva o preenchimento, mas exige conferir a prévia recuperada e marcar novamente a confirmação antes de enviar. Consulte as [evidências da correção P1 #478](../validation/2026-10-21-p1-caixa-contexto-478.md).
+
 Em mês aberto, **Corrigir** e **Cancelar** exigem motivo e versão esperada. A auditoria preserva antes/depois, referências, autor e UTC; não há exclusão física nem reversão de cancelamento. Referências inativadas depois do registro permanecem consultáveis e podem ser mantidas em correções de outros campos. Novos vínculos precisam estar ativos.
 
 ## Fechamento e ajustes
