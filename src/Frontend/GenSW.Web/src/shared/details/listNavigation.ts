@@ -36,10 +36,12 @@ export function parentReturnState(state: unknown, parentPath: string, context: {
 // Relationship-filtered lists keep their explicit parent alongside their own
 // filters. The hierarchy is finite: Prole → Ciclo → Cruzamento.
 function linkedParentReturnState(state: unknown, listPath: string): ParentNavigationState | undefined {
-  const parentRoot = listPath.split('?')[0] === '/ciclos-reprodutivos' ? '/cruzamentos' : listPath.split('?')[0] === '/proles' ? '/ciclos-reprodutivos' : undefined
+  const [root, search] = listPath.split('?')
+  const parentRoot = root === '/ciclos-reprodutivos' ? '/cruzamentos' : root === '/proles' ? '/ciclos-reprodutivos' : undefined
+  const parentId = new URLSearchParams(search).get(root === '/ciclos-reprodutivos' ? 'cruzamentoId' : 'cicloReprodutivoId')
   if (!parentRoot || !state || typeof state !== 'object' || !('parentReturn' in state)) return undefined
   const parent = state.parentReturn
-  if (!parent || typeof parent !== 'object' || !('path' in parent) || typeof parent.path !== 'string' || !parent.path.startsWith(`${parentRoot}/`) || parentListPath(parent.path) !== parentRoot) return undefined
+  if (!parentId || !parent || typeof parent !== 'object' || !('path' in parent) || parent.path !== `${parentRoot}/${parentId}`) return undefined
   return readParentReturnState(state, parent.path)
 }
 
@@ -103,7 +105,7 @@ export function listReturnState(state: unknown, path: string): ListNavigationSta
   if (!list || typeof list !== 'object' || !('path' in list) || typeof list.path !== 'string' || !('filters' in list)) return undefined
   if (list.path !== path && (path.includes('?') || !list.path.startsWith(`${path}?`))) return undefined
   if (!list.filters || typeof list.filters !== 'object' || Array.isArray(list.filters)) return undefined
-  return { ...linkedParentReturnState(state, path), list: { path: list.path, filters: list.filters } }
+  return { ...linkedParentReturnState(state, list.path), list: { path: list.path, filters: list.filters } }
 }
 
 export function useRestoredListState<T extends object>(path: string, defaults: T): T {
