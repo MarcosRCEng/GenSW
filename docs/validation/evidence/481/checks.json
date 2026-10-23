@@ -1,0 +1,577 @@
+{
+  "task": 481,
+  "baseline": "79a0030089e5d85b5be04f141e63bcf6d17a86a1",
+  "branch": "codex/481-p1-reproducao-paginacao",
+  "environment": {
+    "sqlReview": {
+      "destination": "exclusive disposable loopback cluster",
+      "requiredMigrations": 18,
+      "emptyTargetConfirmed": true,
+      "createIndexes": 103,
+      "reviewedDataUpdate": "Pessoas backfill TipoPessoa/Ativo on an empty new database",
+      "task": 481,
+      "reviewedBeforeApply": true,
+      "newMigration": false,
+      "createTables": 49,
+      "destructiveDropsDeletesTruncates": 0
+    },
+    "alias": "P1-481-SYNTHETIC-ONLY",
+    "sqlSha256": "72508A964C272B8E9CEC47AA866AE8098C077CB80FAEDCF140697D3E6067034D",
+    "sourceOrPilotMutations": false,
+    "images": 0,
+    "sourceOrPilotDataCopied": false,
+    "imagesGateClaimed": false,
+    "fixtures": {
+      "offspring": 26,
+      "users": 2,
+      "cycles": 26,
+      "allSynthetic": true,
+      "animals": 2,
+      "crossings": 26
+    },
+    "appliedMigrations": [
+      "20260820002015_AddIdentityFoundation",
+      "20260828000328_AddPessoaMasterData",
+      "20260901012054_AddEspecies",
+      "20260901230349_AddRacasVariedades",
+      "20260908223306_AddAnimalBase",
+      "20260912152820_AddIdentificacoesAnimal",
+      "20260929120616_AddRegistrosAnimal",
+      "20260929145816_AddFiliacoesAnimal",
+      "20260929151949_AddCruzamentos",
+      "20260929170724_AddCiclosReprodutivos",
+      "20260929180642_AddProles",
+      "20260929225633_AddEggProduction",
+      "20261002133151_AddAnimalWeightsAndImages",
+      "20261002133435_AddGenealogyTraversalIndex",
+      "20261002222623_AddFinancialCash",
+      "20261005132012_AddOperationalProperties",
+      "20261006220939_AddCatalogAndFormulation",
+      "20261007225228_AddManualInventory"
+    ],
+    "requiredMigrations": [
+      "20260820002015_AddIdentityFoundation",
+      "20260828000328_AddPessoaMasterData",
+      "20260901012054_AddEspecies",
+      "20260901230349_AddRacasVariedades",
+      "20260908223306_AddAnimalBase",
+      "20260912152820_AddIdentificacoesAnimal",
+      "20260929120616_AddRegistrosAnimal",
+      "20260929145816_AddFiliacoesAnimal",
+      "20260929151949_AddCruzamentos",
+      "20260929170724_AddCiclosReprodutivos",
+      "20260929180642_AddProles",
+      "20260929225633_AddEggProduction",
+      "20261002133151_AddAnimalWeightsAndImages",
+      "20261002133435_AddGenealogyTraversalIndex",
+      "20261002222623_AddFinancialCash",
+      "20261005132012_AddOperationalProperties",
+      "20261006220939_AddCatalogAndFormulation",
+      "20261007225228_AddManualInventory"
+    ],
+    "postgresVersion": "PostgreSQL 18.1 on x86_64-windows, compiled by msvc-19.44.35219, 64-bit"
+  },
+  "baselineRegressions": [
+    {
+      "fixtureRecords": 26,
+      "reachable26": false,
+      "result": "FAIL: missing Anterior",
+      "visibleRecords": 25,
+      "list": "Cruzamentos"
+    },
+    {
+      "fixtureRecords": 26,
+      "reachable26": false,
+      "result": "FAIL: missing Página 1 de 2",
+      "visibleRecords": 25,
+      "list": "Ciclos reprodutivos"
+    },
+    {
+      "fixtureRecords": 26,
+      "reachable26": false,
+      "result": "FAIL: missing Anterior",
+      "visibleRecords": 25,
+      "list": "Proles"
+    }
+  ],
+  "frontend": {
+    "failed": 0,
+    "tests": 627,
+    "skipped": 0,
+    "chunkAdvisory": true,
+    "lintExitCode": 0,
+    "buildExitCode": 0,
+    "bundleKiloBytes": 644.72,
+    "files": 57
+  },
+  "backend": {
+    "isolatedBenchmark": {
+      "failed": 0,
+      "limitMs": 500,
+      "treeP95Ms": 214.2,
+      "candidateP95Ms": 200.5,
+      "maximumSql": 9,
+      "passed": 1
+    },
+    "fullStandardRuns": [
+      {
+        "candidateP95Ms": 558.1,
+        "failed": 1,
+        "case": "AnimalTreePerformanceTests",
+        "passed": 607
+      },
+      {
+        "candidateP95Ms": 181.4,
+        "treeP95Ms": 703.3,
+        "failed": 1,
+        "case": "AnimalTreePerformanceTests",
+        "passed": 607
+      }
+    ],
+    "serialFullResult": {
+      "failedTest": "Authenticated_weight_image_candidate_tree_contracts_and_negative_cases",
+      "backendOrTestLimitsChanged": false,
+      "infrastructure": 114,
+      "failed": 1,
+      "application": 147,
+      "skipped": 0,
+      "apiFailed": 1,
+      "passed": 607,
+      "domain": 165,
+      "apiPassed": 181,
+      "failure": "Npgsql read timeout during authentication"
+    }
+  },
+  "browserNavigation": [
+    {
+      "width": 1440,
+      "list": "Cruzamentos",
+      "pageSequence": "1→2→1",
+      "totalItems": 26,
+      "totalPages": 2,
+      "rows": [
+        25,
+        1,
+        25
+      ],
+      "detailAndEditAndCreationReturn": true,
+      "focusRetained": true,
+      "viewportOverflow": false,
+      "parentReturn": false
+    },
+    {
+      "width": 1440,
+      "list": "Ciclos reprodutivos",
+      "pageSequence": "1→2→1",
+      "totalItems": 26,
+      "totalPages": 2,
+      "rows": [
+        25,
+        1,
+        25
+      ],
+      "detailAndEditAndCreationReturn": true,
+      "focusRetained": true,
+      "viewportOverflow": false,
+      "parentReturn": true
+    },
+    {
+      "width": 1440,
+      "list": "Proles",
+      "pageSequence": "1→2→1",
+      "totalItems": 26,
+      "totalPages": 2,
+      "rows": [
+        25,
+        1,
+        25
+      ],
+      "detailAndEditAndCreationReturn": true,
+      "focusRetained": true,
+      "viewportOverflow": false,
+      "parentReturn": true
+    },
+    {
+      "width": 390,
+      "list": "Cruzamentos",
+      "pageSequence": "1→2→1",
+      "totalItems": 26,
+      "totalPages": 2,
+      "rows": [
+        25,
+        1,
+        25
+      ],
+      "detailAndEditAndCreationReturn": true,
+      "focusRetained": true,
+      "viewportOverflow": false,
+      "parentReturn": false
+    },
+    {
+      "width": 390,
+      "list": "Ciclos reprodutivos",
+      "pageSequence": "1→2→1",
+      "totalItems": 26,
+      "totalPages": 2,
+      "rows": [
+        25,
+        1,
+        25
+      ],
+      "detailAndEditAndCreationReturn": true,
+      "focusRetained": true,
+      "viewportOverflow": false,
+      "parentReturn": true
+    },
+    {
+      "width": 390,
+      "list": "Proles",
+      "pageSequence": "1→2→1",
+      "totalItems": 26,
+      "totalPages": 2,
+      "rows": [
+        25,
+        1,
+        25
+      ],
+      "detailAndEditAndCreationReturn": true,
+      "focusRetained": true,
+      "viewportOverflow": false,
+      "parentReturn": true
+    }
+  ],
+  "browserErrors": [
+    {
+      "width": 1440,
+      "list": "cruzamentos",
+      "pendingHasNoOldRows": true,
+      "errorDistinctFromEmpty": true,
+      "retryPage": 2,
+      "retryContextPreserved": true
+    },
+    {
+      "width": 1440,
+      "list": "ciclos",
+      "pendingHasNoOldRows": true,
+      "errorDistinctFromEmpty": true,
+      "retryPage": 2,
+      "retryContextPreserved": true
+    },
+    {
+      "width": 1440,
+      "list": "proles",
+      "pendingHasNoOldRows": true,
+      "errorDistinctFromEmpty": true,
+      "retryPage": 2,
+      "retryContextPreserved": true
+    },
+    {
+      "width": 1440,
+      "list": "cruzamentos",
+      "outOfOrderDiscarded": true,
+      "emptyFromRealAPI": true,
+      "totalItems": 0,
+      "totalPages": 0,
+      "emptyLimitsDisabled": true
+    },
+    {
+      "width": 1440,
+      "list": "ciclos",
+      "outOfOrderDiscarded": true,
+      "emptyFromRealAPI": true,
+      "totalItems": 0,
+      "totalPages": 0,
+      "emptyLimitsDisabled": true
+    },
+    {
+      "width": 1440,
+      "list": "proles",
+      "emptyFromRealAPI": true,
+      "totalItems": 0,
+      "totalPages": 0
+    },
+    {
+      "width": 390,
+      "list": "cruzamentos",
+      "pendingHasNoOldRows": true,
+      "errorDistinctFromEmpty": true,
+      "retryPage": 2,
+      "retryContextPreserved": true
+    },
+    {
+      "width": 390,
+      "list": "ciclos",
+      "pendingHasNoOldRows": true,
+      "errorDistinctFromEmpty": true,
+      "retryPage": 2,
+      "retryContextPreserved": true
+    },
+    {
+      "width": 390,
+      "list": "proles",
+      "pendingHasNoOldRows": true,
+      "errorDistinctFromEmpty": true,
+      "retryPage": 2,
+      "retryContextPreserved": true
+    },
+    {
+      "width": 390,
+      "list": "cruzamentos",
+      "outOfOrderDiscarded": true,
+      "emptyFromRealAPI": true,
+      "totalItems": 0,
+      "totalPages": 0,
+      "emptyLimitsDisabled": true
+    },
+    {
+      "width": 390,
+      "list": "ciclos",
+      "outOfOrderDiscarded": true,
+      "emptyFromRealAPI": true,
+      "totalItems": 0,
+      "totalPages": 0,
+      "emptyLimitsDisabled": true
+    },
+    {
+      "width": 390,
+      "list": "proles",
+      "emptyFromRealAPI": true,
+      "totalItems": 0,
+      "totalPages": 0
+    },
+    {
+      "anonymousSession": true,
+      "statuses": [
+        401,
+        401,
+        401
+      ],
+      "uiRedirectToLogin": true
+    }
+  ],
+  "browserHierarchy": [
+    {
+      "width": 1440,
+      "chain": "Cruzamento26→Ciclo26→Prole26→pais→listas",
+      "allPage2OriginsPreserved": true,
+      "filtersPreserved": true,
+      "parentIdsPreserved": true
+    },
+    {
+      "width": 390,
+      "chain": "Cruzamento26→Ciclo26→Prole26→pais→listas",
+      "allPage2OriginsPreserved": true,
+      "filtersPreserved": true,
+      "parentIdsPreserved": true
+    },
+    {
+      "width": 390,
+      "list": "Cruzamentos",
+      "realStatusMutation": true,
+      "filteredTotalBefore": 26,
+      "filteredTotalAfter": 25,
+      "pageBefore": 2,
+      "pageAfter": 1,
+      "previousRecordsReachable": true,
+      "onlyDisposableFixturesMutated": true
+    }
+  ],
+  "browserCycleMutation": {
+    "alias": "P1-481-SYNTHETIC-ONLY",
+    "list": "Ciclos reprodutivos",
+    "width": 390,
+    "realStatusMutation": true,
+    "filteredTotalBefore": 26,
+    "filteredTotalAfter": 25,
+    "pageBefore": 2,
+    "pageAfter": 1,
+    "previousRecordsReachable": true,
+    "onlyDisposableFixturesMutated": true
+  },
+  "browserFinalAccessibility": [
+    {
+      "width": 1440,
+      "list": "cruzamentos",
+      "accessibleSummaryNamedGroup": true,
+      "focusedSummaryOnPagination": true,
+      "noPageOverflow": true
+    },
+    {
+      "width": 1440,
+      "list": "ciclos-reprodutivos",
+      "accessibleSummaryNamedGroup": true,
+      "focusedSummaryOnPagination": true,
+      "noPageOverflow": true
+    },
+    {
+      "width": 1440,
+      "list": "proles",
+      "accessibleSummaryNamedGroup": true,
+      "focusedSummaryOnPagination": true,
+      "noPageOverflow": true
+    },
+    {
+      "width": 390,
+      "list": "cruzamentos",
+      "accessibleSummaryNamedGroup": true,
+      "focusedSummaryOnPagination": true,
+      "noPageOverflow": true
+    },
+    {
+      "width": 390,
+      "list": "ciclos-reprodutivos",
+      "accessibleSummaryNamedGroup": true,
+      "focusedSummaryOnPagination": true,
+      "noPageOverflow": true
+    },
+    {
+      "width": 390,
+      "list": "proles",
+      "accessibleSummaryNamedGroup": true,
+      "focusedSummaryOnPagination": true,
+      "noPageOverflow": true
+    }
+  ],
+  "browserCommon": [
+    {
+      "role": "common",
+      "width": 1440,
+      "list": "Cruzamentos",
+      "status": 200,
+      "server": {
+        "page": 2,
+        "pageSize": 25,
+        "totalItems": 26,
+        "totalPages": 2,
+        "items": 1
+      },
+      "distinctAcrossPages": 26
+    },
+    {
+      "role": "common",
+      "width": 1440,
+      "list": "Ciclos reprodutivos",
+      "status": 200,
+      "server": {
+        "page": 2,
+        "pageSize": 25,
+        "totalItems": 26,
+        "totalPages": 2,
+        "items": 1
+      },
+      "distinctAcrossPages": 26
+    },
+    {
+      "role": "common",
+      "width": 1440,
+      "list": "Proles",
+      "status": 200,
+      "server": {
+        "page": 2,
+        "pageSize": 25,
+        "totalItems": 26,
+        "totalPages": 2,
+        "items": 1
+      },
+      "distinctAcrossPages": 26
+    },
+    {
+      "role": "common",
+      "width": 390,
+      "list": "Cruzamentos",
+      "status": 200,
+      "server": {
+        "page": 2,
+        "pageSize": 25,
+        "totalItems": 26,
+        "totalPages": 2,
+        "items": 1
+      },
+      "distinctAcrossPages": 26
+    },
+    {
+      "role": "common",
+      "width": 390,
+      "list": "Ciclos reprodutivos",
+      "status": 200,
+      "server": {
+        "page": 2,
+        "pageSize": 25,
+        "totalItems": 26,
+        "totalPages": 2,
+        "items": 1
+      },
+      "distinctAcrossPages": 26
+    },
+    {
+      "role": "common",
+      "width": 390,
+      "list": "Proles",
+      "status": 200,
+      "server": {
+        "page": 2,
+        "pageSize": 25,
+        "totalItems": 26,
+        "totalPages": 2,
+        "items": 1
+      },
+      "distinctAcrossPages": 26
+    }
+  ],
+  "diffCheckExitCode": 0,
+  "independentReview": "No unresolved actionable findings after corrections",
+  "humanPilotAcceptanceClaimed": false,
+  "mergeAuthorized": false,
+  "deploymentPerformed": false,
+  "finalEnvironmentPreservation": {
+    "previousApplicationListeners": [
+      {
+        "port": 5175,
+        "sameProcessAsBefore": true
+      },
+      {
+        "port": 7003,
+        "sameProcessAsBefore": true
+      },
+      {
+        "port": 5177,
+        "sameProcessAsBefore": true
+      },
+      {
+        "port": 7005,
+        "sameProcessAsBefore": true
+      }
+    ],
+    "alias": "P1-481-SYNTHETIC-ONLY",
+    "pilotOrScheduledBackupCommandsExecuted": false,
+    "onlyOwnDisposableClusterStopped": true,
+    "finalFixtureState": {
+      "crossings": 26,
+      "plannedCrossings": 26,
+      "cycles": 26,
+      "runningCycles": 25,
+      "completedCycles": 1,
+      "offspring": 26,
+      "offspringQuantity": 26,
+      "convertedOffspring": 0,
+      "animals": 2,
+      "filiations": 0,
+      "images": 0,
+      "migrations": 18
+    },
+    "onlyOwnApplicationProcessesStopped": true
+  },
+  "implementationCI": {
+    "backendSkipped": 0,
+    "frontendFailed": 0,
+    "frontendPassed": 627,
+    "conclusion": "success",
+    "backendFailed": 0,
+    "url": "https://github.com/MarcosRCEng/GenSW/actions/runs/39862031899",
+    "lint": "success",
+    "finalHeadCI": "Recorded in Redmine #481 and PR #28 to avoid a circular commit reference",
+    "backendPassed": 608,
+    "head": "97d2de18d3f2a9fb2281cd062a7727576e39afc8",
+    "build": "success"
+  }
+}

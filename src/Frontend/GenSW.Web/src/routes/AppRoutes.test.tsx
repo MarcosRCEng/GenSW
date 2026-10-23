@@ -123,7 +123,10 @@ describe('AppRoutes', () => {
       if (path.startsWith('/propriedades?')) return { items: [], page: 1, pageSize: 25, totalItems: 0, totalPages: 0 }
       if (path === '/financeiro/configuracao') return null
       if (path === '/financeiro/categorias' || path === '/financeiro/fechamentos') return []
-      if (['/cruzamentos', '/ciclos-reprodutivos', '/proles'].includes(path)) {
+      if (['/cruzamentos', '/ciclos-reprodutivos', '/proles'].includes(path.split('?')[0])) {
+        const pagination = new URLSearchParams(path.split('?')[1])
+        expect(pagination.get('page')).toBe('1')
+        expect(pagination.get('pageSize')).toBe('25')
         return { items: [], page: 1, pageSize: 25, totalItems: 0, totalPages: 0 }
       }
       throw new Error(`Requisição inesperada no teste: ${path}`)
@@ -489,7 +492,7 @@ describe('AppRoutes', () => {
     ['Cruzamentos', 'Nenhum cruzamento encontrado.'],
     ['Propriedades', 'Nenhuma propriedade encontrada.'],
     ['Ciclos reprodutivos', 'Nenhum ciclo encontrado.'],
-    ['Proles', null],
+    ['Proles', 'Nenhuma prole encontrada.'],
   ])('mantém %s acessível a partir da home autenticada', async (name, emptyMessage) => {
     vi.mocked(bootstrapSession).mockResolvedValue(currentUser)
     renderApplication('/')

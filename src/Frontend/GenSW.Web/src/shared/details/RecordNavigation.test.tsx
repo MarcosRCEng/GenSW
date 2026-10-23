@@ -156,7 +156,7 @@ describe('record navigation contract', () => {
     await screen.findByRole('link', { name: 'Visualizar' })
     fireEvent.change(screen.getByLabelText('Fluxo'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Status do ciclo'), { target: { value: '3' } })
-    await waitFor(() => expect(listReproductiveCycles).toHaveBeenLastCalledWith({ cruzamentoId: 'cross-1', tipo: 2, status: 3 }))
+    await waitFor(() => expect(listReproductiveCycles).toHaveBeenLastCalledWith({ cruzamentoId: 'cross-1', tipo: 2, status: 3, page: 1, pageSize: 25 }))
     expect(readParentReturnState(router.state.location.state, '/cruzamentos/cross-1')?.parentReturn.origin).toEqual(crossingOrigin)
     fireEvent.click(screen.getByRole('link', { name: 'Visualizar' }))
     await screen.findByRole('heading', { name: 'Visualizar ciclo reprodutivo' })
@@ -184,5 +184,19 @@ describe('record navigation contract', () => {
     expect(parentReturnState(undefined, '//outside.invalid/a', { section: 'pesagens' })).toBeUndefined()
     expect(formReturnTarget(undefined, '/propriedades')).toEqual({ to: '/propriedades', state: undefined })
     expect(listReturnState({ list: { path: '/propriedades-invasoras', filters: {} } }, '/propriedades')).toBeUndefined()
+  })
+
+  it('retains only the parent matching the relationship query when restoring a list', () => {
+    for (const [root, parameter, parentRoot] of [
+      ['/ciclos-reprodutivos', 'cruzamentoId', '/cruzamentos'],
+      ['/proles', 'cicloReprodutivoId', '/ciclos-reprodutivos'],
+    ]) {
+      const list = { path: `${root}?${parameter}=parent-2`, filters: { page: 2 } }
+      const stale = { list, parentReturn: { path: `${parentRoot}/parent-1`, section: 'children' } }
+      expect(listReturnState(stale, root)).toEqual({ list })
+      const matched = { list, parentReturn: { path: `${parentRoot}/parent-2`, section: 'children' } }
+      expect(listReturnState(matched, root)?.parentReturn?.path).toBe(`${parentRoot}/parent-2`)
+      expect(listReturnState({ ...matched, list: { path: root, filters: {} } }, root)?.parentReturn).toBeUndefined()
+    }
   })
 })
