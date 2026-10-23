@@ -128,7 +128,19 @@
         "passed": 607
       }
     ],
-    "serialFullStatus": "pending"
+    "serialFullResult": {
+      "failedTest": "Authenticated_weight_image_candidate_tree_contracts_and_negative_cases",
+      "backendOrTestLimitsChanged": false,
+      "infrastructure": 114,
+      "failed": 1,
+      "application": 147,
+      "skipped": 0,
+      "apiFailed": 1,
+      "passed": 607,
+      "domain": 165,
+      "apiPassed": 181,
+      "failure": "Npgsql read timeout during authentication"
+    }
   },
   "browserNavigation": [
     {
@@ -548,5 +560,18 @@
       "migrations": 18
     },
     "onlyOwnApplicationProcessesStopped": true
+  },
+  "implementationCI": {
+    "backendSkipped": 0,
+    "frontendFailed": 0,
+    "frontendPassed": 627,
+    "conclusion": "success",
+    "backendFailed": 0,
+    "url": "https://github.com/MarcosRCEng/GenSW/actions/runs/39862031899",
+    "lint": "success",
+    "finalHeadCI": "Recorded in Redmine #481 and PR #28 to avoid a circular commit reference",
+    "backendPassed": 608,
+    "head": "97d2de18d3f2a9fb2281cd062a7727576e39afc8",
+    "build": "success"
   }
 }
