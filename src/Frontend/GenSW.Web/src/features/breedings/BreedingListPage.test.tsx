@@ -1,8 +1,8 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { transferableAbortController } from 'node:util'
 import { createMemoryRouter, MemoryRouter, RouterProvider } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { listAnimals } from '../animals/services/animalsService'
+import { getAnimalById, listAnimals } from '../animals/services/animalsService'
 import type { Animal } from '../animals/types/animals'
 import { BreedingDetailsPage } from './BreedingDetailsPage'
 import { BreedingFormPage } from './BreedingFormPage'
@@ -10,7 +10,7 @@ import { BreedingListPage } from './BreedingListPage'
 import { createBreeding, getBreeding, listBreedings, setBreedingStatus, updateBreeding } from './breedingsService'
 import type { Breeding, BreedingsPage } from './types'
 
-vi.mock('../animals/services/animalsService', () => ({ listAnimals: vi.fn() }))
+vi.mock('../animals/services/animalsService', () => ({ listAnimals: vi.fn(), getAnimalById: vi.fn() }))
 vi.mock('./breedingsService', () => ({ listBreedings: vi.fn(), setBreedingStatus: vi.fn(), getBreeding: vi.fn(), createBreeding: vi.fn(), updateBreeding: vi.fn() }))
 
 // Synthetic records belong exclusively to these regressions, never to the pilot.
@@ -53,7 +53,8 @@ async function expectRestoredPage() {
 beforeEach(() => {
   vi.resetAllMocks()
   vi.stubGlobal('AbortController', transferableAbortController().constructor)
-  vi.mocked(listAnimals).mockResolvedValue({ items: [animal('male', 1), animal('female', 2)], page: 1, pageSize: 100, totalItems: 2, totalPages: 1 })
+  vi.mocked(listAnimals).mockImplementation(async ({ sexo, page = 1, pageSize = 10 } = {}) => ({ items: [animal('male', 1), animal('female', 2)].filter(item => !sexo || item.sexo === sexo), page, pageSize, totalItems: 1, totalPages: 1 }))
+  vi.mocked(getAnimalById).mockImplementation(async id => animal(id, id === 'female' ? 2 : 1))
   vi.mocked(listBreedings).mockImplementation(async ({ page = 1 } = {}) => pageOf(page))
   vi.mocked(setBreedingStatus).mockResolvedValue({ ...records[25], status: 2 })
   vi.mocked(getBreeding).mockResolvedValue(records[25])
@@ -136,7 +137,7 @@ describe('BreedingListPage pagination', () => {
     renderPage({ list: { path: '/cruzamentos', filters: { status: 2, machoId: 'male' } } })
     await screen.findByText('TEST-M-01')
     fireEvent.click(screen.getByRole('button', { name: 'Próxima' }))
-    expect(screen.getByRole('status')).toHaveTextContent('Carregando cruzamentos…')
+    expect(screen.getByText('Carregando cruzamentos…')).toHaveAttribute('role', 'status')
     expect(screen.getByRole('button', { name: 'Próxima' })).toBeDisabled()
     expect(screen.queryByText('TEST-M-01')).not.toBeInTheDocument()
     await act(async () => pending.reject(new Error('unavailable')))
@@ -171,7 +172,7 @@ describe('BreedingListPage pagination', () => {
     fireEvent.change(screen.getByLabelText('Status'), { target: { value: '1' } })
     fireEvent.change(screen.getByLabelText('Status'), { target: { value: '2' } })
     await act(async () => older.resolve(pageOf(1)))
-    expect(screen.getByRole('status')).toHaveTextContent('Carregando cruzamentos…')
+    expect(screen.getByText('Carregando cruzamentos…')).toHaveAttribute('role', 'status')
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
     await act(async () => newest.resolve({ ...pageOf(1), items: [records[25]] }))
     expect(screen.getByText('TEST-M-26')).toBeInTheDocument()
@@ -183,7 +184,7 @@ describe('BreedingListPage pagination', () => {
     renderPage()
     await screen.findByText('Nenhum cruzamento encontrado.')
     expect(screen.getByText('0 registros')).toBeInTheDocument()
-    expect(screen.queryByText(/Página/)).not.toBeInTheDocument()
+    expect(within(screen.getByRole('navigation', { name: 'Paginação de cruzamentos' })).queryByText(/Página/)).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Próxima' })).toBeDisabled()
     expect(listBreedings).toHaveBeenCalledOnce()
@@ -198,7 +199,7 @@ describe('BreedingListPage pagination', () => {
     fireEvent.change(screen.getByLabelText('Status'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Status'), { target: { value: '' } })
     expect(screen.queryByText('TEST-M-01')).not.toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent('Carregando cruzamentos…')
+    expect(screen.getByText('Carregando cruzamentos…')).toHaveAttribute('role', 'status')
     await act(async () => newest.resolve({ ...pageOf(1), items: [records[25]] }))
     await act(async () => older.resolve(pageOf(1)))
     expect(screen.getByText('TEST-M-26')).toBeInTheDocument()
@@ -240,8 +241,8 @@ describe('BreedingListPage pagination', () => {
     vi.mocked(listAnimals).mockRejectedValue(new Error('catalog failure'))
     renderPage()
     await screen.findByText('TEST-M-01')
-    expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível carregar os animais para os filtros.')
-    expect(screen.getByLabelText('Macho')).toBeDisabled()
+    expect(screen.getAllByRole('alert')).toHaveLength(2)
+    expect(screen.getByRole('button', { name: 'Tentar novamente: Macho' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Próxima' })).toBeEnabled()
   })
 })

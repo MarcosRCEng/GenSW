@@ -1,0 +1,256 @@
+{
+  "task": 484,
+  "baseline": "3a35ef149951ad92a201a6c7acc05359daf2ddab",
+  "implementationCommit": "ba26cbd328e49d65e17915d2bf8a3d6258b9e271",
+  "branch": "codex/484-p1-selecao-animais",
+  "pullRequest": "https://github.com/MarcosRCEng/GenSW/pull/29",
+  "regressionBefore": {
+    "eachSex": 102,
+    "passed": 0,
+    "tests": 2,
+    "failedExpected": 2,
+    "syntheticAnimals": 204,
+    "male101OverallPosition": 201,
+    "female101OverallPosition": 202,
+    "failure": "Missing server search control on baseline; first general page of 100 excludes target animals"
+  },
+  "frontend": {
+    "diffCheckExitCode": 0,
+    "files": 60,
+    "exitCode": 0,
+    "lintExitCode": 0,
+    "total": 653,
+    "passed": 653,
+    "command": "npm test",
+    "buildExitCode": 0,
+    "bundleKB": 649.13,
+    "bundleWarningPreserved": true,
+    "failed": 0
+  },
+  "backend": {
+    "task": 484,
+    "total": 608,
+    "passed": 608,
+    "postgresTestsUseNewEphemeralClusters": true,
+    "repeatRuns": 0,
+    "failed": 0,
+    "standardScheduling": true,
+    "command": "dotnet test GenSW.sln --logger \"trx;LogFilePrefix=484\" --results-directory ./output/validation/p1-484/backend",
+    "exitCode": 0,
+    "notExecuted": 0,
+    "testThresholdsUnchanged": true,
+    "allBackendsUnchanged": true,
+    "suites": [
+      {
+        "suite": "Domain",
+        "total": 165,
+        "passed": 165,
+        "failed": 0,
+        "notExecuted": 0,
+        "started": "2026-10-23T19:20:48.4292959-03:00",
+        "finished": "2026-10-23T19:20:51.4210431-03:00"
+      },
+      {
+        "suite": "Application",
+        "total": 147,
+        "passed": 147,
+        "failed": 0,
+        "notExecuted": 0,
+        "started": "2026-10-23T19:20:48.5546694-03:00",
+        "finished": "2026-10-23T19:20:51.523238-03:00"
+      },
+      {
+        "suite": "Infrastructure",
+        "total": 114,
+        "passed": 114,
+        "failed": 0,
+        "notExecuted": 0,
+        "started": "2026-10-23T19:20:48.8171112-03:00",
+        "finished": "2026-10-23T19:25:42.2268403-03:00"
+      },
+      {
+        "suite": "API",
+        "total": 182,
+        "passed": 182,
+        "failed": 0,
+        "notExecuted": 0,
+        "started": "2026-10-23T19:20:50.4839522-03:00",
+        "finished": "2026-10-23T19:27:25.9039718-03:00"
+      }
+    ]
+  },
+  "environment": {
+    "historyExactlyMatches": true,
+    "databaseWasEmptyBeforeMigrations": true,
+    "syntheticOnly": true,
+    "frontend": "https://localhost:5180",
+    "requiredMigrations": 18,
+    "sourceOrPilotTouched": false,
+    "tlsBypassUsed": false,
+    "syntheticOffspring": 26,
+    "migrationsAppliedBeforeAppStarted": true,
+    "syntheticCycles": 26,
+    "accounts": 2,
+    "alias": "P1-484-SYNTHETIC-ONLY",
+    "inactiveReferenceAnimals": 2,
+    "task": 484,
+    "api": "https://localhost:7008",
+    "image200AndUiRenderGateClaimed": false,
+    "effectiveClusterDirectoryVerified": true,
+    "imageLimitation": "Fixture contains no images; original/thumbnail authenticated image delivery and pilot image rendering were not validated.",
+    "activeMales": 102,
+    "appliedMigrations": 18,
+    "exactPrivateImageRoot": true,
+    "imageRootAccessRestricted": true,
+    "credentialsAndSigningKeyStoredOutsideGit": true,
+    "privateImageFiles": 0,
+    "imageReferences": 0,
+    "animals": 207,
+    "activeFemales": 102,
+    "effectiveDatabaseAndUserVerified": true,
+    "newExclusiveLoopbackCluster": true,
+    "indeterminedAnimals": 1,
+    "syntheticCrosses": 26
+  },
+  "migrationReview": {
+    "task": 484,
+    "requiredMigrations": 18,
+    "createTables": 49,
+    "createIndexes": 103,
+    "dropStatements": 0,
+    "truncateStatements": 0,
+    "deleteStatements": 0,
+    "updateStatements": 1,
+    "scope": "new-empty-exclusive-P1-484-synthetic-only",
+    "sameSqlAsPreviouslyReviewed18Migrations": true,
+    "backfillPeopleReviewedOnNewEmptyDatabase": true,
+    "destructiveStatementsAbsent": true
+  },
+  "apiReproduction": {
+    "female101AbsentFirstSexPage": true,
+    "male101PresentSecondSexPage": true,
+    "tlsBypassUsed": false,
+    "totalAnimals": 207,
+    "adminAuthenticated": true,
+    "inactiveHistoricalDetailResolved": true,
+    "imagesGateClaimed": false,
+    "imagesCount": 0,
+    "task": 484,
+    "male101AbsentFirstGeneral": true,
+    "female101SearchResolved": true,
+    "female101AbsentFirstGeneral": true,
+    "alias": "P1-484-SYNTHETIC-ONLY",
+    "firstGeneralPageItems": 100,
+    "male101AbsentFirstSexPage": true,
+    "female101PresentSecondSexPage": true,
+    "male101SearchResolved": true
+  },
+  "apiContract": {
+    "incompatibleSexCreate": 409,
+    "task": 484,
+    "commonCrosses": 200,
+    "unauthenticatedDetail": 401,
+    "unauthenticatedCrosses": 401,
+    "notFoundCreate": 404,
+    "unauthenticatedAnimals": 401,
+    "commonAnimals": 200,
+    "indeterminateSexCreate": 409,
+    "sameIdCreate": 409,
+    "oversizedPageRejected": 400,
+    "missingAnimal": 404
+  },
+  "browser": {
+    "selection": {
+      "source": "Successful ui-selection.js run; desktop and narrow screenshots inspected",
+      "apiMutationsScope": "exclusive synthetic fixture only",
+      "completedAssertions": [
+        "candidateKeyboardPaginationAndFocus",
+        "candidateSearchDoesNotResetBreedingPage",
+        "male101AndFemale101SearchedAndSelected",
+        "filterSelectionResetsBreedingPageOnly",
+        "restoredLabelsAndIds",
+        "searchEnterDoesNotSave",
+        "searchDoesNotDirty",
+        "cancelContinueEditing",
+        "create201CorrectIds",
+        "update200CorrectIds",
+        "noViewportOverflow"
+      ],
+      "widths": [
+        1440,
+        390
+      ]
+    },
+    "hierarchy": {
+      "hierarchyBrowserChecks": [
+        {
+          "width": 1440,
+          "crossingCycleOffspringAndBack": true,
+          "allListPages2Restored": true,
+          "sexAndStatusFiltersRestored": true,
+          "selectedLabelsResolved": true,
+          "noViewportOverflow": true
+        },
+        {
+          "width": 390,
+          "crossingCycleOffspringAndBack": true,
+          "allListPages2Restored": true,
+          "sexAndStatusFiltersRestored": true,
+          "selectedLabelsResolved": true,
+          "noViewportOverflow": true
+        }
+      ]
+    },
+    "auth": {
+      "anonymousApiStatus": 401,
+      "anonymousUiRedirectsLogin": true
+    },
+    "common": {
+      "commonAuthenticatedBrowserSearchBothSexes": true,
+      "forbiddenRoleRuleIntroduced": false
+    },
+    "errors": {
+      "errorAndHistoricalBrowserChecks": [
+        {
+          "width": 1440,
+          "referenceFailureRetainsId": true,
+          "referenceRetryResolvesInactive": true,
+          "candidate503RetrySamePageSearch": true,
+          "simulated403Visible": true,
+          "noResultDistinct": true,
+          "lateABAResponsesDiscarded": true,
+          "historicalInactiveSave200OriginalIds": true
+        },
+        {
+          "width": 390,
+          "referenceFailureRetainsId": true,
+          "referenceRetryResolvesInactive": true,
+          "candidate503RetrySamePageSearch": true,
+          "simulated403Visible": true,
+          "noResultDistinct": true,
+          "lateABAResponsesDiscarded": true,
+          "historicalInactiveSave200OriginalIds": true
+        }
+      ]
+    }
+  },
+  "preservedEnvironments": {
+    "secretsInEvidence": 0,
+    "sourcePilotOrBackupChanged": false,
+    "originalListenersStillPresent": true
+  },
+  "ciFinalHead": "Verify Backend/Frontend for PR #29 final HEAD; result and exact final commit recorded in Redmine #484 and PR to avoid self-reference",
+  "pending": [
+    "human functional acceptance and review",
+    "merge not requested",
+    "pilot image gate not covered",
+    "physical mobile Safari and screen reader not exercised"
+  ],
+  "implementationCi": {
+    "url": "https://github.com/MarcosRCEng/GenSW/actions/runs/40034342987",
+    "run": 40034342987,
+    "frontend": "success",
+    "headSha": "ba26cbd328e49d65e17915d2bf8a3d6258b9e271",
+    "backend": "success"
+  }
+}
