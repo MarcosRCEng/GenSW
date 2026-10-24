@@ -1,6 +1,6 @@
 # F02 — plano incremental condicionado (P2.0 / #487)
 
-24/10/2026. Baseline `425306167764c94519a843deaeb19505844e9114`. **Plano proposto, sem execução técnica F02 autorizada.** Depende do aceite explícito dos IDs D05/O01/R01/D06/E01/Q02 do [adendo](../specs/2026-10-24-f02-ordens-execucao-487-design.md), confirmação da prioridade e autorização em nova Tarefa filha de #430. Não criar antecipadamente todas as Tarefas abaixo. O [relatório P2.0](../../validation/2026-10-24-p2-0-contrato-f02-487.md) contém dependências, evidências e limites.
+24/10/2026. Baseline `425306167764c94519a843deaeb19505844e9114`. **Plano proposto, sem execução técnica F02 autorizada.** O responsável definiu: “Aceitar primeiro o piloto de gestão”. Implementar F02 depende de prioridade futura explícita, aceite dos IDs D05/O01/R01/D06/E01/Q02 do [adendo](../specs/2026-10-24-f02-ordens-execucao-487-design.md) e autorização em nova Tarefa filha de #430. A prioridade recebida não aceita o piloto nem o contrato F02. Não criar antecipadamente todas as Tarefas abaixo. O [relatório P2.0](../../validation/2026-10-24-p2-0-contrato-f02-487.md) contém dependências, evidências e limites.
 
 ## 1. Reuso obrigatório e lacunas verificadas
 
