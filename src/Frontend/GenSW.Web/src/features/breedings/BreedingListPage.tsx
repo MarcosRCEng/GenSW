@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom'
 import { useRememberListState, useRestoredListState } from '../../shared/details/listNavigation'
 import { PageHeader } from '../../shared/layout/PageHeader'
 import { TableRegion } from '../../shared/layout/TableRegion'
-import { listAnimals } from '../animals/services/animalsService'
-import type { Animal } from '../animals/types/animals'
+import { BreedingAnimalSelector } from './BreedingAnimalSelector'
 import { listBreedings, setBreedingStatus } from './breedingsService'
 import type { Breeding, BreedingsPage, BreedingStatus } from './types'
 
@@ -16,12 +15,10 @@ const actionClass = 'rounded px-2 py-1 font-semibold focus:outline-none focus:ri
 export function BreedingListPage() {
   const initial = useRestoredListState<{ page: number; status?: BreedingStatus; machoId?: string; femeaId?: string }>('/cruzamentos', { page: 1 })
   const [loaded, setLoaded] = useState<{ key: string; result?: BreedingsPage; error?: boolean } | null>(null)
-  const [animals, setAnimals] = useState<Animal[]>([])
   const [page, setPage] = useState(Number.isSafeInteger(initial.page) && initial.page > 0 ? initial.page : 1)
   const [status, setStatus] = useState(initial.status)
   const [machoId, setMachoId] = useState(initial.machoId)
   const [femeaId, setFemeaId] = useState(initial.femeaId)
-  const [catalogError, setCatalogError] = useState(false)
   const [mutationError, setMutationError] = useState(false)
   const [refresh, setRefresh] = useState(0)
   const [changing, setChanging] = useState<string | null>(null)
@@ -32,12 +29,6 @@ export function BreedingListPage() {
   const result = current?.result
   const error = current?.error === true
   const loading = !current
-
-  useEffect(() => {
-    let current = true
-    void listAnimals({ pageSize: 100 }).then(response => { if (current) setAnimals(response.items) }).catch(() => { if (current) setCatalogError(true) })
-    return () => { current = false }
-  }, [])
 
   useEffect(() => {
     let current = true
@@ -72,10 +63,9 @@ export function BreedingListPage() {
     <PageHeader title="Cruzamentos" description="Planejamento e acompanhamento reprodutivo. A filiação continua sendo a fonte de verdade do pedigree." actions={<Link className="gensw-primary-action" to="/cruzamentos/novo" state={listState}>Novo cruzamento</Link>} />
     <section className="mt-8 grid gap-4 rounded-2xl border bg-white p-5 sm:grid-cols-3">
       <div><label className="text-sm font-medium" htmlFor="breeding-status">Status</label><select className="mt-1 w-full rounded border p-2" id="breeding-status" value={status ?? ''} onChange={event => { resetPage(); setStatus(event.target.value ? Number(event.target.value) as BreedingStatus : undefined) }}><option value="">Todos</option><option value="1">Planejado</option><option value="2">Em andamento</option><option value="3">Concluído</option><option value="4">Cancelado</option></select></div>
-      <div><label className="text-sm font-medium" htmlFor="breeding-male">Macho</label><select className="mt-1 w-full rounded border p-2" disabled={catalogError} id="breeding-male" value={machoId ?? ''} onChange={event => { resetPage(); setMachoId(event.target.value || undefined) }}><option value="">Todos</option>{animals.filter(item => item.sexo === 1).map(item => <option key={item.id} value={item.id}>{item.codigoInterno}</option>)}</select></div>
-      <div><label className="text-sm font-medium" htmlFor="breeding-female">Fêmea</label><select className="mt-1 w-full rounded border p-2" disabled={catalogError} id="breeding-female" value={femeaId ?? ''} onChange={event => { resetPage(); setFemeaId(event.target.value || undefined) }}><option value="">Todas</option>{animals.filter(item => item.sexo === 2).map(item => <option key={item.id} value={item.id}>{item.codigoInterno}</option>)}</select></div>
+      <BreedingAnimalSelector id="breeding-male" label="Macho" sexo={1} value={machoId ?? ''} emptyLabel="Todos" onChange={value => { resetPage(); setMachoId(value || undefined) }} />
+      <BreedingAnimalSelector id="breeding-female" label="Fêmea" sexo={2} value={femeaId ?? ''} emptyLabel="Todas" onChange={value => { resetPage(); setFemeaId(value || undefined) }} />
     </section>
-    {catalogError && <p className="mt-4 rounded border border-red-200 bg-red-50 p-3 text-red-700" role="alert">Não foi possível carregar os animais para os filtros.</p>}
     {mutationError && <p className="mt-4 rounded border border-red-200 bg-red-50 p-3 text-red-700" role="alert">Não foi possível alterar o status do cruzamento.</p>}
     <section className="mt-6 overflow-hidden rounded-2xl border bg-white" aria-busy={loading}>
       {loading ? <p className="p-8" role="status">Carregando cruzamentos…</p> : error ? <div className="p-8" role="alert"><p className="text-red-700">Não foi possível carregar os cruzamentos.</p><button className={`${actionClass} mt-4 border`} onClick={() => { paginationSummary.current?.focus(); setRefresh(value => value + 1) }} type="button">Tentar novamente</button></div> : result?.items.length === 0 ? <p className="p-8">Nenhum cruzamento encontrado.</p> : result ? <TableRegion label="Tabela de cruzamentos" className="overflow-x-auto"><table className="min-w-full text-left text-sm">
