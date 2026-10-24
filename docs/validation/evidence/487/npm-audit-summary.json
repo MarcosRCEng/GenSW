@@ -1,0 +1,603 @@
+{
+  "lockSha256": "608141fda28bc0b03686daa99eb7ede8c26b9e3a51bc7b09f72e30cd64285cdb",
+  "audits": {
+    "omitDev": {
+      "counts": {
+        "info": 0,
+        "low": 0,
+        "moderate": 1,
+        "high": 3,
+        "critical": 0,
+        "total": 4
+      },
+      "packages": [
+        {
+          "name": "esbuild",
+          "severity": "moderate",
+          "isDirect": false,
+          "range": "<=0.24.2",
+          "nodes": [
+            "node_modules/esbuild"
+          ],
+          "via": [
+            {
+              "range": "<=0.24.2",
+              "title": "esbuild enables any website to send any requests to the development server and read the response",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-67mh-4wv8-2f99"
+            }
+          ]
+        },
+        {
+          "name": "postcss",
+          "severity": "high",
+          "isDirect": true,
+          "range": "<=8.5.22",
+          "nodes": [
+            "node_modules/postcss"
+          ],
+          "via": [
+            {
+              "range": "<8.5.10",
+              "title": "PostCSS has XSS via Unescaped </style> in its CSS Stringify Output",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-qx2v-qp2m-jg93"
+            },
+            {
+              "range": "<=8.5.11",
+              "title": "PostCSS: Arbitrary file read and information disclosure via attacker-controlled sourceMappingURL in CSS comments",
+              "severity": "high",
+              "url": "https://github.com/advisories/GHSA-6g55-p6wh-862q"
+            },
+            {
+              "range": "<=8.5.22",
+              "title": "PostCSS: incomplete fix of GHSA-6g55-p6wh-862q — attacker-controlled sourceMappingURL reads arbitrary .map files when `from` is unset",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-fxqj-rqcc-2cmp"
+            },
+            {
+              "range": "<=8.5.17",
+              "title": "PostCSS: Path Traversal in Previous Source Map Auto-Loading (sourceMappingURL) leads to Arbitrary .map File Disclosure",
+              "severity": "high",
+              "url": "https://github.com/advisories/GHSA-r28c-9q8g-f849"
+            }
+          ]
+        },
+        {
+          "name": "source-map-js",
+          "severity": "high",
+          "isDirect": false,
+          "range": "1.0.0 - 1.2.1",
+          "nodes": [
+            "node_modules/source-map-js"
+          ],
+          "via": [
+            {
+              "range": ">=1.0.0 <1.2.2",
+              "title": "source-map-js allows event-loop denial of service through indexed source-map section offsets",
+              "severity": "high",
+              "url": "https://github.com/advisories/GHSA-68fv-2mgg-jv7q"
+            }
+          ]
+        },
+        {
+          "name": "vite",
+          "severity": "high",
+          "isDirect": true,
+          "range": "<=6.4.3",
+          "nodes": [
+            "node_modules/vite"
+          ],
+          "via": [
+            {
+              "range": ">=5.0.0 <=5.4.11",
+              "title": "Websites were able to send any requests to the development server and read the response in vite",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-vg6x-rcgg-rjx6"
+            },
+            {
+              "range": ">=5.0.0 <5.4.15",
+              "title": "Vite bypasses server.fs.deny when using ?raw??",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-x574-m823-4x7w"
+            },
+            {
+              "range": ">=5.0.0 <5.4.18",
+              "title": "Vite has an `server.fs.deny` bypass with an invalid `request-target`",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-356w-63v5-8wf4"
+            },
+            {
+              "range": ">=5.0.0 <=5.4.18",
+              "title": "Vite's server.fs.deny bypassed with /. for files under project root",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-859w-5945-r5v3"
+            },
+            {
+              "range": ">=5.0.0 <5.4.17",
+              "title": "Vite allows server.fs.deny to be bypassed with .svg or relative paths",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-xcj6-pq6g-qj4x"
+            },
+            {
+              "range": "<=5.4.19",
+              "title": "Vite middleware may serve files starting with the same name with the public directory",
+              "severity": "low",
+              "url": "https://github.com/advisories/GHSA-g4jq-h2w9-997c"
+            },
+            {
+              "range": "<=5.4.19",
+              "title": "Vite's `server.fs` settings were not applied to HTML files",
+              "severity": "low",
+              "url": "https://github.com/advisories/GHSA-jqfw-vq24-v9c3"
+            },
+            {
+              "range": ">=5.2.6 <=5.4.20",
+              "title": "vite allows server.fs.deny bypass via backslash on Windows",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-93m4-6634-74q7"
+            },
+            {
+              "range": ">=5.0.0 <5.4.16",
+              "title": "Vite has a `server.fs.deny` bypassed for `inline` and `raw` with `?import` query",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-4r4m-qw57-chr8"
+            },
+            {
+              "range": "<=6.4.1",
+              "title": "Vite Vulnerable to Path Traversal in Optimized Deps `.map` Handling",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-4w7w-66w2-5vf9"
+            },
+            {
+              "range": "<=6.4.2",
+              "title": "launch-editor: NTLMv2 hash disclosure via UNC path handling on Windows",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-v6wh-96g9-6wx3"
+            },
+            {
+              "range": "<=6.4.2",
+              "title": "vite: `server.fs.deny` bypass on Windows alternate paths",
+              "severity": "high",
+              "url": "https://github.com/advisories/GHSA-fx2h-pf6j-xcff"
+            },
+            {
+              "range": "<=6.4.3",
+              "title": "launch-editor: escapeCmdArgs() omits % escaping on Windows",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-698v-4r3x-3vcv"
+            },
+            {
+              "range": "<=6.4.3",
+              "title": "launch-editor: Editor CLI flag misinterpretation causing arbitrary command execution for some editors",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-r825-w8mm-5pxw"
+            },
+            {
+              "range": "<=6.4.3",
+              "title": "launch-editor: `fs.existsSync()` existence check can be bypassed on Windows",
+              "severity": "high",
+              "url": "https://github.com/advisories/GHSA-587h-7wmj-h5pm"
+            },
+            {
+              "range": "<=6.4.3",
+              "title": "Vite: Cross origin script execution through Vite custom middleware",
+              "severity": "low",
+              "url": "https://github.com/advisories/GHSA-9jrq-w75r-8gcw"
+            },
+            {
+              "range": "<=6.4.3",
+              "title": "Vite: Files outside `server.fs.allow` could be served when project paths match system paths on non-Windows machine",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-rq7h-c2jc-7f22"
+            },
+            "esbuild"
+          ]
+        }
+      ]
+    },
+    "full": {
+      "counts": {
+        "info": 0,
+        "low": 2,
+        "moderate": 5,
+        "high": 5,
+        "critical": 2,
+        "total": 14
+      },
+      "packages": [
+        {
+          "name": "@eslint/plugin-kit",
+          "severity": "low",
+          "isDirect": false,
+          "range": "<0.3.4",
+          "nodes": [
+            "node_modules/@eslint/plugin-kit"
+          ],
+          "via": [
+            {
+              "range": "<0.3.4",
+              "title": "@eslint/plugin-kit is vulnerable to Regular Expression Denial of Service attacks through ConfigCommentParser",
+              "severity": "low",
+              "url": "https://github.com/advisories/GHSA-xffm-g5w8-qvg7"
+            }
+          ]
+        },
+        {
+          "name": "@vitest/mocker",
+          "severity": "moderate",
+          "isDirect": false,
+          "range": "<=4.1.11",
+          "nodes": [
+            "node_modules/vitest/node_modules/@vitest/mocker"
+          ],
+          "via": [
+            {
+              "range": ">=2.1.0 <4.1.11",
+              "title": "Vitest: Path Traversal / Arbitrary File Read via @vitest/mocker Redirect Mock",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-82fw-gwwq-j7x9"
+            },
+            {
+              "range": ">=2.1.0-beta.7 <4.1.12",
+              "title": "Vitest: Code injection via unauthenticated manual mock registration",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-qxg6-89mg-rqv8"
+            }
+          ]
+        },
+        {
+          "name": "brace-expansion",
+          "severity": "high",
+          "isDirect": false,
+          "range": "<=1.1.20 || 2.0.0 - 2.1.6",
+          "nodes": [
+            "node_modules/@typescript-eslint/typescript-estree/node_modules/brace-expansion",
+            "node_modules/brace-expansion"
+          ],
+          "via": [
+            {
+              "range": "<1.1.21",
+              "title": "brace-expansion: Quadratic-time expansion of the `{a},b}` rewrite causes CPU denial of service",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr"
+            },
+            {
+              "range": ">=2.0.0 <2.1.7",
+              "title": "brace-expansion: Quadratic-time expansion of the `{a},b}` rewrite causes CPU denial of service",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr"
+            },
+            {
+              "range": "<1.1.20",
+              "title": "brace-expansion: DoS via uncontrolled recursion on nested brace groups causing stack exhaustion",
+              "severity": "high",
+              "url": "https://github.com/advisories/GHSA-qhr7-859c-m2p7"
+            },
+            {
+              "range": ">=2.0.0 <2.1.6",
+              "title": "brace-expansion: DoS via uncontrolled recursion on nested brace groups causing stack exhaustion",
+              "severity": "high",
+              "url": "https://github.com/advisories/GHSA-qhr7-859c-m2p7"
+            },
+            {
+              "range": "<1.1.19",
+              "title": "brace-expansion: DoS via uncontrolled recursion in parseCommaParts causing stack exhaustion",
+              "severity": "high",
+              "url": "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p"
+            },
+            {
+              "range": ">=2.0.0 <2.1.5",
+              "title": "brace-expansion: DoS via uncontrolled recursion in parseCommaParts causing stack exhaustion",
+              "severity": "high",
+              "url": "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p"
+            }
+          ]
+        },
+        {
+          "name": "esbuild",
+          "severity": "moderate",
+          "isDirect": false,
+          "range": "<=0.24.2",
+          "nodes": [
+            "node_modules/esbuild"
+          ],
+          "via": [
+            {
+              "range": "<=0.24.2",
+              "title": "esbuild enables any website to send any requests to the development server and read the response",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-67mh-4wv8-2f99"
+            }
+          ]
+        },
+        {
+          "name": "eslint",
+          "severity": "low",
+          "isDirect": true,
+          "range": "9.10.0 - 9.26.0",
+          "nodes": [
+            "node_modules/eslint"
+          ],
+          "via": [
+            "@eslint/plugin-kit"
+          ]
+        },
+        {
+          "name": "js-yaml",
+          "severity": "high",
+          "isDirect": false,
+          "range": "4.0.0 - 4.3.1",
+          "nodes": [
+            "node_modules/js-yaml"
+          ],
+          "via": [
+            {
+              "range": ">=4.0.0 <4.3.2",
+              "title": "js-yaml: maxTotalMergeKeys does not limit CPU use for empty merge sources",
+              "severity": "high",
+              "url": "https://github.com/advisories/GHSA-2883-xcg3-v3hh"
+            }
+          ]
+        },
+        {
+          "name": "postcss",
+          "severity": "high",
+          "isDirect": true,
+          "range": "<=8.5.22",
+          "nodes": [
+            "node_modules/postcss"
+          ],
+          "via": [
+            {
+              "range": "<8.5.10",
+              "title": "PostCSS has XSS via Unescaped </style> in its CSS Stringify Output",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-qx2v-qp2m-jg93"
+            },
+            {
+              "range": "<=8.5.11",
+              "title": "PostCSS: Arbitrary file read and information disclosure via attacker-controlled sourceMappingURL in CSS comments",
+              "severity": "high",
+              "url": "https://github.com/advisories/GHSA-6g55-p6wh-862q"
+            },
+            {
+              "range": "<=8.5.22",
+              "title": "PostCSS: incomplete fix of GHSA-6g55-p6wh-862q — attacker-controlled sourceMappingURL reads arbitrary .map files when `from` is unset",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-fxqj-rqcc-2cmp"
+            },
+            {
+              "range": "<=8.5.17",
+              "title": "PostCSS: Path Traversal in Previous Source Map Auto-Loading (sourceMappingURL) leads to Arbitrary .map File Disclosure",
+              "severity": "high",
+              "url": "https://github.com/advisories/GHSA-r28c-9q8g-f849"
+            }
+          ]
+        },
+        {
+          "name": "postcss-nested",
+          "severity": "moderate",
+          "isDirect": false,
+          "range": "2.0.3 - 6.2.0",
+          "nodes": [
+            "node_modules/postcss-nested"
+          ],
+          "via": [
+            "postcss-selector-parser"
+          ]
+        },
+        {
+          "name": "postcss-selector-parser",
+          "severity": "moderate",
+          "isDirect": false,
+          "range": "<7.1.6",
+          "nodes": [
+            "node_modules/postcss-selector-parser"
+          ],
+          "via": [
+            {
+              "range": "<7.1.6",
+              "title": "PostCSS: Quadratic complexity in flat selector parsing allows CPU exhaustion",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-rj75-hqrm-r3gf"
+            }
+          ]
+        },
+        {
+          "name": "source-map-js",
+          "severity": "high",
+          "isDirect": false,
+          "range": "1.0.0 - 1.2.1",
+          "nodes": [
+            "node_modules/source-map-js"
+          ],
+          "via": [
+            {
+              "range": ">=1.0.0 <1.2.2",
+              "title": "source-map-js allows event-loop denial of service through indexed source-map section offsets",
+              "severity": "high",
+              "url": "https://github.com/advisories/GHSA-68fv-2mgg-jv7q"
+            }
+          ]
+        },
+        {
+          "name": "tailwindcss",
+          "severity": "moderate",
+          "isDirect": true,
+          "range": "<=0.0.0-oxide-insiders.ff2c25f || 0.5.0 - 3.4.19",
+          "nodes": [
+            "node_modules/tailwindcss"
+          ],
+          "via": [
+            "postcss-nested",
+            "postcss-selector-parser"
+          ]
+        },
+        {
+          "name": "tinypool",
+          "severity": "critical",
+          "isDirect": false,
+          "range": "<=2.1.1",
+          "nodes": [
+            "node_modules/tinypool"
+          ],
+          "via": [
+            {
+              "range": "<=2.1.0",
+              "title": "Tinypool: Prototype Pollution gadget in worker options leads to Remote Code Execution",
+              "severity": "critical",
+              "url": "https://github.com/advisories/GHSA-5gmw-xhrv-c9v3"
+            },
+            {
+              "range": "<2.1.2",
+              "title": "Tinypool: Prototype Pollution Gadget to RCE in run() options",
+              "severity": "critical",
+              "url": "https://github.com/advisories/GHSA-85c8-ppgw-ccpr"
+            }
+          ]
+        },
+        {
+          "name": "vite",
+          "severity": "high",
+          "isDirect": true,
+          "range": "<=6.4.3",
+          "nodes": [
+            "node_modules/vite"
+          ],
+          "via": [
+            {
+              "range": ">=5.0.0 <=5.4.11",
+              "title": "Websites were able to send any requests to the development server and read the response in vite",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-vg6x-rcgg-rjx6"
+            },
+            {
+              "range": ">=5.0.0 <5.4.15",
+              "title": "Vite bypasses server.fs.deny when using ?raw??",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-x574-m823-4x7w"
+            },
+            {
+              "range": ">=5.0.0 <5.4.18",
+              "title": "Vite has an `server.fs.deny` bypass with an invalid `request-target`",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-356w-63v5-8wf4"
+            },
+            {
+              "range": ">=5.0.0 <=5.4.18",
+              "title": "Vite's server.fs.deny bypassed with /. for files under project root",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-859w-5945-r5v3"
+            },
+            {
+              "range": ">=5.0.0 <5.4.17",
+              "title": "Vite allows server.fs.deny to be bypassed with .svg or relative paths",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-xcj6-pq6g-qj4x"
+            },
+            {
+              "range": "<=5.4.19",
+              "title": "Vite middleware may serve files starting with the same name with the public directory",
+              "severity": "low",
+              "url": "https://github.com/advisories/GHSA-g4jq-h2w9-997c"
+            },
+            {
+              "range": "<=5.4.19",
+              "title": "Vite's `server.fs` settings were not applied to HTML files",
+              "severity": "low",
+              "url": "https://github.com/advisories/GHSA-jqfw-vq24-v9c3"
+            },
+            {
+              "range": ">=5.2.6 <=5.4.20",
+              "title": "vite allows server.fs.deny bypass via backslash on Windows",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-93m4-6634-74q7"
+            },
+            {
+              "range": ">=5.0.0 <5.4.16",
+              "title": "Vite has a `server.fs.deny` bypassed for `inline` and `raw` with `?import` query",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-4r4m-qw57-chr8"
+            },
+            {
+              "range": "<=6.4.1",
+              "title": "Vite Vulnerable to Path Traversal in Optimized Deps `.map` Handling",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-4w7w-66w2-5vf9"
+            },
+            {
+              "range": "<=6.4.2",
+              "title": "launch-editor: NTLMv2 hash disclosure via UNC path handling on Windows",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-v6wh-96g9-6wx3"
+            },
+            {
+              "range": "<=6.4.2",
+              "title": "vite: `server.fs.deny` bypass on Windows alternate paths",
+              "severity": "high",
+              "url": "https://github.com/advisories/GHSA-fx2h-pf6j-xcff"
+            },
+            {
+              "range": "<=6.4.3",
+              "title": "launch-editor: escapeCmdArgs() omits % escaping on Windows",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-698v-4r3x-3vcv"
+            },
+            {
+              "range": "<=6.4.3",
+              "title": "launch-editor: Editor CLI flag misinterpretation causing arbitrary command execution for some editors",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-r825-w8mm-5pxw"
+            },
+            {
+              "range": "<=6.4.3",
+              "title": "launch-editor: `fs.existsSync()` existence check can be bypassed on Windows",
+              "severity": "high",
+              "url": "https://github.com/advisories/GHSA-587h-7wmj-h5pm"
+            },
+            {
+              "range": "<=6.4.3",
+              "title": "Vite: Cross origin script execution through Vite custom middleware",
+              "severity": "low",
+              "url": "https://github.com/advisories/GHSA-9jrq-w75r-8gcw"
+            },
+            {
+              "range": "<=6.4.3",
+              "title": "Vite: Files outside `server.fs.allow` could be served when project paths match system paths on non-Windows machine",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-rq7h-c2jc-7f22"
+            },
+            "esbuild"
+          ]
+        },
+        {
+          "name": "vitest",
+          "severity": "critical",
+          "isDirect": true,
+          "range": "0.0.95 - 4.1.10",
+          "nodes": [
+            "node_modules/vitest"
+          ],
+          "via": [
+            "@vitest/mocker",
+            {
+              "range": ">=2.1.0 <4.1.11",
+              "title": "Vitest: Path Traversal / Arbitrary File Read via @vitest/mocker Redirect Mock",
+              "severity": "moderate",
+              "url": "https://github.com/advisories/GHSA-82fw-gwwq-j7x9"
+            },
+            "tinypool"
+          ]
+        }
+      ]
+    }
+  },
+  "applicationExecuted": false,
+  "date": "2026-10-24",
+  "timezone": "America/Sao_Paulo",
+  "installed": false,
+  "exploitationDemonstrated": false,
+  "method": "npm audit --package-lock-only --ignore-scripts --json; same with --omit=dev; exit 1 expected",
+  "baseline": "425306167764c94519a843deaeb19505844e9114"
+}
