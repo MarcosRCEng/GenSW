@@ -1,0 +1,83 @@
+{
+  "date": "2026-10-26",
+  "alias": "F02-495-SYNTHETIC",
+  "scope": "Directed browser validation; not operational pilot acceptance",
+  "apiConfiguration": "Release candidate, localhost HTTPS, new ephemeral PostgreSQL cluster",
+  "migrations": {
+    "required": 19,
+    "applied": 19,
+    "pending": 0,
+    "target": "20261025184750_AddProductionOrdersAndExecution",
+    "sqlSha256": "90ca7daa9661360c9229db8416feb84325422b06cbc63a164fa582460c97dba2"
+  },
+  "operationalDataUsed": false,
+  "imageRecordsAffected": 0,
+  "imageGate": "Not applicable to synthetic F02 material records; private image and pilot acceptance gates remain in #493",
+  "observations": {
+    "createDraft": true,
+    "publishedPlanSnapshot": true,
+    "reserveIntegral100kg": true,
+    "physical1000Reserved100Available900": true,
+    "enterDoesNotConfirmAndInvalidatesPreview": true,
+    "confirmation100to98plusLoss2": true,
+    "singleExecution": true,
+    "reservationsSettled": true,
+    "genealogyAncestorsAndDescendants": true,
+    "adminCompensatoryReversal": true,
+    "originalPhysicalInputRestored1000": true,
+    "outputZeroAndTerminal": true,
+    "ledgerProjectionEqual": true,
+    "readFailureNoticeAndRetry": true,
+    "reloadSessionRecovered": true,
+    "ordinaryUserCanRead": true,
+    "adminReconciliationHiddenFromOrdinaryUser": true
+  },
+  "viewports": {
+    "desktop": {
+      "width": 1440,
+      "height": 1000
+    },
+    "narrow": {
+      "width": 390,
+      "height": 844,
+      "documentWidth": 390
+    }
+  },
+  "screenshots": [
+    {
+      "file": "output/playwright/f02-495/confirmation-preview-narrow.png",
+      "sha256": "754f332e976fac65047c5164a2c186617b4d74dd37ba16fa53db2c89068d183b"
+    },
+    {
+      "file": "output/playwright/f02-495/confirmed-narrow.png",
+      "sha256": "bcca42af68b62f523065db8301d075e2e30833de98fc8cf42606c7afa08f1616"
+    },
+    {
+      "file": "output/playwright/f02-495/genealogy-narrow.png",
+      "sha256": "99bb4bf4b151bac1d8520c538a6ccea5c3d81fb9c405cf29d06e7508db911f29"
+    },
+    {
+      "file": "output/playwright/f02-495/ordinary-user-narrow.png",
+      "sha256": "8072022b7e274b58f41bdae44c5c0efc09d5781f255937ef05335373a3ce15e1"
+    },
+    {
+      "file": "output/playwright/f02-495/reverted-narrow.png",
+      "sha256": "c2bbe8b8641e8583f19315a68fd5ab254ee2f9f58406e220f1e5cfbade920b44"
+    },
+    {
+      "file": "output/playwright/f02-495/started-desktop.png",
+      "sha256": "2567b55d1891a627669b90c1640df764ca6ddf9d0814f19f41eda204a0001ba9"
+    }
+  ],
+  "limits": [
+    "Browser flow uses synthetic quantities and accounts; real routine/values and operational acceptance are not inferred.",
+    "Backend PostgreSQL matrix and frontend unit suites cover additional E01, total-loss, concurrency, idempotence and retry cases.",
+    "No shared or production migration, deploy, or pilot backup change."
+  ],
+  "cleanup": {
+    "syntheticSessionsLoggedOut": true,
+    "taskApiAndFrontendStopped": true,
+    "fixtureShutdownRequested": true,
+    "preexistingServicesPreserved": true
+  }
+}

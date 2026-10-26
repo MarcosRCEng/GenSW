@@ -10,6 +10,7 @@ namespace GenSW.Infrastructure.Tests;
 public sealed class AnimalMigrationTests : IAsyncLifetime
 {
     private const string PreviousMigration = "20260901230349_AddRacasVariedades";
+    private const string AnimalMigration = "20260908223306_AddAnimalBase";
     private GenSW.API.Tests.EphemeralPostgreSql postgreSql = null!;
 
     public async Task InitializeAsync() => postgreSql = await GenSW.API.Tests.EphemeralPostgreSql.StartAsync();
@@ -18,7 +19,8 @@ public sealed class AnimalMigrationTests : IAsyncLifetime
     public async Task Migration_creates_and_reverses_the_animal_schema_without_leaving_alternate_keys()
     {
         await using var context = CreateContext();
-        await context.Database.MigrateAsync();
+        // This historical Up/Down contract must not reverse later physical ledgers.
+        await context.GetService<IMigrator>().MigrateAsync(AnimalMigration);
 
         Assert.True(await ExistsAsync(context, "SELECT EXISTS (SELECT 1 FROM pg_class WHERE relkind = 'r' AND relname = 'Animais')"));
         Assert.True(await ExistsAsync(context, "SELECT EXISTS (SELECT 1 FROM pg_class WHERE relkind = 'S' AND relname = 'AnimalCodigoInternoSequence')"));

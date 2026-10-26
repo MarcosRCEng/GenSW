@@ -1,0 +1,11 @@
+{
+  "orderState": "Revertida",
+  "physicalInput": 1000.0,
+  "physicalOutput": 0.0,
+  "outputLotState": "Encerrado",
+  "activeReserved": 0.0,
+  "executions": 1,
+  "reversals": 1,
+  "compensations": 2,
+  "ledgerMismatches": 0
+}

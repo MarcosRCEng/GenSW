@@ -1,0 +1,287 @@
+{
+  "recorded_at_utc": "2026-10-26T21:54:22.422942+00:00",
+  "task_id": 495,
+  "integration_task_id": 496,
+  "baseline_commit": "5b9f8a18aba470ce9825c91efab81a06fbb36153",
+  "branch": "codex/495-f02-ordens-execucao",
+  "status": "passed",
+  "command": "dotnet test GenSW.sln --configuration Release --logger trx --results-directory output/test-results/f02/final-backend-20261026 --nologo -v:minimal",
+  "exit_code": 0,
+  "totals": {
+    "total": 674,
+    "passed": 674,
+    "failed": 0,
+    "not_executed": 0,
+    "new_production_cases": 66
+  },
+  "projects": [
+    {
+      "project": "GenSW.Domain.Tests",
+      "total": 165,
+      "passed": 165,
+      "failed": 0,
+      "not_executed": 0
+    },
+    {
+      "project": "GenSW.Application.Tests",
+      "total": 147,
+      "passed": 147,
+      "failed": 0,
+      "not_executed": 0
+    },
+    {
+      "project": "GenSW.Infrastructure.Tests",
+      "total": 114,
+      "passed": 114,
+      "failed": 0,
+      "not_executed": 0
+    },
+    {
+      "project": "GenSW.API.Tests",
+      "total": 248,
+      "passed": 248,
+      "failed": 0,
+      "not_executed": 0
+    }
+  ],
+  "postgresql": {
+    "provider": "PostgreSQL real",
+    "fixture": "EphemeralPostgreSql - newly initialized isolated clusters",
+    "operational_database_used": false,
+    "existing_pilot_used": false
+  },
+  "migration_id": "20261025184750_AddProductionOrdersAndExecution",
+  "sql_script": {
+    "path": "docs/operations/sql/2026-10-25-f02-from-inventory.sql",
+    "sha256": "f4126078a113263327890dbb6ed7f6861c2c7c86ef2270d9f24e07388973a4f5"
+  },
+  "release_assembly_sha256": {
+    "src/Backend/GenSW.Infrastructure/bin/Release/net8.0/GenSW.Infrastructure.dll": "35ec2ad010c6125f4b67510159102da75d273d71b8cca6cee2ff159417ed612c",
+    "src/Backend/GenSW.Application/bin/Release/net8.0/GenSW.Application.dll": "af040fd204abbed5698600775e1c4522d3cdddd0eb5a800d8db58c47d0d3f0bc",
+    "src/Backend/GenSW.Domain/bin/Release/net8.0/GenSW.Domain.dll": "99808d0d543e21de80cd7ffaff671fabd584fa8aa251da5065b40fcf45b6c02b",
+    "src/Backend/GenSW.API/bin/Release/net8.0/GenSW.API.dll": "f039f42584efe13535799d8bf10f1fa947922517a484be101c3a8bf12ca5da7f",
+    "tests/GenSW.API.Tests/bin/Release/net8.0/GenSW.API.Tests.dll": "323a389efbdf50aed3a3ac70e6aee0d4aa4373f6b2b5886c696cf3e99efb106e"
+  },
+  "raw_results": [
+    {
+      "path": "output/test-results/f02/final-backend-20261026/Marcos_DESKTOP-LL36HNP_2026-10-26_18_42_13_net8.0.trx",
+      "sha256": "53ad40b65a2c6582a47bfa6180f72deb6cb9b3fe84265bdf18a4e103fd8e39e9"
+    },
+    {
+      "path": "output/test-results/f02/final-backend-20261026/Marcos_DESKTOP-LL36HNP_2026-10-26_18_42_13_net8.0[1].trx",
+      "sha256": "1a2132fcc0e8abf43aa34613b5a8bee08c058750c685a214ebdc39d99e5e390a"
+    },
+    {
+      "path": "output/test-results/f02/final-backend-20261026/Marcos_DESKTOP-LL36HNP_2026-10-26_18_42_16_net8.0.trx",
+      "sha256": "f5a6d8c761eb73df295c9b91b6d57ea48a7ffe4022f52ddae392e1f34e241b99"
+    },
+    {
+      "path": "output/test-results/f02/final-backend-20261026/Marcos_DESKTOP-LL36HNP_2026-10-26_18_42_20_net8.0.trx",
+      "sha256": "fa3887765cf72fc1b82ae0e92fbca5dbc526ea3c8267a00787527dd6b0f2f597"
+    }
+  ],
+  "coverage": {
+    "T01": {
+      "status": "passed",
+      "case_count": 2,
+      "cases": [
+        "GenSW.API.Tests.ProductionApiTests.T01_plan_freezes_exact_version_revision_and_labels_without_stock_effects",
+        "GenSW.API.Tests.ProductionApiTests.T01_two_draft_edits_from_one_revision_preserve_only_one_winner_and_no_stock_effect"
+      ]
+    },
+    "T02": {
+      "status": "passed",
+      "case_count": 1,
+      "cases": [
+        "GenSW.API.Tests.ProductionApiTests.T02_two_orders_racing_for_sixty_of_one_hundred_reserve_exactly_once"
+      ]
+    },
+    "T03": {
+      "status": "passed",
+      "case_count": 6,
+      "cases": [
+        "GenSW.API.Tests.ProductionApiTests.T03_transfer_or_segregation_racing_with_start_cannot_move_reserved_material(operation: \"segregacoes\", purpose: \"Segregacao\")",
+        "GenSW.API.Tests.ProductionApiTests.T03_inventory_withdrawals_and_admin_adjustment_cannot_cross_active_reservations(operation: \"saidas-manuais\")",
+        "GenSW.API.Tests.ProductionApiTests.T03_inventory_withdrawals_and_admin_adjustment_cannot_cross_active_reservations(operation: \"ajustes\")",
+        "GenSW.API.Tests.ProductionApiTests.T03_inventory_withdrawals_and_admin_adjustment_cannot_cross_active_reservations(operation: \"descartes\")",
+        "GenSW.API.Tests.ProductionApiTests.T03_transfer_or_segregation_racing_with_start_cannot_move_reserved_material(operation: \"transferencias\", purpose: \"Ordinario\")",
+        "GenSW.API.Tests.ProductionApiTests.T03_inventory_withdrawals_and_admin_adjustment_cannot_cross_active_reservations(operation: \"consumos-internos\")"
+      ]
+    },
+    "T04": {
+      "status": "passed",
+      "case_count": 1,
+      "cases": [
+        "GenSW.API.Tests.ProductionApiTests.T04_insufficient_last_input_rolls_back_all_reservations_state_and_history"
+      ]
+    },
+    "T05": {
+      "status": "passed",
+      "case_count": 1,
+      "cases": [
+        "GenSW.API.Tests.ProductionApiTests.T05_T06_concurrent_confirmation_replay_is_shared_between_authors_and_preserves_business_hash"
+      ]
+    },
+    "T06": {
+      "status": "passed",
+      "case_count": 1,
+      "cases": [
+        "GenSW.API.Tests.ProductionApiTests.T05_T06_concurrent_confirmation_replay_is_shared_between_authors_and_preserves_business_hash"
+      ]
+    },
+    "T07": {
+      "status": "passed",
+      "case_count": 1,
+      "cases": [
+        "GenSW.API.Tests.ProductionApiTests.T07_lost_http_response_after_commit_recovers_same_execution_with_original_key"
+      ]
+    },
+    "T08": {
+      "status": "passed",
+      "case_count": 9,
+      "cases": [
+        "GenSW.API.Tests.ProductionApiTests.T08_every_persistence_phase_rolls_back_all_facts_and_same_key_can_retry(table: \"GenealogiaMateriais\", operation: \"INSERT\", condition: \"true\")",
+        "GenSW.API.Tests.ProductionApiTests.T08_every_persistence_phase_rolls_back_all_facts_and_same_key_can_retry(table: \"ReservasProducao\", operation: \"UPDATE\", condition: \"NEW.\\\"QuantidadeAtiva\\\"=0\")",
+        "GenSW.API.Tests.ProductionApiTests.T08_every_persistence_phase_rolls_back_all_facts_and_same_key_can_retry(table: \"SaidasProducao\", operation: \"INSERT\", condition: \"true\")",
+        "GenSW.API.Tests.ProductionApiTests.T08_every_persistence_phase_rolls_back_all_facts_and_same_key_can_retry(table: \"ComandosProducao\", operation: \"INSERT\", condition: \"true\")",
+        "GenSW.API.Tests.ProductionApiTests.T08_every_persistence_phase_rolls_back_all_facts_and_same_key_can_retry(table: \"PosicoesEstoque\", operation: \"INSERT\", condition: \"true\")",
+        "GenSW.API.Tests.ProductionApiTests.T08_every_persistence_phase_rolls_back_all_facts_and_same_key_can_retry(table: \"ExecucoesProducao\", operation: \"INSERT\", condition: \"true\")",
+        "GenSW.API.Tests.ProductionApiTests.T08_every_persistence_phase_rolls_back_all_facts_and_same_key_can_retry(table: \"MovimentosEstoque\", operation: \"INSERT\", condition: \"NEW.\\\"Sentido\\\"='Saida'\")",
+        "GenSW.API.Tests.ProductionApiTests.T08_every_persistence_phase_rolls_back_all_facts_and_same_key_can_retry(table: \"ExecucaoMovimentos\", operation: \"INSERT\", condition: \"true\")",
+        "GenSW.API.Tests.ProductionApiTests.T08_every_persistence_phase_rolls_back_all_facts_and_same_key_can_retry(table: \"LotesMateriais\", operation: \"INSERT\", condition: \"true\")"
+      ]
+    },
+    "T09": {
+      "status": "passed",
+      "case_count": 4,
+      "cases": [
+        "GenSW.API.Tests.ProductionApiTests.T09_real_less_or_more_preserves_original_reservation_and_separate_supplement(input: \"90\", output: \"88\", totalOriginal: \"100\", consumed: \"90\", released: \"10\")",
+        "GenSW.API.Tests.ProductionApiTests.T09_insufficient_supplement_retains_every_original_reservation_and_duplicate_allocation_is_rejected",
+        "GenSW.API.Tests.ProductionApiTests.T09_replacing_the_input_position_releases_original_reservation_and_consumes_a_separate_allocation",
+        "GenSW.API.Tests.ProductionApiTests.T09_real_less_or_more_preserves_original_reservation_and_separate_supplement(input: \"110\", output: \"108\", totalOriginal: \"110\", consumed: \"110\", released: \"0\")"
+      ]
+    },
+    "T10": {
+      "status": "passed",
+      "case_count": 4,
+      "cases": [
+        "GenSW.API.Tests.ProductionApiTests.T10_changed_eligibility_retains_reservation_and_only_documented_admin_fact_can_resolve_it(aptitude: \"Irregular\", result: \"ConsumoIrregular\")",
+        "GenSW.API.Tests.ProductionApiTests.T10_T11_exceptional_irregular_fact_with_zero_output_is_total_loss_and_retains_irregularity_evidence",
+        "GenSW.API.Tests.ProductionApiTests.T10_expiry_is_inclusive_and_next_operational_day_blocks_confirmation_without_releasing_reservations",
+        "GenSW.API.Tests.ProductionApiTests.T10_changed_eligibility_retains_reservation_and_only_documented_admin_fact_can_resolve_it(aptitude: \"Apto\", result: \"FatoApto\")"
+      ]
+    },
+    "T11": {
+      "status": "passed",
+      "case_count": 4,
+      "cases": [
+        "GenSW.API.Tests.ProductionApiTests.T11_total_loss_requires_admin_evidence_and_creates_no_empty_lot",
+        "GenSW.API.Tests.ProductionApiTests.T11_abort_requires_admin_and_explicit_no_consumption_releases_once_and_is_terminal",
+        "GenSW.API.Tests.ProductionApiTests.T11_consumption_occurrence_prevents_abort_and_partial_loss_is_not_debited_twice",
+        "GenSW.API.Tests.ProductionApiTests.T10_T11_exceptional_irregular_fact_with_zero_output_is_total_loss_and_retains_irregularity_evidence"
+      ]
+    },
+    "T12": {
+      "status": "passed",
+      "case_count": 5,
+      "cases": [
+        "GenSW.API.Tests.ProductionApiTests.T12_compensation_keeps_original_null_references_after_the_source_lot_gets_a_new_conversion",
+        "GenSW.API.Tests.ProductionApiTests.T12_intact_reversal_is_additive_atomic_and_original_confirmation_can_replay_afterwards",
+        "GenSW.API.Tests.ProductionApiTests.T12_closed_input_blocks_reversal_before_any_output_is_debited",
+        "GenSW.API.Tests.ProductionApiTests.T12_failed_input_compensation_rolls_back_the_already_debited_output_and_retries_once",
+        "GenSW.API.Tests.ProductionApiTests.T12_T15_inverse_one_third_conversion_accepts_precise_residue_and_reversal_restores_original_normalized_fact"
+      ]
+    },
+    "T13": {
+      "status": "passed",
+      "case_count": 2,
+      "cases": [
+        "GenSW.API.Tests.ProductionApiTests.T13_even_a_released_descendant_reservation_permanently_blocks_parent_reversal",
+        "GenSW.API.Tests.ProductionApiTests.T13_transfer_out_and_back_still_blocks_reversal_even_with_original_balance"
+      ]
+    },
+    "T14": {
+      "status": "passed",
+      "case_count": 1,
+      "cases": [
+        "GenSW.API.Tests.ProductionApiTests.T14_A_to_B_to_C_consumes_only_intermediate_and_additional_receipt_is_forbidden"
+      ]
+    },
+    "T15": {
+      "status": "passed",
+      "case_count": 7,
+      "cases": [
+        "GenSW.API.Tests.ProductionApiTests.T15_quantization_requires_individual_acceptance_for_each_allocation_and_preview_has_no_effect",
+        "GenSW.API.Tests.ProductionApiTests.T15_fractional_count_or_cross_dimension_without_explicit_factor_is_rejected(unit: \"L\", quantity: \"1\")",
+        "GenSW.API.Tests.ProductionApiTests.T15_mass_balance_uses_explicit_conversion_subunits_and_inverse_without_requantizing_stock(origin: \"kg\", destination: \"L\", factor: \"2\", produced: \"0.4\", loss: \"0.1\")",
+        "GenSW.API.Tests.ProductionApiTests.T15_mass_balance_uses_explicit_conversion_subunits_and_inverse_without_requantizing_stock(origin: \"mL\", destination: \"g\", factor: \"1\", produced: \"0.8\", loss: \"0.2\")",
+        "GenSW.API.Tests.ProductionApiTests.T15_fractional_count_or_cross_dimension_without_explicit_factor_is_rejected(unit: \"un\", quantity: \"1.5\")",
+        "GenSW.API.Tests.ProductionApiTests.T12_T15_inverse_one_third_conversion_accepts_precise_residue_and_reversal_restores_original_normalized_fact",
+        "GenSW.API.Tests.ProductionApiTests.T15_each_output_parcel_creates_a_distinct_lot_and_keeps_all_physical_genealogy_edges"
+      ]
+    },
+    "T16": {
+      "status": "passed",
+      "case_count": 9,
+      "cases": [
+        "GenSW.API.Tests.ProductionApiTests.T16_direct_sql_cannot_append_a_new_original_consumption_to_a_confirmed_execution",
+        "GenSW.API.Tests.ProductionApiTests.T16_direct_sql_cannot_add_consumed_reservation_without_a_matching_confirmed_debit",
+        "GenSW.API.Tests.ProductionApiTests.T16_direct_sql_cannot_settle_one_of_multiple_reservations_without_a_physical_execution",
+        "GenSW.API.Tests.ProductionApiTests.T16_direct_sql_production_debit_without_execution_is_rejected_and_rolls_back_its_projection",
+        "GenSW.API.Tests.ProductionApiTests.T16_false_output_state_snapshot_is_rejected_with_complete_rollback",
+        "GenSW.API.Tests.ProductionApiTests.T16_noncooperating_sql_writers_serialize_on_position_without_application_advisory_locks(isolation: ReadCommitted)",
+        "GenSW.API.Tests.ProductionApiTests.T16_produced_lot_metadata_cannot_change_without_advancing_its_revision",
+        "GenSW.API.Tests.ProductionApiTests.T16_direct_sql_cannot_edit_reservation_identity_or_exceed_physical_balance",
+        "GenSW.API.Tests.ProductionApiTests.T16_noncooperating_sql_writers_serialize_on_position_without_application_advisory_locks(isolation: RepeatableRead)"
+      ]
+    },
+    "T17": {
+      "status": "passed",
+      "case_count": 2,
+      "cases": [
+        "GenSW.API.Tests.ProductionApiTests.T17_reconciliation_keeps_one_repeatable_snapshot_when_confirmation_commits_between_its_queries",
+        "GenSW.API.Tests.ProductionApiTests.T17_reconciliation_reports_fixture_corruption_and_mutation_is_blocked_without_repair"
+      ]
+    },
+    "T18": {
+      "status": "passed",
+      "case_count": 2,
+      "cases": [
+        "GenSW.API.Tests.ProductionApiTests.T18_advisory_lock_timeout_is_sanitized_conflict_and_same_key_retries_once_after_release",
+        "GenSW.API.Tests.ProductionApiTests.T18_deliberately_inverted_external_lock_order_causes_sanitized_deadlock_conflict_then_safe_retry"
+      ]
+    },
+    "T19": {
+      "status": "passed",
+      "case_count": 4,
+      "cases": [
+        "GenSW.API.Tests.ProductionMigrationTests.T19_destructive_down_is_refused_without_changing_the_installed_schema_or_data",
+        "GenSW.API.Tests.ProductionMigrationTests.T19_new_database_has_empty_production_tables_and_all_migrations_applied",
+        "GenSW.API.Tests.ProductionMigrationTests.T19_upgrade_of_restored_f01_fixture_preserves_every_legacy_row_and_backup_can_restore_baseline",
+        "GenSW.API.Tests.ProductionMigrationTests.T19_reviewed_idempotent_sql_applies_from_exact_inventory_baseline_and_replay_is_readonly"
+      ]
+    },
+    "T20": {
+      "status": "passed",
+      "case_count": 3,
+      "cases": [
+        "GenSW.API.Tests.ProductionApiTests.T20_malformed_preview_collections_are_bad_requests_without_any_mutation(inputs: \"[null]\")",
+        "GenSW.API.Tests.ProductionApiTests.T20_malformed_preview_collections_are_bad_requests_without_any_mutation(inputs: \"null\")",
+        "GenSW.API.Tests.ProductionApiTests.T20_authorization_is_checked_before_replay_and_inexistent_differs_from_ineligible"
+      ]
+    }
+  },
+  "limits": [
+    "Only automated backend gates are attested here; browser verification is separate.",
+    "CI, integration and human operational acceptance are separate records.",
+    "General validation and pilot acceptance remain in task #493."
+  ],
+  "historical_test_scope_adjustment": "Animal and identification rollback tests now target their own historical migrations. The financial additive test uses a fresh historical cluster and the exact financial migration. The current F02 destructive Down remains refused and is independently tested with data/history preservation.",
+  "delivered_sql_script": {
+    "path": "docs/operations/sql/2026-10-25-f02-from-inventory.sql",
+    "sha256": "90ca7daa9661360c9229db8416feb84325422b06cbc63a164fa582460c97dba2",
+    "normalization": "LF and one terminal newline; SQL statements unchanged after full suite. Dedicated T19 check recorded separately.",
+    "targetedRecheck": "sql-delivered-check.json",
+    "targetedRecheckResult": "PASS 1/1"
+  }
+}

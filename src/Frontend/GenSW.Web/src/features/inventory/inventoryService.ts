@@ -35,7 +35,8 @@ export function parseLote(v: unknown): Lote {
 }
 export function parseSaldo(v: unknown): Saldo {
   const value = fields(v, { loteId: nonempty, localId: nonempty, itemId: nonempty, itemCodigo: nonempty, itemNome: nonempty, loteCodigo: nonempty, localCodigo: nonempty, localNome: nonempty, unidade: unit, quantidade: amount, quantidadeElegivel: amount, elegivel: bool, motivosIndisponibilidade: strings, revisao: integer, itemRevisao: integer, loteRevisao: integer, localRevisao: integer, observadoEmUtc: timestamp, sequenciaAte: sequence }) as unknown as Saldo
-  canonicalCount(value.unidade, value.quantidade, value.quantidadeElegivel)
+  fields(v, { fisico: amount, reservado: amount, disponivel: amount, usoOrdinarioPermitido: bool })
+  canonicalCount(value.unidade, value.quantidade, value.quantidadeElegivel, value.fisico, value.reservado, value.disponivel)
   fields(v, { avisos: x => x === undefined || x === null || strings(x) })
   return { ...value, avisos: value.avisos ?? [] }
 }

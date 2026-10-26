@@ -31,12 +31,17 @@ public sealed record LoteView(Guid Id, Guid ItemId, string ItemCodigo, string It
     string Codigo, string? CodigoExterno, string Origem, string Fonte, Guid ResponsavelId, string ResponsavelNome,
     DateOnly? DataOrigem, DateOnly? Fabricacao, DateOnly? Coleta, DateOnly? Validade, string? FonteValidade,
     Guid? ResponsavelValidadeId, string Situacao, bool Ativo, string Unidade, Guid? PerfilNutricionalId,
-    Guid? ConversaoItemId, string? Aplicabilidade, int Revisao, DateTimeOffset CreatedAtUtc, DateTimeOffset UpdatedAtUtc);
+    Guid? ConversaoItemId, string? Aplicabilidade, int Revisao, DateTimeOffset CreatedAtUtc, DateTimeOffset UpdatedAtUtc,
+    bool OrigemProducao = false);
 public sealed record SaldoView(Guid LoteId, Guid LocalId, Guid ItemId, string ItemCodigo, string ItemNome,
     string LoteCodigo, string LocalCodigo, string LocalNome, string Unidade, string Quantidade,
     string QuantidadeElegivel, bool Elegivel, IReadOnlyList<string> MotivosIndisponibilidade, int Revisao,
     int ItemRevisao, int LoteRevisao, int LocalRevisao, DateTimeOffset ObservadoEmUtc, string SequenciaAte,
-    IReadOnlyList<string>? Avisos = null);
+    IReadOnlyList<string>? Avisos = null, string Reservado = "0", string Disponivel = "0")
+{
+    public string Fisico => Quantidade;
+    public bool UsoOrdinarioPermitido => Elegivel;
+}
 public sealed record ResponsavelView(Guid Id, string Nome, bool Ativo);
 public sealed record ReconciliacaoView(Guid LoteId, Guid LocalId, string Unidade, string QuantidadeLivro, string QuantidadeProjecao, string Diferenca);
 public sealed record HistoricoView(Guid Id, Guid RegistroId, string Tipo, string Operacao, string Sequencia,
@@ -64,7 +69,7 @@ public sealed record InventoryMovementCommand(Guid LoteId, string Quantidade, st
     Guid? DestinoLocalId = null, Guid? ConversaoItemId = null, string? QuantidadeContada = null,
     QuantizationAcceptance? AceiteQuantizacao = null, DateOnly? DataObservada = null, string? Origem = null,
     string? Fonte = null, string? Documento = null, string? Destino = null, string? Evidencia = null,
-    Guid? EventoReferenciaId = null);
+    Guid? EventoReferenciaId = null, Guid? ExecucaoReferenciaId = null);
 public sealed record InventoryPreviewCommand(string Operacao, InventoryMovementCommand Comando);
 public sealed record PreviewPosition(Guid LoteId, Guid LocalId, string SaldoAnterior, string SaldoPosterior, int Revisao, int RevisaoResultante);
 public sealed record InventoryPreview(string Operacao, Guid LoteId, string Unidade, PhysicalQuantity Quantidade,
@@ -94,6 +99,9 @@ public interface IInventoryRepository
     Task<bool> PropertyActiveAsync(Guid id, CancellationToken ct);
     Task<bool> HasBalanceAsync(Guid? lot, Guid? local, CancellationToken ct);
     Task<bool> HasMovementsAsync(Guid lot, Guid local, CancellationToken ct);
+    Task<decimal> ReservedAsync(Guid lot, Guid local, CancellationToken ct);
+    Task<bool> IsProductionLotAsync(Guid lot, CancellationToken ct);
+    Task<bool> ExecutionExistsAsync(Guid execution, CancellationToken ct);
     Task<ComandoEstoque?> ReplayAsync(Guid actor, string operation, Guid resource, string key, CancellationToken ct);
     Task<InventoryPage<LocalView>> LocaisAsync(InventoryQuery query, CancellationToken ct);
     Task<InventoryPage<LoteView>> LotesAsync(InventoryQuery query, CancellationToken ct);

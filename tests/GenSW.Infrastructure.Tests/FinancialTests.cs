@@ -179,12 +179,15 @@ public sealed class FinancialTests : IAsyncLifetime
     [Fact]
     public async Task Additive_migration_on_existing_base_does_not_backfill_or_change_people()
     {
-        await using var scope=services.CreateAsyncScope(); var db=scope.ServiceProvider.GetRequiredService<GenSWDbContext>();
+        // Use a fresh historical database instead of rolling back the current
+        // physical-ledger schema initialized for the service tests.
+        await using var historical = await GenSW.API.Tests.EphemeralPostgreSql.StartAsync();
+        await using var db = new GenSWDbContext(new DbContextOptionsBuilder<GenSWDbContext>().UseNpgsql(historical.ConnectionString).Options);
         var migrator=db.GetService<IMigrator>(); await migrator.MigrateAsync("20261002133435_AddGenealogyTraversalIndex");
         var person=Pessoa.Criar(TipoPessoa.Fisica,"Histórico preservado",null,DateTimeOffset.UtcNow); db.Add(person); await db.SaveChangesAsync();
         db.ChangeTracker.Clear(); var before=System.Text.Json.JsonSerializer.Serialize(await db.Pessoas.SingleAsync());
-        await db.Database.MigrateAsync(); db.ChangeTracker.Clear(); Assert.Equal(before,System.Text.Json.JsonSerializer.Serialize(await db.Pessoas.SingleAsync()));
+        await migrator.MigrateAsync("20261002222623_AddFinancialCash"); db.ChangeTracker.Clear(); Assert.Equal(before,System.Text.Json.JsonSerializer.Serialize(await db.Pessoas.SingleAsync()));
         Assert.Equal(7,await db.Set<CategoriaFinanceira>().CountAsync()); Assert.Empty(await db.Set<LancamentoCaixa>().ToArrayAsync()); Assert.Empty(await db.Set<ConfiguracaoCaixa>().ToArrayAsync());
-        await db.Database.MigrateAsync(); Assert.Equal(7,await db.Set<CategoriaFinanceira>().CountAsync());
+        await migrator.MigrateAsync("20261002222623_AddFinancialCash"); Assert.Equal(7,await db.Set<CategoriaFinanceira>().CountAsync());
     }
 }

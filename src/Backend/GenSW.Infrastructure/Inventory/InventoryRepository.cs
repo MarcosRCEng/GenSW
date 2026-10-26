@@ -4,6 +4,7 @@ using GenSW.Application.Inventory;
 using GenSW.Domain.Catalog;
 using GenSW.Domain.Formulation;
 using GenSW.Domain.Inventory;
+using GenSW.Domain.Production;
 using GenSW.Domain.Properties;
 using GenSW.Infrastructure.Identity;
 using GenSW.Infrastructure.Persistence;
@@ -101,6 +102,10 @@ public sealed class InventoryRepository(GenSWDbContext db, TimeProvider clock) :
     }
     public Task<bool> HasBalanceAsync(Guid? lot, Guid? local, CancellationToken ct) => db.Set<PosicaoEstoque>().AnyAsync(x => (!lot.HasValue || x.LoteId == lot) && (!local.HasValue || x.LocalId == local) && x.Quantidade > 0, ct);
     public Task<bool> HasMovementsAsync(Guid lot, Guid local, CancellationToken ct) => db.Set<MovimentoEstoque>().AnyAsync(x => x.LoteId == lot && x.LocalId == local, ct);
+    public Task<decimal> ReservedAsync(Guid lot, Guid local, CancellationToken ct) => db.Set<ReservaProducao>()
+        .Where(x => x.LoteId == lot && x.LocalId == local).SumAsync(x => x.QuantidadeAtiva, ct);
+    public Task<bool> IsProductionLotAsync(Guid lot, CancellationToken ct) => db.Set<SaidaProducao>().AnyAsync(x => x.LoteId == lot, ct);
+    public Task<bool> ExecutionExistsAsync(Guid execution, CancellationToken ct) => db.Set<ExecucaoProducao>().AnyAsync(x => x.Id == execution, ct);
     public Task<ComandoEstoque?> ReplayAsync(Guid actor, string operation, Guid resource, string key, CancellationToken ct) => db.Set<ComandoEstoque>().AsNoTracking().SingleOrDefaultAsync(x => x.AutorId == actor && x.Operacao == operation && x.RecursoId == resource && x.Chave == key, ct);
     private static string Escape(string value) => "%" + value.Trim().Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_") + "%";
     private async Task<InventoryPage<T>> Page<T>(IQueryable<T> rows, InventoryQuery q, CancellationToken ct, DateTimeOffset? observedAt = null)
@@ -137,8 +142,8 @@ public sealed class InventoryRepository(GenSWDbContext db, TimeProvider clock) :
         join i in db.Set<Item>().AsNoTracking() on l.ItemId equals i.Id
         join u in db.Users.AsNoTracking() on l.ResponsavelId equals u.Id
         join p in db.Pessoas.AsNoTracking() on u.PessoaId equals p.Id
-        select new LoteView(default, default, "", "", false, "", null, "", "", default, "", null, null, null, null, null, null, "", false, "", null, null, null, 0, default, default)
-        { Id=l.Id, ItemId=l.ItemId, ItemCodigo=i.Codigo, ItemNome=i.Nome, ItemAtivo=i.Ativo, Codigo=l.Codigo, CodigoExterno=l.CodigoExterno, Origem=l.Origem, Fonte=l.Fonte, ResponsavelId=l.ResponsavelId, ResponsavelNome=p.Nome, DataOrigem=l.DataOrigem, Fabricacao=l.Fabricacao, Coleta=l.Coleta, Validade=l.Validade, FonteValidade=l.FonteValidade, ResponsavelValidadeId=l.ResponsavelValidadeId, Situacao=l.Situacao, Ativo=l.Ativo, Unidade=l.Unidade, PerfilNutricionalId=l.PerfilNutricionalId, ConversaoItemId=l.ConversaoItemId, Aplicabilidade=l.Aplicabilidade, Revisao=l.Revisao, CreatedAtUtc=l.CreatedAtUtc, UpdatedAtUtc=l.UpdatedAtUtc };
+        select new LoteView(default, default, "", "", false, "", null, "", "", default, "", null, null, null, null, null, null, "", false, "", null, null, null, 0, default, default, false)
+        { Id=l.Id, ItemId=l.ItemId, ItemCodigo=i.Codigo, ItemNome=i.Nome, ItemAtivo=i.Ativo, Codigo=l.Codigo, CodigoExterno=l.CodigoExterno, Origem=l.Origem, Fonte=l.Fonte, ResponsavelId=l.ResponsavelId, ResponsavelNome=p.Nome, DataOrigem=l.DataOrigem, Fabricacao=l.Fabricacao, Coleta=l.Coleta, Validade=l.Validade, FonteValidade=l.FonteValidade, ResponsavelValidadeId=l.ResponsavelValidadeId, Situacao=l.Situacao, Ativo=l.Ativo, Unidade=l.Unidade, PerfilNutricionalId=l.PerfilNutricionalId, ConversaoItemId=l.ConversaoItemId, Aplicabilidade=l.Aplicabilidade, Revisao=l.Revisao, CreatedAtUtc=l.CreatedAtUtc, UpdatedAtUtc=l.UpdatedAtUtc, OrigemProducao=db.Set<SaidaProducao>().Any(s => s.LoteId == l.Id) };
     public Task<LoteView?> LoteViewAsync(Guid id, CancellationToken ct) => LoteRows().SingleOrDefaultAsync(x => x.Id == id, ct);
     public Task<InventoryPage<LoteView>> LotesAsync(InventoryQuery q, CancellationToken ct)
     {
@@ -170,7 +175,7 @@ public sealed class InventoryRepository(GenSWDbContext db, TimeProvider clock) :
         join i in db.Set<Item>().AsNoTracking() on l.ItemId equals i.Id
         join local in db.Set<LocalEstoque>().AsNoTracking() on p.LocalId equals local.Id
         select new StockRow { Position=p, Lot=l, Item=i, Local=local };
-    private static SaldoView StockView(PosicaoEstoque? p, LoteMaterial l, Item i, LocalEstoque local, DateOnly today, DateTimeOffset observed, long cut)
+    private static SaldoView StockView(PosicaoEstoque? p, LoteMaterial l, Item i, LocalEstoque local, DateOnly today, DateTimeOffset observed, long cut, decimal reserved = 0m)
     {
         var reasons = new List<string>();
         if (!i.Ativo) reasons.Add("Item inativo");
@@ -180,7 +185,10 @@ public sealed class InventoryRepository(GenSWDbContext db, TimeProvider clock) :
         if (l.Situacao != "Liberado") reasons.Add("Lote " + l.Situacao.ToLowerInvariant());
         if (l.Validade < today) reasons.Add("Validade vencida");
         var quantity = p?.Quantidade ?? 0m; var eligible = reasons.Count == 0;
-        return new(l.Id, local.Id, i.Id, i.Codigo, i.Nome, l.Codigo, local.Codigo, local.Nome, l.Unidade, CatalogRules.Format(quantity), CatalogRules.Format(eligible ? quantity : 0m), eligible, reasons, p?.Revisao ?? 0, i.Revisao, l.Revisao, local.Revisao, observed, cut.ToString(CultureInfo.InvariantCulture), l.Validade.HasValue ? [] : ["Validade não informada"]);
+        var warnings = new List<string>();
+        if (!l.Validade.HasValue) warnings.Add("Validade não informada");
+        if (reserved > 0) warnings.Add("Material reservado para produção; a baixa física contábil ocorre na confirmação integral.");
+        return new(l.Id, local.Id, i.Id, i.Codigo, i.Nome, l.Codigo, local.Codigo, local.Nome, l.Unidade, CatalogRules.Format(quantity), CatalogRules.Format(eligible ? quantity - reserved : 0m), eligible, reasons, p?.Revisao ?? 0, i.Revisao, l.Revisao, local.Revisao, observed, cut.ToString(CultureInfo.InvariantCulture), warnings, CatalogRules.Format(reserved), CatalogRules.Format(quantity - reserved));
     }
     private (DateTimeOffset Observed, DateOnly Today) StockReadTime()
     {
@@ -214,7 +222,12 @@ public sealed class InventoryRepository(GenSWDbContext db, TimeProvider clock) :
             _ => rows.OrderBy(x => x.Item.Codigo).ThenBy(x => x.Position.LoteId).ThenBy(x => x.Position.LocalId)
         };
         var page = await Page(rows, q, ct, readTime.Observed); var cut = long.Parse(page.SequenciaAte, CultureInfo.InvariantCulture);
-        return new(page.Items.Select(x => StockView(x.Position, x.Lot, x.Item, x.Local, today, page.ObservadoEmUtc, cut)).ToArray(), page.Page, page.PageSize, page.TotalItems, page.TotalPages, page.ObservadoEmUtc, page.SequenciaAte);
+        var lotIds = page.Items.Select(x => x.Lot.Id).Distinct().ToArray();
+        var localIds = page.Items.Select(x => x.Local.Id).Distinct().ToArray();
+        var reservations = await db.Set<ReservaProducao>().AsNoTracking().Where(x => lotIds.Contains(x.LoteId) && localIds.Contains(x.LocalId))
+            .GroupBy(x => new { x.LoteId, x.LocalId }).Select(x => new { x.Key.LoteId, x.Key.LocalId, Reserved = x.Sum(y => y.QuantidadeAtiva) }).ToArrayAsync(ct);
+        var reservedByPosition = reservations.ToDictionary(x => (x.LoteId, x.LocalId), x => x.Reserved);
+        return new(page.Items.Select(x => StockView(x.Position, x.Lot, x.Item, x.Local, today, page.ObservadoEmUtc, cut, reservedByPosition.GetValueOrDefault((x.Lot.Id, x.Local.Id)))).ToArray(), page.Page, page.PageSize, page.TotalItems, page.TotalPages, page.ObservadoEmUtc, page.SequenciaAte);
     }
     public async Task<SaldoView?> SaldoAsync(Guid lot, Guid local, DateOnly today, CancellationToken ct)
     {
@@ -222,7 +235,7 @@ public sealed class InventoryRepository(GenSWDbContext db, TimeProvider clock) :
         var l = await LoteAsync(lot, false, ct); var loc = await LocalAsync(local, false, ct);
         if (l is null || loc is null) return null;
         var item = await ItemAsync(l.ItemId, false, ct); if (item is null) return null;
-        return StockView(await PositionAsync(lot, local, false, ct), l, item, loc, today, readTime.Observed, await LastSequenceAsync(ct));
+        return StockView(await PositionAsync(lot, local, false, ct), l, item, loc, today, readTime.Observed, await LastSequenceAsync(ct), await ReservedAsync(lot, local, ct));
     }
     private static MovimentoView MovementView(MovimentoEstoque m) => new(m.Id, m.Ordinal, m.LoteId, m.LocalId, m.ItemId, m.Unidade, m.Sentido, CatalogRules.Format(m.Quantidade), m.QuantidadeDeclarada, m.UnidadeDeclarada, m.Residuo, CatalogRules.Format(m.SaldoAnterior), CatalogRules.Format(m.SaldoPosterior), m.ConversaoItemId, m.PerfilNutricionalId, m.SnapshotJson);
     private async Task<EventoView> EventView(EventoEstoque e, CancellationToken ct) => new(e.Id, e.Sequencia.ToString(CultureInfo.InvariantCulture), e.Tipo, e.AutorId, e.ResponsavelId, e.CreatedAtUtc, e.DataOperacional, e.DataObservada, e.Motivo, e.Documento, e.EventoReferenciaId, e.Algoritmo, e.SnapshotJson, (await db.Set<MovimentoEstoque>().AsNoTracking().Where(x => x.EventoId == e.Id).OrderBy(x => x.Ordinal).ToArrayAsync(ct)).Select(MovementView).ToArray());

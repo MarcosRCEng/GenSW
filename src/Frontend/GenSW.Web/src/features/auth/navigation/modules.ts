@@ -80,8 +80,9 @@ export const navigationModules: readonly NavigationModule[] = [
   },
   {
     id: 'transformacoes', name: 'Produção — transformações', area: 'operacoes', state: 'available',
-    description: 'Receitas versionadas, simulação manual e comparação nutricional.',
+    description: 'Receitas versionadas, ordens, execução física e genealogia dos materiais.',
     features: [
+      { id: 'ordens-producao', name: 'Ordens', route: '/producao/ordens' },
       { id: 'receitas', name: 'Receitas', route: '/producao/receitas' },
       { id: 'formulacao', name: 'Formulação e comparação', route: '/producao/formulacao' },
     ],
@@ -155,6 +156,10 @@ export function modulePages(module: NavigationModule): AvailableFeature[] {
 
 // Match whole route segments; a profile belongs to its Item, not the production area.
 export function activeNavigation(pathname: string) {
+  if (pathname === '/producao/genealogia' || pathname.startsWith('/producao/genealogia/')) {
+    const module = navigationModules.find((entry) => entry.id === 'transformacoes')!
+    return { module, page: modulePages(module).find((entry) => entry.id === 'ordens-producao')! }
+  }
   if (pathname === '/producao/perfis' || pathname.startsWith('/producao/perfis/')) {
     const module = navigationModules.find((entry) => entry.id === 'produtos')!
     return { module, page: modulePages(module).find((entry) => entry.id === 'catalogo')! }

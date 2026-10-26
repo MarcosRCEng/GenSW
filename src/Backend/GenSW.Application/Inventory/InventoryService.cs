@@ -138,6 +138,8 @@ public sealed class InventoryService(IInventoryRepository repository, IAuthentic
         if (lot.ItemId != c.ItemId || lot.Codigo != c.Codigo || lot.Validade != c.Validade || lot.FonteValidade != c.FonteValidade || lot.ResponsavelValidadeId != c.ResponsavelValidadeId ||
             lot.PerfilNutricionalId != c.PerfilNutricionalId || lot.ConversaoItemId != c.ConversaoItemId || lot.Aplicabilidade != c.Aplicabilidade || c.Pendente) throw new ArgumentException("Identidade, validade, situação e referências não são editáveis por metadados.");
         if (c.ResponsavelId != lot.ResponsavelId) await Responsible(c.ResponsavelId, ct);
+        if (await repository.IsProductionLotAsync(id, ct))
+            Conflict(c.Origem != lot.Origem || c.Fonte != lot.Fonte, "origem_producao_imutavel", "A origem de um lote produzido permanece vinculada à execução.");
         lot.Update(LotData(c), c.VersaoEsperada, Now, Today); await Audit(id, "Lote", "Edicao", actor, c.Motivo, JsonDocument.Parse(before).RootElement, lot, ct);
         await repository.SaveAsync(ct); return new(await repository.LoteViewAsync(id, ct) ?? throw Missing(), 200, null, id);
     }, ct);
@@ -220,6 +222,16 @@ public sealed class InventoryService(IInventoryRepository repository, IAuthentic
         var today = Today; InventoryRules.Date(c.DataObservada, today); Conflict(lot.Situacao == "Encerrado", "lote_encerrado", "Lote encerrado não admite novos movimentos.");
         if (lot.Unidade != item.Unidade) throw new InventoryException(409, "unidade_incompativel", "Unidade do lote não corresponde ao item.");
         var origin = locals[localIds[0]]; var target = locals[localIds[^1]]; bool block = false;
+        var productionLot = await repository.IsProductionLotAsync(lot.Id, ct);
+        if (operation is "Abertura" or "Entrada")
+            Conflict(productionLot, "lote_producao_sem_recebimento", "Lote produzido não admite novo recebimento. Cadastre outro lote; correção exige ajuste vinculado.");
+        if (c.ExecucaoReferenciaId is { } execution)
+        {
+            if (operation != "Ajuste") throw new ArgumentException("Referência de execução é própria do ajuste presente.");
+            if (!await repository.ExecutionExistsAsync(execution, ct)) throw Missing();
+        }
+        if (operation == "Ajuste" && productionLot && c.ExecucaoReferenciaId is null)
+            throw new ArgumentException("Ajuste de lote produzido exige referência explícita da execução e motivo.");
         if (AdminOperation(operation)) Evidence(c.Motivo, c.Evidencia);
         if ((operation is "Abertura" or "Entrada" or "Ajuste") && c.DataObservada is null) throw new ArgumentException("Informe data observada/conferência.");
         if (operation == "Abertura")
@@ -270,6 +282,8 @@ public sealed class InventoryService(IInventoryRepository repository, IAuthentic
         {
             var position = positions[id]; var isCredit = transfer ? id == localIds[1] : addition;
             var after = checked(position.Quantidade + (isCredit ? amount : -amount)); InventoryRules.Balance(after, lot.Unidade);
+            if (!isCredit)
+                Conflict(after < await repository.ReservedAsync(lot.Id, id, ct), "saldo_reservado", "A retirada atingiria material reservado. Resolva a execução antes de movimentá-lo.");
             legs.Add((locals[id], position, position.Quantidade, after));
         }
         var warnings = new List<string>(); if (lot.Validade is null) warnings.Add("Validade não informada."); if (quantity.Proveniencia is "Estimado" or "Declarado") warnings.Add("Conversão " + quantity.Proveniencia.ToLowerInvariant() + "."); if (block) warnings.Add("Lote permanece/será Bloqueado globalmente.");

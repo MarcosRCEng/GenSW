@@ -1,0 +1,9 @@
+{
+  "orderState": "Confirmada",
+  "physicalInput": 900.0,
+  "physicalOutput": 98.0,
+  "activeReserved": 0.0,
+  "genealogyEdges": 1,
+  "executions": 1,
+  "effectiveDestinationProved": true
+}

@@ -2,13 +2,15 @@
 
 Data: 24/10/2026. [Tarefa #487](https://devops-lab.tailaf9418.ts.net/issues/487), filha da [Evolução #430](https://devops-lab.tailaf9418.ts.net/issues/430), relacionada a #467/#434/#484. Baseline investigada: `425306167764c94519a843deaeb19505844e9114` de `origin/main`.
 
-**Proposta para aceite humano; nenhuma regra nova deste adendo está aprovada.** A autorização recebida é executar P2.0 investigativa/documental. F01 está funcionalmente aceita (#438); isso não aprova F02. Nenhuma implementação, migration, tabela física, execução da aplicação ou alteração de banco foi feita nesta etapa. O [plano](../plans/2026-10-24-f02-ordens-execucao-487-implementation.md), a [evidência](../../validation/2026-10-24-p2-0-contrato-f02-487.md) e a [P2.1 condicionada](../plans/2026-10-24-p2-1-implementacao-f02-487-prompt.md) completam a proposta.
+**Estado histórico da P2.0 em 24/10/2026: proposta então sem aceite humano.** A autorização recebida é executar P2.0 investigativa/documental. F01 está funcionalmente aceita (#438); isso não aprova F02. Nenhuma implementação, migration, tabela física, execução da aplicação ou alteração de banco foi feita nesta etapa. O [plano](../plans/2026-10-24-f02-ordens-execucao-487-implementation.md), a [evidência](../../validation/2026-10-24-p2-0-contrato-f02-487.md) e a [P2.1 condicionada](../plans/2026-10-24-p2-1-implementacao-f02-487-prompt.md) completam a proposta.
 
 Este adendo detalha §9/D05/D06 da [especificação original](2026-10-05-producao-insumos-produtos-413-design.md) e §5/F02 do [plano original](../plans/2026-10-05-producao-insumos-produtos-413-implementation.md). Em conflito com desenho prospectivo, o comportamento F01 aceito é a referência existente; qualquer extensão abaixo depende de aceite.
 
-## 1. Decisões materiais pendentes
+**Atualização de rastreabilidade em 25/10/2026:** o responsável aprovou explicitamente D05/O01/R01/D06/E01/Q02 e o adendo na revisão `5b9f8a18aba470ce9825c91efab81a06fbb36153`, e autorizou separadamente V1–V5 completos, na [#495](https://devops-lab.tailaf9418.ts.net/issues/495), journal 1426: “Considere todas aprovadas e siga”. As regras abaixo permanecem as aprovadas. A validação geral do piloto foi transferida para a #493; a prioridade histórica de aceitar primeiro o piloto foi superada quanto ao momento da validação. Testes dirigidos e CI de cada implementação permanecem necessários. [Operação F02](../../operations/producao-f02.md).
 
-Todos os IDs abaixo aguardam resposta explícita do responsável. Aceitar o documento, autorizar implementação, aceitar funcionalmente e autorizar merge são atos separados. Silêncio não aprova nenhuma opção.
+## 1. Decisões materiais deliberadas
+
+Na entrega P2.0, todos os IDs abaixo aguardavam resposta explícita do responsável. Aceitar o documento, autorizar implementação, aceitar funcionalmente e autorizar merge são atos separados. Silêncio não aprova nenhuma opção.
 
 | ID | Recomendação a aceitar | Alternativa real | Consequência operacional | Exemplo sintético |
 | --- | --- | --- | --- | --- |
@@ -19,7 +21,7 @@ Todos os IDs abaixo aguardam resposta explícita do responsável. Aceitar o docu
 | E01 | Mudança de status/validade preserva reserva e bloqueia rotina; Admin registra fato já ocorrido, distinguindo consumo apto de irregular, com saídas Bloqueadas em Segregacao | Rever modelo/WIP antes de operar processos sujeitos a esses casos | Registro do fato irregular não autoriza novo uso; evita reserva sem resolução e conserva responsabilidade/evidência | Lote vence durante processo: Admin distingue consumo elegível ontem de uso irregular hoje; ambos preservam o fato e a ocorrência |
 | Q02 | Reusar Q01 F01: seis casas, resíduo aceito por linha, `un` inteira; receita publicada fixa planejamento e reais preservam desvios explícitos | Exigir nova versão publicada para qualquer desvio real | Não normalizar divergência nem supor equivalência nutricional; saída com perda usa Processamento | Planejado 100→98+2; real 99→96+3, ambos preservados |
 
-**Prioridade definida pelo responsável em 24/10/2026:** “Aceitar primeiro o piloto de gestão”, em resposta à pergunta de sequência apresentada na P2.0. Portanto, fechar os pendentes P0/P1 e obter o aceite real do piloto precede a implementação F02. Essa escolha não é aceite dos fluxos atuais, do contrato F02 ou autorização de implementação. Transformação física continua evolução posterior, sujeita a repriorização explícita e aos próprios gates; entrada explícita de ovos exige F03.
+**Prioridade histórica definida em 24/10/2026, superada quanto ao momento da validação pela decisão de 25/10 acima:** “Aceitar primeiro o piloto de gestão”, em resposta à pergunta de sequência apresentada na P2.0. Portanto, fechar os pendentes P0/P1 e obter o aceite real do piloto precede a implementação F02. Essa escolha não é aceite dos fluxos atuais, do contrato F02 ou autorização de implementação. Transformação física continua evolução posterior, sujeita a repriorização explícita e aos próprios gates; entrada explícita de ovos exige F03.
 
 ## 2. Fronteiras e dados congelados
 
