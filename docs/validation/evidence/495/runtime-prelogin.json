@@ -1,0 +1,10 @@
+{
+  "migrationCount": 19,
+  "f02Applied": true,
+  "orders": 0,
+  "fixtureSourceExists": true,
+  "membershipGuardInstalled": true,
+  "alias": "F02-495-SYNTHETIC",
+  "typedDestinationValidated": true,
+  "operationalSourceUsed": false
+}

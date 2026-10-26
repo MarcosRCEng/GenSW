@@ -12,6 +12,7 @@ namespace GenSW.Infrastructure.Tests;
 public sealed class IdentificacaoAnimalMigrationTests : IAsyncLifetime
 {
     private const string PreviousMigration = "20260908223306_AddAnimalBase";
+    private const string IdentificationMigration = "20260912152820_AddIdentificacoesAnimal";
     private const string OutroDescricaoTipoValorIndex = "UX_IdentificacoesAnimal_Outro_DescricaoTipo_Valor_CaseInsensiti";
     private GenSW.API.Tests.EphemeralPostgreSql postgreSql = null!;
 
@@ -21,7 +22,8 @@ public sealed class IdentificacaoAnimalMigrationTests : IAsyncLifetime
     public async Task Migration_creates_and_reverses_all_identification_artifacts()
     {
         await using var context = CreateContext();
-        await context.Database.MigrateAsync();
+        // Restrict the rollback exercise to the identification migration itself.
+        await context.GetService<IMigrator>().MigrateAsync(IdentificationMigration);
 
         Assert.True(await ExistsAsync(context, "SELECT EXISTS (SELECT 1 FROM pg_class WHERE relkind = 'r' AND relname = 'IdentificacoesAnimal')"));
         Assert.Equal("uuid", await ColumnTypeAsync(context, "Id"));

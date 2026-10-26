@@ -1,0 +1,98 @@
+{
+  "recorded_at_utc": "2026-10-26T21:42:51.747859+00:00",
+  "npm_ci": {
+    "exit_code": 0,
+    "packages_added": 399,
+    "packages_audited": 400
+  },
+  "test_runs": [
+    {
+      "report": "frontend-suite.json",
+      "passed": 671,
+      "failed": 1,
+      "pending": 0,
+      "total": 672,
+      "success": false,
+      "failures": [
+        "Drawer financeiro e contexto do caixa conserva o rascunho ao continuar editando e descarta somente após confirmação"
+      ]
+    },
+    {
+      "report": "frontend-directed-final.json",
+      "passed": 32,
+      "failed": 0,
+      "pending": 0,
+      "total": 32,
+      "success": true,
+      "failures": []
+    },
+    {
+      "report": "frontend-suite-final.json",
+      "passed": 677,
+      "failed": 0,
+      "pending": 0,
+      "total": 677,
+      "success": true,
+      "failures": []
+    },
+    {
+      "report": "frontend-suite-post-ci.json",
+      "passed": 679,
+      "failed": 0,
+      "pending": 0,
+      "total": 679,
+      "success": true,
+      "failures": []
+    },
+    {
+      "report": "frontend-final-contracts.json",
+      "passed": 27,
+      "failed": 0,
+      "pending": 0,
+      "total": 27,
+      "success": true,
+      "failures": []
+    },
+    {
+      "report": "frontend-suite-20261026.json",
+      "passed": 680,
+      "failed": 0,
+      "pending": 0,
+      "total": 680,
+      "success": true,
+      "failures": []
+    },
+    {
+      "report": "frontend-suite-final-20261026.json",
+      "passed": 695,
+      "failed": 0,
+      "pending": 0,
+      "total": 695,
+      "success": true,
+      "failures": []
+    }
+  ],
+  "final_lint": {
+    "exit_code": 0,
+    "command": "npm run lint"
+  },
+  "final_build": {
+    "exit_code": 0,
+    "command": "npm run build",
+    "modules": 158,
+    "javascript_asset": "index-CZD4HNVM.js",
+    "javascript_kb": 713.13,
+    "gzip_kb": 186.66,
+    "known_warning": "chunk larger than 500kB"
+  },
+  "scope": "Automated frontend gates only; real browser evidence is recorded separately.",
+  "dependency_changes": false,
+  "financial_test_changes": false,
+  "baseline_intermittency": "Initial complete run failed only FinancialDrawer.test.tsx:129; isolated and subsequent complete runs passed without changing financial code.",
+  "last_complete_run": "695/695 on the final frontend source after recovery-context review; zero skipped.",
+  "final_review_corrections": [
+    "A 404 consultation after a timeout, network failure, expired session, forbidden response or server error does not release the original retry context.",
+    "Editing can be released only after a definitive 400/409 POST rejection followed by a 404 command consultation; retrying clears the old rejection status before sending.",
+    "Recovery validates the stored request envelope, operation, path, method, scope and business-body shape; invalid context remains preserved with a diagnostic instead of rendering a broken route."
+  ]
+}

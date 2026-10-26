@@ -16,6 +16,7 @@ namespace GenSW.API.Tests;
 public sealed class InventoryMigrationTests
 {
     private const string Previous = "20261006220939_AddCatalogAndFormulation";
+    private const string InventoryMigration = "20261007225228_AddManualInventory";
     private static readonly string[] Tables = ["LocaisEstoque", "LotesMateriais", "PosicoesEstoque", "EventosEstoque", "MovimentosEstoque", "HistoricoEstoque", "ComandosEstoque"];
     private static GenSWDbContext Db(EphemeralPostgreSql pg) => new(new DbContextOptionsBuilder<GenSWDbContext>().UseNpgsql(pg.ConnectionString).Options);
 
@@ -23,11 +24,11 @@ public sealed class InventoryMigrationTests
     public async Task New_database_has_seven_empty_inventory_tables_and_no_deferred_phases()
     {
         await using var pg = await EphemeralPostgreSql.StartAsync(); await using var db = Db(pg);
-        await db.Database.MigrateAsync();
+        await db.GetService<IMigrator>().MigrateAsync(InventoryMigration);
         var rows = await FormulationMigrationTests.RowsAsync(db);
         foreach (var table in Tables) Assert.Empty(rows[table]);
         Assert.DoesNotContain(rows.Keys, x => x.Contains("Reserva") || x.Contains("OrdemProducao") || x.Contains("OrigemOvo") || x.Contains("Custo") || x.Contains("Compra") || x.Contains("Venda"));
-        Assert.Empty(await db.Database.GetPendingMigrationsAsync());
+        Assert.Equal(InventoryMigration, (await db.Database.GetAppliedMigrationsAsync()).Last());
     }
 
     [Fact]
@@ -45,7 +46,7 @@ public sealed class InventoryMigrationTests
             await source.BackupAsync(backup);
             await using var copy = await EphemeralPostgreSql.StartAsync(); await copy.RestoreAsync(backup); await using var db = Db(copy);
             Assert.Equal(JsonSerializer.Serialize(before), JsonSerializer.Serialize(await FormulationMigrationTests.RowsAsync(db, before.Keys)));
-            await db.Database.MigrateAsync();
+            await db.GetService<IMigrator>().MigrateAsync(InventoryMigration);
             Assert.Equal(JsonSerializer.Serialize(before), JsonSerializer.Serialize(await FormulationMigrationTests.RowsAsync(db, before.Keys)));
             var after = await FormulationMigrationTests.RowsAsync(db);
             Assert.Equal(Tables.Order(), after.Keys.Except(before.Keys).Order());
@@ -90,7 +91,7 @@ public sealed class InventoryMigrationTests
         await ExecuteMigrationScriptAsync(db,sql);
         Assert.Equal(JsonSerializer.Serialize(rows),JsonSerializer.Serialize(await FormulationMigrationTests.RowsAsync(db)));
         Assert.Equal(migrations,(await db.Database.GetAppliedMigrationsAsync()).ToArray());
-        Assert.Empty(await db.Database.GetPendingMigrationsAsync());
+        Assert.Equal(InventoryMigration, (await db.Database.GetAppliedMigrationsAsync()).Last());
     }
 
     private static async Task ExecuteMigrationScriptAsync(GenSWDbContext db,string sql)

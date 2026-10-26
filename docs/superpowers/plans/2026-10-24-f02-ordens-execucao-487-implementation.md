@@ -1,6 +1,8 @@
 # F02 — plano incremental condicionado (P2.0 / #487)
 
-24/10/2026. Baseline `425306167764c94519a843deaeb19505844e9114`. **Plano proposto, sem execução técnica F02 autorizada.** O responsável definiu: “Aceitar primeiro o piloto de gestão”. Implementar F02 depende de prioridade futura explícita, aceite dos IDs D05/O01/R01/D06/E01/Q02 do [adendo](../specs/2026-10-24-f02-ordens-execucao-487-design.md) e autorização em nova Tarefa filha de #430. A prioridade recebida não aceita o piloto nem o contrato F02. Não criar antecipadamente todas as Tarefas abaixo. O [relatório P2.0](../../validation/2026-10-24-p2-0-contrato-f02-487.md) contém dependências, evidências e limites.
+24/10/2026. Baseline `425306167764c94519a843deaeb19505844e9114`. **Estado histórico da P2.0: plano então proposto, sem execução técnica F02 autorizada.** O responsável definiu: “Aceitar primeiro o piloto de gestão”. Implementar F02 depende de prioridade futura explícita, aceite dos IDs D05/O01/R01/D06/E01/Q02 do [adendo](../specs/2026-10-24-f02-ordens-execucao-487-design.md) e autorização em nova Tarefa filha de #430. A prioridade recebida não aceita o piloto nem o contrato F02. Não criar antecipadamente todas as Tarefas abaixo. O [relatório P2.0](../../validation/2026-10-24-p2-0-contrato-f02-487.md) contém dependências, evidências e limites.
+
+**Atualização de 25/10/2026:** contrato D05/O01/R01/D06/E01/Q02 da revisão `5b9f8a18aba470ce9825c91efab81a06fbb36153` aceito e implementação **V1–V5 completos** autorizada na [#495](https://devops-lab.tailaf9418.ts.net/issues/495), journal 1426. A decisão posterior desloca a validação geral/aceite do piloto para a #493, mantendo testes dirigidos, PostgreSQL isolado e CI por implementação. O texto prospectivo abaixo registra o plano aprovado; a [operação F02](../../operations/producao-f02.md) descreve o comportamento implementado.
 
 ## 1. Reuso obrigatório e lacunas verificadas
 

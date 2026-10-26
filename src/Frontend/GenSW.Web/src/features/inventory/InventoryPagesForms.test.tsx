@@ -134,7 +134,9 @@ describe('Cadastros e consultas de estoque', () => {
     app('/estoque/saldos')
     expect(await screen.findByText('Aviso: Validade não informada')).toBeInTheDocument()
     expect(screen.getByText('Elegível')).toBeInTheDocument()
-    expect(screen.getAllByText('10,000000 kg')).toHaveLength(2)
+    expect(screen.getAllByText('10,000000 kg')).toHaveLength(3)
+    expect(screen.getByRole('columnheader', { name: 'Reservado' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Disponível' })).toBeInTheDocument()
   })
   it('mostra códigos e nomes congelados em cada linha e conserva o JSON original', async () => {
     const frozen = '{"lote":{"id":"lot-1","codigo":"LOTE-HIST"},"item":{"nome":"Milho histórico"},"locais":[{"id":"local-1","codigo":"DEP-HIST","nome":"Depósito histórico"}],"quantidade":99999999999999.123456}'

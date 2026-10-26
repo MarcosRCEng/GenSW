@@ -39,6 +39,9 @@ import { FormulationPage, SimulationFormPage, SimulationDetailsPage, ComparisonD
 import { InventoryListPage, LocalDetailsPage, LoteDetailsPage, EventDetailsPage } from '../features/inventory/InventoryPages'
 import { LocalFormPage, LoteFormPage, InventoryStatePage } from '../features/inventory/InventoryForms'
 import { InventoryOperationPage } from '../features/inventory/InventoryOperationPage'
+import { OrderDetailsPage, OrderFormPage, OrdersPage, ProductionReconciliationPage } from '../features/production/OrderPages'
+import { OrderActionPage } from '../features/production/OrderActionPage'
+import { ProductionGenealogyPage } from '../features/production/GenealogyPage'
 import { AppShell } from '../shared/layout/AppShell'
 
 function ApplicationLoading() {
@@ -92,6 +95,13 @@ export function AppRoutes() {
         <Route element={<InventoryListPage key="reconciliacao" resource="reconciliacao" />} path="/estoque/reconciliacao" />
         <Route element={<InventoryOperationPage key="operation" />} path="/estoque/operacoes/:type" />
         <Route element={<ItemsPage />} path="/itens" />
+        <Route element={<OrdersPage />} path="/producao/ordens" />
+        <Route element={<OrderFormPage />} path="/producao/ordens/nova" />
+        <Route element={<ProductionReconciliationPage />} path="/producao/ordens/reconciliacao" />
+        <Route element={<OrderDetailsPage />} path="/producao/ordens/:id" />
+        <Route element={<OrderFormPage />} path="/producao/ordens/:id/editar" />
+        <Route element={<OrderActionPage />} path="/producao/ordens/:id/acoes/:action" />
+        <Route element={<ProductionGenealogyPage />} path="/producao/genealogia/:loteId" />
         <Route element={<ItemFormPage />} path="/itens/novo" />
         <Route element={<CategoriesPage />} path="/itens/categorias" />
         <Route element={<ItemDetailsPage />} path="/itens/:id" />

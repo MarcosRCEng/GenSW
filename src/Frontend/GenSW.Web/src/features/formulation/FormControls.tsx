@@ -18,7 +18,7 @@ export function Frame({
 }) {
   const location = useLocation()
   const catalog = location.pathname.startsWith('/itens') || location.pathname.startsWith('/producao/perfis')
-  const pages = catalog ? [['Categorias', '/itens/categorias'], ['Insumos e produtos', '/itens']] : [['Formulação e comparação', '/producao/formulacao'], ['Receitas', '/producao/receitas']]
+  const pages = catalog ? [['Categorias', '/itens/categorias'], ['Insumos e produtos', '/itens']] : [['Formulação e comparação', '/producao/formulacao'], ['Ordens', '/producao/ordens'], ['Receitas', '/producao/receitas']]
   return (
     <main className="gensw-page px-4 py-8 sm:px-6">
       <div className="mx-auto max-w-6xl space-y-8">

@@ -347,6 +347,7 @@ public sealed class InventoryApiTests(AnimalApiPostgreSqlFixture fixture)
             await Factory.ExecuteDbContextAsync(db => db.Database.ExecuteSqlRawAsync($$"""
                 ALTER TABLE "PosicoesEstoque" DISABLE TRIGGER "TR_PosicoesEstoque_Reconcile";
                 UPDATE "PosicoesEstoque" SET "Quantidade"=6 WHERE "LoteId"='{{f.Lot.Id}}'::uuid AND "LocalId"='{{f.A.Id}}'::uuid;
+                SET CONSTRAINTS ALL IMMEDIATE;
                 ALTER TABLE "PosicoesEstoque" ENABLE TRIGGER "TR_PosicoesEstoque_Reconcile";
                 """));
             try

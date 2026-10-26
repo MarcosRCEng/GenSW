@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-26",
+  "scope": "T19 recheck after line ending and terminal whitespace normalization only",
+  "result": "PASS",
+  "passed": 1,
+  "failed": 0,
+  "skipped": 0,
+  "sqlPath": "docs/operations/sql/2026-10-25-f02-from-inventory.sql",
+  "sqlSha256": "90ca7daa9661360c9229db8416feb84325422b06cbc63a164fa582460c97dba2",
+  "rawTrxPath": "output/test-results/f02/sql-delivered/sql-delivered.trx",
+  "rawTrxSha256": "7b2804531be208fa3bda3568c4e2c2ea17b6f8dd9ad35b1f782f13a68d9fb730",
+  "command": "dotnet test tests/GenSW.API.Tests/GenSW.API.Tests.csproj --configuration Release --no-build --filter FullyQualifiedName~T19_reviewed_idempotent_sql_applies_from_exact_inventory_baseline_and_replay_is_readonly"
+}
