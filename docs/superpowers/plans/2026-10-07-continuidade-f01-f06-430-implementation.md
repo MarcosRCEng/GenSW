@@ -184,6 +184,8 @@ Aceite F02: planejar/iniciar/reservar/apontar/confirmar e corrigir pelos caminho
 
 ## 5. F03–F06 — entregas a especificar antes de executar
 
+F03 detalhada documentalmente na [P3.0 #499](https://devops-lab.tailaf9418.ts.net/issues/499): [contrato](../specs/2026-10-27-f03-ponte-ovos-499-design.md), [plano B1–B5](2026-10-27-f03-ponte-ovos-499-implementation.md) e [instrução condicionada P3.1](2026-10-27-p3-1-implementacao-f03-499-prompt.md). A integração desses documentos não aceita o contrato nem autoriza código/migrations F03.
+
 | Fase | Próxima ação autorizável / dependência | Aceite e testes próprios |
 | --- | --- | --- |
 | F03 | Confirmar unidade versus amostra, inventário manual existente e regra de conciliação. Entrega física F01 aceita; F02 se transformação incluída. Especificar seleção/prévia/entrada ou associação sem incrementar, ponte vitalícia/snapshot/hash/UpdatedAtUtc e comparação atual. | Uma entrada por ID, compensação não libera reentrada; edição antes/depois visível, concorrência/replay/sem alteração Animal; sem importação automática ou peso padrão. UI permite seleção humana e explica duplicidade manual. |
