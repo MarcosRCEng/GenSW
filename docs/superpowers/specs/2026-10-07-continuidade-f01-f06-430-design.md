@@ -272,6 +272,8 @@ Replay de confirmação após reversão retorna resposta original Confirmada; GE
 
 ### F03 — Ponte explícita de ovos
 
+Detalhamento documental P3.0 em 27/10/2026, [#499](https://devops-lab.tailaf9418.ts.net/issues/499): [contrato proposto](2026-10-27-f03-ponte-ovos-499-design.md), [decisões pendentes](2026-10-27-f03-ponte-ovos-499-decisions.md) e [plano P3.1 condicionado](../plans/2026-10-27-f03-ponte-ovos-499-implementation.md). A publicação documental foi autorizada; F03 continua sem aceite de contrato e sem autorização de implementação P3.1.
+
 Pode depender apenas da entrega física de F01 aceita para recebimento simples; depende também de F02 quando a entrega incluir consumo em transformação. Não há dependência artificial de F04. Antes de importar: confirmar se cada `ProducaoOvoId` é uma unidade ou amostra; se amostra, manter entrada coletiva manual e projetar origem coletiva separada. Semântica não é inferida de uma linha de tabela.
 
 Seleção humana de IDs/item ovo/lote/local; ponte única vitalícia por ProducaoOvoId, inclusive depois de compensação. Snapshot do AnimalId/postura/peso/observação/UpdatedAtUtc e hash do conteúdo observado, sem inventar Revisao. Prévia de seleção e confirmação devem comparar hash/UpdatedAtUtc observado; mudança concorrente detectável causa conflito/novo aceite, sem adquirir lock de genealogia. Capturar um snapshot consistente dos registros; edição posterior pode ocorrer e aparece na conciliação, sem recalcular saldo.
