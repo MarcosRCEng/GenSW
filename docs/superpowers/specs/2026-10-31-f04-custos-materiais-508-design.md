@@ -1,6 +1,8 @@
 # F04 — contrato proposto de custos de materiais
 
-P4.0, 31/10/2026, America/Sao_Paulo. Tarefa [#508](https://devops-lab.tailaf9418.ts.net/issues/508), filha da [#430](https://devops-lab.tailaf9418.ts.net/issues/430). **Proposta documental para aceite; F04 não implementada. Código e migration P4.1 não autorizados.**
+P4.0, 31/10/2026, America/Sao_Paulo. Tarefa [#508](https://devops-lab.tailaf9418.ts.net/issues/508), filha da [#430](https://devops-lab.tailaf9418.ts.net/issues/430). **Contrato aceito; P4.1 C1–C5 autorizada sob condição de aceite funcional F02. Condição ainda não cumprida; F04 não implementada.**
+
+Aceite humano posterior à entrega, registrado na [#510](https://devops-lab.tailaf9418.ts.net/issues/510): “1 - Aceito” e “2 - Sim, autorizo”, em resposta aos dois atos separados apresentados no chat. O primeiro aceita contrato e recomendações D04-01–D04-11, priorizando F04 após aceite funcional F02; o segundo autoriza P4.1 C1–C5 condicionada a esse gate. Revisão aceita: `9c0d795696a962b1c565926eb363bd0092670f53`, PR #34. Esta atualização registra os atos sem mudar regras aprovadas. Não perguntar novamente esses aceites; não presumir aceite funcional F02, merge ou deploy.
 
 Pacote: [decisões](2026-10-31-f04-custos-materiais-508-decisions.md), [cenários](2026-10-31-f04-custos-materiais-508-scenarios.md), [plano P4.1](../plans/2026-10-31-f04-custos-materiais-508-implementation.md), [instrução condicionada](../plans/2026-10-31-p4-1-implementacao-f04-508-prompt.md) e [evidências P4.0](../../validation/2026-10-31-p4-0-contrato-f04-508.md).
 
@@ -10,7 +12,7 @@ Após fetch, `origin/main` permanece em `0f05ac810bfcbe4caf579b05a6decaf3b6e63ba
 
 #501/#503/#504/#506 estão Concluído. #506/j1534–1544 registra aceite humano do recorte F03 e autorização de integração; isso não comprova acervo físico ou aceite geral. #507/j1549 recomenda P4.0, sem autorizá-la a implementar. [#493](https://devops-lab.tailaf9418.ts.net/issues/493) permanece Planejado para validação geral ao final das implementações. [#495](https://devops-lab.tailaf9418.ts.net/issues/495) permanece Em validação funcional: seu journal 1426 já aceitou D05/O01/R01/D06/E01/Q02 e autorizou V1–V5. Esses aceites de contrato não serão perguntados novamente.
 
-O [roteiro #430, seção F04](2026-10-07-continuidade-f01-f06-430-design.md#f04--custos-de-materiais) exige prioridade explícita e F02 aceita antes de implementar custos. Não foi localizada decisão que dispense o aceite funcional F02. A presente solicitação autoriza a documentação. Permanecem abertos: prioridade de implementação F04; cumprimento ou alteração humana expressa da dependência F02; aceite deste contrato; autorização separada de P4.1. Recomenda-se conservar o gate F02 e preparar P4.1 para depois dele. Não iniciar #493 para suprir esse gate por inferência.
+O [roteiro #430, seção F04](2026-10-07-continuidade-f01-f06-430-design.md#f04--custos-de-materiais) exige prioridade explícita e F02 aceita antes de implementar custos. O aceite posterior acima fixa a prioridade F04 e mantém essa dependência; contrato e autorização separada P4.1 já estão registrados. Resta cumprir o aceite funcional F02: na reconferência da #510, #495 continua Em validação, sem aceite funcional posterior localizado. Parar antes de código/migration P4.1 enquanto essa condição não estiver cumprida. Não iniciar #493 para suprir esse gate por inferência.
 
 Os 110 lançamentos históricos de ovos não representam automaticamente 110 unidades físicas. A [#509](https://devops-lab.tailaf9418.ts.net/issues/509) acompanha separadamente exposição e eventual remediação npm antes do piloto: CI pós-merge informou 21 vulnerabilidades (1 baixa, 13 moderadas, 5 altas, 2 críticas). Contagem não comprova exploração nem aceita o risco; triagem e decisão residual permanecem pendentes.
 
@@ -115,4 +117,4 @@ UI completa: referências com filtros/validade histórica, recebimento conhecido
 
 ## 9. Aceite e limite desta entrega
 
-Aceitar explicitamente esta revisão e o quadro D04-01–D04-11, com eventuais exceções. Depois registrar autorização distinta de implementação e recorte P4.1, sob seus gates. Aprovar documento/PR não equivale a autorizar código, migration, merge, deploy ou piloto. Enquanto prioridade/dependência F02 estiverem abertas, parar antes de P4.1. F05/F06, validação geral #493, remediação npm e encerramento #430 não são inferidos.
+Contrato, cenários e recomendações D04-01–D04-11 aceitos na revisão acima; autorização distinta P4.1 C1–C5 registrada sob condição F02. Não solicitar novamente esses atos. Antes de código/migration, comprovar o aceite funcional F02; enquanto ausente, manter implementação não iniciada. Os atos recebidos não autorizam merge, deploy ou piloto. F05/F06, validação geral #493, remediação npm e encerramento #430 não são inferidos.

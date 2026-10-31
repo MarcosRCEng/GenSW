@@ -1,6 +1,8 @@
 # P4.1 — plano incremental condicionado de F04
 
-31/10/2026 · P4.0 [#508](https://devops-lab.tailaf9418.ts.net/issues/508), Evolução [#430](https://devops-lab.tailaf9418.ts.net/issues/430). **Plano futuro, sem código/migration autorizados nesta entrega.** Base examinada `0f05ac810bfcbe4caf579b05a6decaf3b6e63baf`. [Contrato](../specs/2026-10-31-f04-custos-materiais-508-design.md), [decisões](../specs/2026-10-31-f04-custos-materiais-508-decisions.md), [matriz C01–C35](../specs/2026-10-31-f04-custos-materiais-508-scenarios.md) e [instrução](2026-10-31-p4-1-implementacao-f04-508-prompt.md).
+31/10/2026 · P4.0 [#508](https://devops-lab.tailaf9418.ts.net/issues/508), Evolução [#430](https://devops-lab.tailaf9418.ts.net/issues/430). **Contrato aceito e P4.1 C1–C5 autorizada sob condição de aceite funcional F02; execução ainda não iniciada.** Base examinada `0f05ac810bfcbe4caf579b05a6decaf3b6e63baf`. [Contrato](../specs/2026-10-31-f04-custos-materiais-508-design.md), [decisões](../specs/2026-10-31-f04-custos-materiais-508-decisions.md), [matriz C01–C35](../specs/2026-10-31-f04-custos-materiais-508-scenarios.md) e [instrução](2026-10-31-p4-1-implementacao-f04-508-prompt.md).
+
+Atualização [#510](https://devops-lab.tailaf9418.ts.net/issues/510): respostas humanas “1 - Aceito” e “2 - Sim, autorizo” ao contrato/quadro e à autorização separada, respectivamente, na revisão `9c0d795696a962b1c565926eb363bd0092670f53`. Prioridade F04 e manutenção da dependência F02 aceitas; A/B abaixo já atendidos e não serão perguntados novamente. Falta cumprir a condição: #495 ainda Em validação funcional. Os passos abaixo conservam o roteiro de execução, não autorizam iniciar antes desse aceite.
 
 ## Gates anteriores a qualquer implementação
 
