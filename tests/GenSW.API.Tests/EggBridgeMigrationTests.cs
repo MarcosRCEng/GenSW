@@ -75,7 +75,8 @@ public sealed class EggBridgeMigrationTests
         var root = new DirectoryInfo(AppContext.BaseDirectory);
         while (root is not null && !File.Exists(Path.Combine(root.FullName, "GenSW.sln"))) root = root.Parent;
         Assert.NotNull(root);
-        var sql = await File.ReadAllTextAsync(Path.Combine(root!.FullName, "docs", "validation", "evidence", "501", filename));
+        // #501 artifacts preserve the original candidate. Exercise the corrected SQL delivered by P3.2.
+        var sql = await File.ReadAllTextAsync(Path.Combine(root!.FullName, "docs", "validation", "evidence", "503", filename));
         // Compare actual preexisting rows below. A trigger's tuple-locking
         // no-op UPDATE is not a data backfill and must not be rejected by text.
         await db.Database.OpenConnectionAsync();

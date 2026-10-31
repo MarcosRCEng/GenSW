@@ -1,0 +1,29 @@
+{
+  "task": 503,
+  "revision": "P3.2-503-r1",
+  "recordedOn": "2026-10-31",
+  "baseCommit": "16cf66e9ee9c0984d1ef8ab5116ab8a96fd45074",
+  "initialCandidate": "09f019c1a55f17204f9c59f0e354063c620edc72",
+  "files": [
+    {
+      "path": "docs/validation/2026-10-31-f03-pr33-review-503.md",
+      "bytes": 9958,
+      "sha256": "1f1f7966a228df57fe7eb0ca940b680debb474f2b69d7d0c618605a5e25ff8d9"
+    },
+    {
+      "path": "docs/validation/evidence/503/review-validation.json",
+      "bytes": 5152,
+      "sha256": "3656eb8b1f60b5650c5b33b567680eab487c583e01807457222bb195284c2e25"
+    },
+    {
+      "path": "docs/validation/evidence/503/egg-bridge-incremental.sql",
+      "bytes": 53587,
+      "sha256": "19a5614b18d11aa2f400a3dd45045edf485efe13d2cf87c8e4c09631f7064043"
+    },
+    {
+      "path": "docs/validation/evidence/503/egg-bridge-idempotent.sql",
+      "bytes": 64223,
+      "sha256": "c6cc39ee35adc6f0b87c4016978b373fafa86bfe158d9653d6e284e50bff0d19"
+    }
+  ]
+}

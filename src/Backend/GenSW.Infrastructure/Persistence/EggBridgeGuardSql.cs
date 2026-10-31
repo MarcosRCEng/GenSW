@@ -116,6 +116,11 @@ internal static class EggBridgeGuardSql
           IF NOT FOUND THEN RETURN NULL; END IF;
           IF EXISTS(SELECT 1 FROM "GruposPonteOvos" g JOIN "OrigensLoteOvos" o ON o."GrupoId"=g."Id" AND o."LoteId"=g."LoteId"
             WHERE g."MovimentoEstoqueId"=NEW."Id" AND g."Operacao"='Entrada' AND g."Id"::text=NEW."SnapshotJson" #>> '{f03,grupoId}') THEN RETURN NULL; END IF;
+          -- The dedicated-lot marker may be inserted after this movement in the same transaction.
+          -- Recheck at commit, when the complete origin is visible, while allowing the exact F03 root above.
+          IF NEW."TipoEvento" IN ('Entrada','Abertura') AND EXISTS(SELECT 1 FROM "OrigensLoteOvos" WHERE "LoteId"=NEW."LoteId") THEN
+            RAISE EXCEPTION 'An egg bridge lot cannot receive another receipt' USING ERRCODE='23514';
+          END IF;
           SELECT * INTO linked FROM "OrigensRecebimentoOvos" WHERE "EventoId"=NEW."EventoId" AND "ItemId"=NEW."ItemId";
           IF NOT FOUND THEN RAISE EXCEPTION 'Managed egg receipt requires proven structured origin' USING ERRCODE='23514'; END IF;
           SELECT * INTO scope_row FROM "RecortesConciliacaoOvos" WHERE "Id"=linked."RecorteId";
