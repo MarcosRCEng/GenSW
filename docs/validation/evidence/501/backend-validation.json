@@ -1,0 +1,230 @@
+{
+  "manifestVersion": 1,
+  "task": 501,
+  "recordedOn": "2026-10-31",
+  "timezone": "America/Sao_Paulo",
+  "branch": "codex/501-f03-ponte-ovos",
+  "baseCommit": "16cf66e9ee9c0984d1ef8ab5116ab8a96fd45074",
+  "scope": "Backend local validation. Final delivered source commit and CI are tracked separately in the task and PR.",
+  "runtime": {
+    "targetFramework": "net8.0",
+    "sdk": "10.0.400",
+    "runtime": "8.0.30",
+    "postgresql": "18.1",
+    "databaseIsolation": "New local ephemeral PostgreSQL clusters and synthetic fixtures; upgrade copies/restores come exclusively from synthetic F02 fixtures. No operational database connection."
+  },
+  "build": {
+    "command": "dotnet build GenSW.sln --configuration Release --no-restore",
+    "exitCode": 0,
+    "warnings": 0,
+    "errors": 0,
+    "artifact": ".build-output-f03-provider-fix.log"
+  },
+  "modelDrift": {
+    "command": "dotnet ef migrations has-pending-model-changes --project src/Backend/GenSW.Infrastructure --startup-project src/Backend/GenSW.API --configuration Release --no-build",
+    "exitCode": 0,
+    "pendingChanges": false
+  },
+  "initialFullRun": {
+    "command": "dotnet test GenSW.sln --configuration Release --no-build --logger trx --results-directory .test-output/backend-final",
+    "total": 734,
+    "passed": 672,
+    "failed": 62,
+    "skipped": 0,
+    "diagnosis": "All 62 failures were SQLite fixture creation rejecting an unconditional PostgreSQL sequence. The provider-specific mapping was corrected; PostgreSQL model and delivered SQL semantics remained unchanged.",
+    "projects": [
+      {
+        "project": "GenSW.API.Tests",
+        "sha256": "882827452df586e7c72e80534175826ffac5443917cb2188020278c61c212469",
+        "total": 308,
+        "passed": 246,
+        "failed": 62,
+        "skipped": 0
+      },
+      {
+        "project": "GenSW.Domain.Tests",
+        "sha256": "93ccd886ffd8ebabb41bd2626740b3b72077b69c052b4be0618686949829ea42",
+        "total": 165,
+        "passed": 165,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "project": "GenSW.Application.Tests",
+        "sha256": "e8ddbf7c3b9ceee08bfe63549c01714724d170e2de0cb9fd14552cbc7d7d150f",
+        "total": 147,
+        "passed": 147,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "project": "GenSW.Infrastructure.Tests",
+        "sha256": "1a4cae082751783260f2b3bb20d5cb5abe55ae355cbb3abbccbc11004f7bd8cb",
+        "total": 114,
+        "passed": 114,
+        "failed": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "correctedProviderRetest": {
+    "artifact": ".test-output/f03/f03-sqlite-final.trx",
+    "sha256": "dc4ab7b8a098b351edad021a66ae8c39a1c81d1c2335f50441ca943e3126e913",
+    "filterArtifact": ".test-output/f03/sqlite-regression-filter.txt",
+    "total": 62,
+    "passed": 62,
+    "failed": 0,
+    "skipped": 0,
+    "originalFailedCasesMatched": 62,
+    "missingOriginalFailures": 0,
+    "includesInitialAdminBootstrapper": true
+  },
+  "reconciledResult": {
+    "total": 734,
+    "passed": 734,
+    "failed": 0,
+    "skipped": 0,
+    "accounting": "734 original TRX test instances, replacing the outcome of exactly the 62 previously failed API cases with their successful retest. Retests are not counted twice. Legacy theory display names are not used to deduplicate the original suite.",
+    "projects": [
+      {
+        "project": "GenSW.API.Tests",
+        "total": 308,
+        "passed": 308,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "project": "GenSW.Application.Tests",
+        "total": 147,
+        "passed": 147,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "project": "GenSW.Domain.Tests",
+        "total": 165,
+        "passed": 165,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "project": "GenSW.Infrastructure.Tests",
+        "total": 114,
+        "passed": 114,
+        "failed": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "f03": {
+    "total": 60,
+    "passed": 60,
+    "failed": 0,
+    "skipped": 0,
+    "source": "F03 cases in the original full API run; provider fix changes only the SQLite mapping branch. PostgreSQL model drift check remained clean.",
+    "testNames": [
+      "GenSW.API.Tests.EggBridgeApiTests.F03_01_02_06_pending_collective_duplicate_and_cycle_id_never_create_stock",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_01_10_new_pending_decision_invalidates_same_source_preview_but_not_disjoint_source",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_02_03_12_explicit_partial_selection_preview_is_readonly_and_global_replay_returns_original_bytes",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_02_20_23_authenticated_reads_page_actual_candidates_and_expose_history_and_approved_references",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_04_05_16_manual_association_consumes_historical_capacity_with_zero_delta_and_invalidation_never_frees_slots",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_04_08_capacity_and_ordinals_support_fourteen_digits_without_materializing_unused_slots",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_05_historical_association_after_consumption_does_not_restore_stock",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_06_17_original_un_receipt_remains_counted_when_conversion_metadata_was_not_applied",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_06_only_original_integer_un_manual_entries_are_eligible_proofs",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_07_two_independent_writers_share_one_lifetime_identity_and_one_physical_effect",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_08_18_noncooperative_sql_writers_cannot_overallocate_last_historical_slot(isolation: ReadCommitted)",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_08_18_noncooperative_sql_writers_cannot_overallocate_last_historical_slot(isolation: RepeatableRead)",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_09_18_sql_decision_rejects_forged_hash_or_stale_observed_timestamp(staleTimestamp: False)",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_09_18_sql_decision_rejects_forged_hash_or_stale_observed_timestamp(staleTimestamp: True)",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_09_before_edit_invalidates_preview_even_when_persisted_timestamp_does_not_change",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_09_source_update_waits_for_confirmation_share_lock_then_preserves_original_snapshot",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_09_sql_and_application_hashes_agree_for_unicode_long_values_null_and_empty",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_10_bridge_and_manual_receipt_race_revalidate_same_item_anchor_across_destinations",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_10_bridge_credit_first_rejects_sequential_manual_receipt_using_old_conference",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_10_enrollment_boundary_serializes_with_preexisting_sql_writer_snapshot(isolation: ReadCommitted, enrollmentFirst: False)",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_10_enrollment_boundary_serializes_with_preexisting_sql_writer_snapshot(isolation: ReadCommitted, enrollmentFirst: True)",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_10_enrollment_boundary_serializes_with_preexisting_sql_writer_snapshot(isolation: RepeatableRead, enrollmentFirst: False)",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_10_enrollment_boundary_serializes_with_preexisting_sql_writer_snapshot(isolation: RepeatableRead, enrollmentFirst: True)",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_10_manual_receipt_in_other_lot_and_local_invalidates_prior_preview_and_requires_new_conference",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_10_sql_receipt_protocol_serializes_with_bridge_in_both_orders(isolation: ReadCommitted, bridgeFirst: False)",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_10_sql_receipt_protocol_serializes_with_bridge_in_both_orders(isolation: ReadCommitted, bridgeFirst: True)",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_10_sql_receipt_protocol_serializes_with_bridge_in_both_orders(isolation: RepeatableRead, bridgeFirst: False)",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_10_sql_receipt_protocol_serializes_with_bridge_in_both_orders(isolation: RepeatableRead, bridgeFirst: True)",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_11_15_dedicated_lot_rejects_extra_receipt_and_later_metadata_revision_blocks_compensation",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_11_destination_inactivated_while_waiting_is_revalidated_before_any_fact(resource: \"Item\")",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_11_destination_inactivated_while_waiting_is_revalidated_before_any_fact(resource: \"Local\")",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_11_destination_inactivated_while_waiting_is_revalidated_before_any_fact(resource: \"Lote\")",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_11_midnight_while_waiting_invalidates_still_unexpired_preview_without_stock_effect",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_12_20_tampered_preview_and_payload_mismatch_cannot_create_any_second_effect",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_13_association_slot_failure_rolls_back_capacity_and_same_key_can_retry",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_13_compensation_failure_after_debit_and_terminal_lot_rolls_back_and_same_key_retries",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_13_failure_before_commit_rolls_back_all_facts_and_same_key_can_retry(table: \"ComandosPonteOvos\")",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_13_failure_before_commit_rolls_back_all_facts_and_same_key_can_retry(table: \"GruposPonteOvos\")",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_13_failure_before_commit_rolls_back_all_facts_and_same_key_can_retry(table: \"MovimentosEstoque\")",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_13_failure_before_commit_rolls_back_all_facts_and_same_key_can_retry(table: \"PontesProducaoOvos\")",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_14_18_sql_compensation_rejects_incoherent_or_incomplete_quantity_snapshot(missingAcceptanceFlag: False)",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_14_18_sql_compensation_rejects_incoherent_or_incomplete_quantity_snapshot(missingAcceptanceFlag: True)",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_14_compensation_is_exact_once_and_preserves_terminal_identity",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_15_even_released_f02_reservation_blocks_compensation_of_intact_physical_quantity",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_15_transfer_out_and_back_keeps_balance_but_permanently_blocks_compensation",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_17_23_f02_consumes_bridge_lot_with_explicit_conversion_and_later_egg_edit_never_recalculates_execution",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_18_sql_cannot_edit_or_delete_lifetime_facts_and_cannot_prove_bridge_root_as_manual",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_18_sql_cannot_use_superseded_individual_evidence_from_an_older_scope",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_18_sql_hash_checks_canonical_content_without_requiring_json_byte_format(variant: \"LowercaseHash\")",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_18_sql_hash_checks_canonical_content_without_requiring_json_byte_format(variant: \"MissingNullObservation\")",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_18_sql_hash_checks_canonical_content_without_requiring_json_byte_format(variant: \"RawJsonHash\")",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_18_sql_hash_checks_canonical_content_without_requiring_json_byte_format(variant: \"SemanticJson\")",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_19_isolated_corruption_is_reported_without_repair_and_blocks_affected_treatment",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_20_anonymous_common_and_revoked_admin_cannot_approve_or_replay_admin_facts",
+      "GenSW.API.Tests.EggBridgeApiTests.F03_20_responsible_deactivated_while_waiting_is_revalidated_before_any_fact",
+      "GenSW.API.Tests.EggBridgeMigrationTests.F03_21_delivered_sql_upgrades_exact_f02_baseline_without_altering_legacy_rows(filename: \"egg-bridge-idempotent.sql\")",
+      "GenSW.API.Tests.EggBridgeMigrationTests.F03_21_delivered_sql_upgrades_exact_f02_baseline_without_altering_legacy_rows(filename: \"egg-bridge-incremental.sql\")",
+      "GenSW.API.Tests.EggBridgeMigrationTests.F03_21_destructive_down_refuses_without_schema_or_data_loss",
+      "GenSW.API.Tests.EggBridgeMigrationTests.F03_21_isolated_restored_copy_preserves_all_previous_rows_and_upgraded_backup_restores",
+      "GenSW.API.Tests.EggBridgeMigrationTests.F03_21_new_database_installs_empty_bridge_without_backfill_and_matches_model"
+    ]
+  },
+  "directedGates": [
+    {
+      "artifact": ".test-output/f03/f03-canonical.trx",
+      "sha256": "157f498ddb9b0f791a3c6ff363a33e876588ff1dc1b3b18a9fb657734c7b91d5",
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "artifact": ".test-output/f03/f03-directed-final.trx",
+      "sha256": "259d2cf35aa719d488f395aca24db909fcad949ff31658424bcbaae1b34f7ff4",
+      "total": 14,
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "artifact": ".test-output/f03/f03-delivered-sql-eof-final.trx",
+      "sha256": "04a9a262dafc3aaf21a4b042646a15f56045b586fdffd81f45102ece72fe3472",
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0
+    }
+  ],
+  "deliveredSql": [
+    {
+      "path": "docs/validation/evidence/501/egg-bridge-incremental.sql",
+      "sha256": "708a24aa74325d57d43114f44a9a9309fcb15967269bc0e1ef2265f398a6eac4"
+    },
+    {
+      "path": "docs/validation/evidence/501/egg-bridge-idempotent.sql",
+      "sha256": "9c2f206c1e8da0d2e4b52c2fb3f606bac4140f97bb5667e26f7da9b53d90cd5f"
+    }
+  ],
+  "limits": [
+    "Browser desktop/390px, image delivery and frontend validation are recorded separately by the primary agent.",
+    "Local technical validation does not constitute human functional acceptance or validation of pilot #493.",
+    "The initial full run and the corrected-provider retest are explicitly distinguished; this is a reconciled result, not a claim of a single uninterrupted green full run."
+  ],
+  "deliveredSqlNormalization": "Final delivered scripts preserve their BOM and LF line endings, with blank lines at EOF removed and exactly one trailing LF. This byte-only normalization was revalidated by the same two SQL upgrade/idempotence cases; no new test cases or changes to the reconciled 734-case count."
+}

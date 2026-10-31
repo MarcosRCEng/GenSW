@@ -20,6 +20,7 @@ describe('mapa de navegação', () => {
     ['/itens/categorias', 'produtos', '/itens/categorias'],
     ['/producao/receitas/versoes/version/editar', 'transformacoes', '/producao/receitas'],
     ['/producao/formulacao/comparacoes/id', 'transformacoes', '/producao/formulacao'],
+    ['/producao/ponte-ovos/grupos/id', 'producao-animal', '/producao/ponte-ovos'],
     ['/financeiro/lancamentos/id', 'financeiro', '/financeiro'],
     ['/estoque/operacoes/entrada', 'estoque', undefined],
   ])('identifica o destino proprietário de %s', (pathname, moduleId, route) => {

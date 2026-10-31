@@ -15,6 +15,7 @@ namespace GenSW.API.Tests;
 public sealed class ProductionMigrationTests
 {
     private const string Baseline = "20261007225228_AddManualInventory";
+    private const string ProductionMigration = "20261025184750_AddProductionOrdersAndExecution";
     private static readonly string[] NewTables = ["OrdensProducao", "ReservasProducao", "ExecucoesProducao", "ExecucaoMovimentos", "SaidasProducao", "GenealogiaMateriais", "HistoricoProducao", "OcorrenciasProducao", "ComandosProducao", "ReversoesProducao"];
     private static GenSWDbContext Db(EphemeralPostgreSql pg) => new(new DbContextOptionsBuilder<GenSWDbContext>().UseNpgsql(pg.ConnectionString).Options);
 
@@ -34,7 +35,7 @@ public sealed class ProductionMigrationTests
     public async Task T19_destructive_down_is_refused_without_changing_the_installed_schema_or_data()
     {
         await using var pg = await EphemeralPostgreSql.StartAsync(); await using var db = Db(pg);
-        await db.Database.MigrateAsync(); await SeedInventory(db);
+        await db.GetService<IMigrator>().MigrateAsync(ProductionMigration); await SeedInventory(db);
         var before = JsonSerializer.Serialize(await FormulationMigrationTests.RowsAsync(db));
         var history = (await db.Database.GetAppliedMigrationsAsync()).ToArray();
 
@@ -42,7 +43,7 @@ public sealed class ProductionMigrationTests
 
         Assert.Equal(history, (await db.Database.GetAppliedMigrationsAsync()).ToArray());
         Assert.Equal(before, JsonSerializer.Serialize(await FormulationMigrationTests.RowsAsync(db)));
-        Assert.Empty(await db.Database.GetPendingMigrationsAsync());
+        Assert.DoesNotContain(ProductionMigration, await db.Database.GetPendingMigrationsAsync());
     }
 
     [Fact]
@@ -58,7 +59,9 @@ public sealed class ProductionMigrationTests
             await source.BackupAsync(backup);
             await using var copy = await EphemeralPostgreSql.StartAsync(); await copy.RestoreAsync(backup); await using var db = Db(copy);
             Assert.Equal(JsonSerializer.Serialize(before), JsonSerializer.Serialize(await FormulationMigrationTests.RowsAsync(db, before.Keys)));
-            await db.Database.MigrateAsync();
+            // This gate verifies the historical F02 transition specifically;
+            // later additive schemas have their own migration/restore gates.
+            await db.GetService<IMigrator>().MigrateAsync(ProductionMigration);
             var after = await FormulationMigrationTests.RowsAsync(db);
             Assert.Equal(JsonSerializer.Serialize(before), JsonSerializer.Serialize(await FormulationMigrationTests.RowsAsync(db, before.Keys)));
             Assert.Equal(NewTables.Order(), after.Keys.Except(before.Keys).Order());
@@ -66,7 +69,7 @@ public sealed class ProductionMigrationTests
             foreach (var table in new[] { "LotesMateriais", "LocaisEstoque", "PosicoesEstoque", "EventosEstoque", "MovimentosEstoque", "HistoricoEstoque", "ComandosEstoque", "Itens", "Animais", "Propriedades", "LancamentosCaixa" }) Assert.NotEmpty(before[table]);
             Assert.Equal(10m, await db.PosicoesEstoque.SumAsync(p => p.Quantidade));
             var migrated = JsonSerializer.Serialize(after);
-            await db.Database.MigrateAsync(); Assert.Equal(migrated, JsonSerializer.Serialize(await FormulationMigrationTests.RowsAsync(db)));
+            await db.GetService<IMigrator>().MigrateAsync(ProductionMigration); Assert.Equal(migrated, JsonSerializer.Serialize(await FormulationMigrationTests.RowsAsync(db)));
             // Recovery restores the pre-upgrade backup into a fresh isolated
             // cluster, avoiding any claim that a destructive Down is safe.
             await using var recovery = await EphemeralPostgreSql.StartAsync();
@@ -92,8 +95,8 @@ public sealed class ProductionMigrationTests
         await command.ExecuteNonQueryAsync();
         Assert.Equal(JsonSerializer.Serialize(before), JsonSerializer.Serialize(await FormulationMigrationTests.RowsAsync(db, before.Keys)));
         foreach (var table in NewTables) Assert.Empty((await FormulationMigrationTests.RowsAsync(db, NewTables))[table]);
-        Assert.Empty(await db.Database.GetPendingMigrationsAsync());
-        Assert.Equal(db.Database.GetMigrations().Last(), (await db.Database.GetAppliedMigrationsAsync()).Last());
+        Assert.DoesNotContain(ProductionMigration, await db.Database.GetPendingMigrationsAsync());
+        Assert.Equal(ProductionMigration, (await db.Database.GetAppliedMigrationsAsync()).Last());
         Assert.EndsWith("_AddProductionOrdersAndExecution", (await db.Database.GetAppliedMigrationsAsync()).Last());
         var migrated = JsonSerializer.Serialize(await FormulationMigrationTests.RowsAsync(db));
         await command.ExecuteNonQueryAsync(); Assert.Equal(migrated, JsonSerializer.Serialize(await FormulationMigrationTests.RowsAsync(db)));

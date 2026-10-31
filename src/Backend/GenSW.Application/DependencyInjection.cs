@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<GenSW.Application.Formulation.FormulationService>();
         services.AddScoped<GenSW.Application.Inventory.InventoryService>();
         services.AddScoped<GenSW.Application.Production.ProductionService>();
+        services.AddScoped<GenSW.Application.EggBridge.EggBridgeService>();
         services.AddScoped<IPessoaService, PessoaService>();
         services.AddScoped<IEspecieService, EspecieService>();
         services.AddScoped<IRacaService, RacaService>();

@@ -513,7 +513,7 @@ describe('AppRoutes', () => {
 
     await screen.findByRole('region', { name: 'Cadastros básicos' })
     const plannedAreas = [
-      { area: 'Produção e operações', modules: ['Produção agrícola', 'Produção animal', 'Genética'] },
+      { area: 'Produção e operações', modules: ['Produção agrícola', 'Genética'] },
       { area: 'Processos gerenciais', modules: ['Compras', 'Vendas', 'Fiscal', 'Contábil', 'Relatórios', 'BI / Indicadores'] },
     ]
     for (const { area, modules } of plannedAreas) {
@@ -530,7 +530,7 @@ describe('AppRoutes', () => {
     expect(within(screen.getByRole('main')).getAllByRole('link').map((link) => link.getAttribute('href')).sort()).toEqual([
       '/animais', '/ciclos-reprodutivos', '/cruzamentos', '/especies',
       '/estoque/locais', '/estoque/lotes', '/estoque/movimentos', '/estoque/reconciliacao', '/estoque/saldos',
-      '/financeiro', '/itens', '/itens/categorias', '/pessoas', '/producao/formulacao', '/producao/ordens', '/producao/receitas', '/proles', '/propriedades', '/racas', '/variedades',
+      '/financeiro', '/itens', '/itens/categorias', '/pessoas', '/producao/formulacao', '/producao/ordens', '/producao/ponte-ovos', '/producao/receitas', '/proles', '/propriedades', '/racas', '/variedades',
     ])
   })
   it('disponibiliza Estoque na home e abre Saldos autenticado', async () => {

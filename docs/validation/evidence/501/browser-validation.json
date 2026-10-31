@@ -1,0 +1,81 @@
+{
+  "task": 501,
+  "reportDate": "2026-10-31",
+  "timezone": "America/Sao_Paulo",
+  "syntheticOnly": true,
+  "operationalDataTouched": false,
+  "engine": "Playwright CLI, real API and isolated PostgreSQL",
+  "finalDatabase": {
+    "migrations": 20,
+    "lastMigration": "20261029000136_AddEggBridge",
+    "serverVersion": "18.1",
+    "groups": 2,
+    "bridges": 4,
+    "slots": 2,
+    "events": 3
+  },
+  "runtimeMatchesReleaseBuild": true,
+  "desktop": {
+    "viewport": 1440,
+    "documentWidth": 1440
+  },
+  "narrow": {
+    "viewport": 390,
+    "documentWidth": 390
+  },
+  "preview": {
+    "selectedAcrossPages": 2,
+    "bridgesBeforeConfirmation": 0,
+    "enterDidNotConfirm": true,
+    "groupsBeforeConfirmation": 0
+  },
+  "lostResponse": {
+    "realCommitBeforeAbort": true,
+    "groupsAfterReplay": 1,
+    "bridgesAfterReplay": 2,
+    "replayedHeader": "true",
+    "retryStatus": 201,
+    "physicalUnitsAfterReplay": "2"
+  },
+  "compensation": {
+    "bridgesRetained": 2,
+    "physicalAfter": "0",
+    "delta": "-2",
+    "lotState": "Encerrado"
+  },
+  "association": {
+    "manualBefore": "5",
+    "selected": 2,
+    "usedSlots": 2,
+    "delta": "0",
+    "manualAfter": "5"
+  },
+  "invalidation": {
+    "slotsRetained": 2,
+    "totalBridgesRetained": 4,
+    "delta": "0",
+    "manualAfter": "5"
+  },
+  "terminalSelectionDisabled": {
+    "invalidated": true,
+    "compensated": true
+  },
+  "permissions": {
+    "commonTreatmentForms": 0,
+    "commonAdminLinks": 0,
+    "commonAdminApiStatus": 403
+  },
+  "images": {
+    "thumbnailMime": "image/png",
+    "anonymousStatus": 401,
+    "thumbnailStatus": 200,
+    "originalMime": "image/png",
+    "originalKeyExists": true,
+    "originalStatus": 200,
+    "thumbnailKeyExists": true,
+    "naturalWidth": 128,
+    "renderedInUi": true,
+    "exactPrivateRoot": true
+  },
+  "functionalAcceptance": "pending human validation; synthetic evidence does not accept pilot"
+}

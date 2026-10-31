@@ -29,7 +29,7 @@ describe('AppShell A', () => {
     const menu = screen.getByRole('complementary', { name: 'Menu principal' })
     expect(within(menu).getAllByRole('heading').map(heading => heading.textContent)).toEqual(['Cadastros básicos', 'Processos gerenciais', 'Produção e operações'])
     expect(within(menu).getAllByRole('button').map(button => button.textContent?.replace('›', ''))).toEqual([
-      'Animais', 'Insumos e produtos', 'Pessoas', 'Propriedades', 'Taxonomia', 'Financeiro', 'Estoque', 'Produção — transformações', 'Reprodução',
+      'Animais', 'Insumos e produtos', 'Pessoas', 'Propriedades', 'Taxonomia', 'Financeiro', 'Estoque', 'Produção — transformações', 'Produção animal', 'Reprodução',
     ])
     expect(menu).not.toHaveTextContent(/Ações|Planejado|Compras|Vendas/)
   })
