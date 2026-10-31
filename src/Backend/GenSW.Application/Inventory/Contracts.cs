@@ -32,7 +32,7 @@ public sealed record LoteView(Guid Id, Guid ItemId, string ItemCodigo, string It
     DateOnly? DataOrigem, DateOnly? Fabricacao, DateOnly? Coleta, DateOnly? Validade, string? FonteValidade,
     Guid? ResponsavelValidadeId, string Situacao, bool Ativo, string Unidade, Guid? PerfilNutricionalId,
     Guid? ConversaoItemId, string? Aplicabilidade, int Revisao, DateTimeOffset CreatedAtUtc, DateTimeOffset UpdatedAtUtc,
-    bool OrigemProducao = false);
+    bool OrigemProducao = false, bool GeridoPelaPonteOvos = false, Guid? GrupoPonteOvosOrigemId = null);
 public sealed record SaldoView(Guid LoteId, Guid LocalId, Guid ItemId, string ItemCodigo, string ItemNome,
     string LoteCodigo, string LocalCodigo, string LocalNome, string Unidade, string Quantidade,
     string QuantidadeElegivel, bool Elegivel, IReadOnlyList<string> MotivosIndisponibilidade, int Revisao,
@@ -69,7 +69,8 @@ public sealed record InventoryMovementCommand(Guid LoteId, string Quantidade, st
     Guid? DestinoLocalId = null, Guid? ConversaoItemId = null, string? QuantidadeContada = null,
     QuantizationAcceptance? AceiteQuantizacao = null, DateOnly? DataObservada = null, string? Origem = null,
     string? Fonte = null, string? Documento = null, string? Destino = null, string? Evidencia = null,
-    Guid? EventoReferenciaId = null, Guid? ExecucaoReferenciaId = null);
+    Guid? EventoReferenciaId = null, Guid? ExecucaoReferenciaId = null, Guid? ConciliacaoOvosId = null,
+    string? OrigemOvosComprovada = null, Guid? GrupoPonteOvosReferenciaId = null);
 public sealed record InventoryPreviewCommand(string Operacao, InventoryMovementCommand Comando);
 public sealed record PreviewPosition(Guid LoteId, Guid LocalId, string SaldoAnterior, string SaldoPosterior, int Revisao, int RevisaoResultante);
 public sealed record InventoryPreview(string Operacao, Guid LoteId, string Unidade, PhysicalQuantity Quantidade,

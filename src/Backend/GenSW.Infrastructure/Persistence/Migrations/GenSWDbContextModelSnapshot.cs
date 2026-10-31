@@ -22,6 +22,8 @@ namespace GenSW.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.HasSequence("SequenciaConciliacaoOvos");
+
             modelBuilder.HasSequence("SequenciaEstoque");
 
             modelBuilder.Entity("GenSW.Domain.Animals.Animal", b =>
@@ -903,6 +905,564 @@ namespace GenSW.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("CK_Itens_Revisao", "\"Revisao\" > 0");
 
                             t.HasCheckConstraint("CK_Itens_Unidade", "\"Unidade\" IN ('kg', 'L', 'un')");
+                        });
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.AlocacaoProvaOvos", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MovimentoEstoqueId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("Ordinal")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("PonteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProvaId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PonteId")
+                        .IsUnique();
+
+                    b.HasIndex("MovimentoEstoqueId", "Ordinal")
+                        .IsUnique();
+
+                    b.HasIndex("ProvaId", "MovimentoEstoqueId");
+
+                    b.ToTable("AlocacoesProvaOvos", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_AlocacoesProvaOvos_Ordinal", "\"Ordinal\" BETWEEN 1 AND 99999999999999");
+                        });
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.AncoraConciliacaoOvos", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AutorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("Revisao")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("SequenciaInicial")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AutorId");
+
+                    b.HasIndex("ItemId")
+                        .IsUnique();
+
+                    b.ToTable("AncorasConciliacaoOvos", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_AncorasConciliacaoOvos_Revisao", "\"Revisao\">=0");
+                        });
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.ComandoPonteOvos", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AutorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Chave")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("ExigeAdmin")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("GrupoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("HashPayload")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("Operacao")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("RespostaJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("StatusHttp")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AutorId");
+
+                    b.HasIndex("GrupoId");
+
+                    b.HasIndex("Operacao", "Chave")
+                        .IsUnique();
+
+                    b.ToTable("ComandosPonteOvos", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_ComandosPonteOvos_Chave", "length(\"Chave\") BETWEEN 1 AND 100 AND length(\"HashPayload\")=64 AND \"StatusHttp\" IN (200,201)");
+                        });
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.DecisaoConciliacaoOvo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Decisao")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("Evidencia")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("HashOrigem")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<bool>("IndividualComprovado")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("OrigemUpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ProducaoOvoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RecorteId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProducaoOvoId");
+
+                    b.HasIndex("RecorteId", "ProducaoOvoId")
+                        .IsUnique();
+
+                    b.ToTable("DecisoesConciliacaoOvos", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_DecisoesConciliacaoOvos_Decisao", "\"Decisao\" IN ('NaoRecebidoComprovado','RecebidoComEquivalencia','Pendente') AND (\"Decisao\"='Pendente' OR \"IndividualComprovado\")");
+
+                            t.HasCheckConstraint("CK_DecisoesConciliacaoOvos_Hash", "length(\"HashOrigem\")=64");
+                        });
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.GrupoPonteOvos", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AutorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("EventoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Evidencia")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("LocalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("LoteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Motivo")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<Guid>("MovimentoEstoqueId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Operacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid?>("ProvaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("Quantidade")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("RecorteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ResponsavelId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("RevisaoLoteOriginal")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SituacaoOriginal")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("SnapshotLoteJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateOnly?>("ValidadeOriginal")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AutorId");
+
+                    b.HasIndex("EventoId");
+
+                    b.HasIndex("LocalId");
+
+                    b.HasIndex("LoteId");
+
+                    b.HasIndex("MovimentoEstoqueId");
+
+                    b.HasIndex("ProvaId");
+
+                    b.HasIndex("RecorteId");
+
+                    b.HasIndex("ResponsavelId");
+
+                    b.HasIndex("ItemId", "CreatedAtUtc", "Id");
+
+                    b.ToTable("GruposPonteOvos", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_GruposPonteOvos_Operacao", "(\"Operacao\"='Entrada' AND \"ProvaId\" IS NULL) OR (\"Operacao\"='Associacao' AND \"ProvaId\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("CK_GruposPonteOvos_Quantidade", "\"Quantidade\" BETWEEN 1 AND 99999999999999");
+                        });
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.OrigemLoteOvos", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("GrupoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("LoteId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GrupoId")
+                        .IsUnique();
+
+                    b.HasIndex("LoteId")
+                        .IsUnique();
+
+                    b.ToTable("OrigensLoteOvos", (string)null);
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.OrigemRecebimentoOvos", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AutorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("EventoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Evidencia")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RecorteId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AutorId");
+
+                    b.HasIndex("EventoId")
+                        .IsUnique();
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("RecorteId");
+
+                    b.ToTable("OrigensRecebimentoOvos", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_OrigensRecebimentoOvos_Evidencia", "length(trim(\"Evidencia\"))>0");
+                        });
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.PonteProducaoOvo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Algoritmo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("GrupoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("HashOrigem")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset>("OrigemUpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ProducaoOvoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SnapshotJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GrupoId");
+
+                    b.HasIndex("ProducaoOvoId")
+                        .IsUnique();
+
+                    b.ToTable("PontesProducaoOvos", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_PontesProducaoOvos_Snapshot", "length(\"HashOrigem\")=64 AND \"Algoritmo\"='gensw-egg-bridge/1.0'");
+                        });
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.ProvaEntradaOvos", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AutorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("Contagem")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("EventoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Evidencia")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Motivo")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<Guid>("MovimentoEstoqueId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ResponsavelId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AutorId");
+
+                    b.HasIndex("EventoId");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("MovimentoEstoqueId")
+                        .IsUnique();
+
+                    b.HasIndex("ResponsavelId");
+
+                    b.ToTable("ProvasEntradaOvos", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_ProvasEntradaOvos_Contagem", "\"Contagem\" BETWEEN 1 AND 99999999999999 AND length(trim(\"Evidencia\"))>0");
+                        });
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.RecorteConciliacaoOvos", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AutorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FontesConsultadas")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Fronteira")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Lacunas")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Motivo")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<long>("OrdemAprovacao")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(0L);
+
+                    b.Property<Guid>("ResponsavelId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("RevisaoAncora")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("SequenciaAte")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AutorId");
+
+                    b.HasIndex("OrdemAprovacao")
+                        .IsUnique();
+
+                    b.HasIndex("ResponsavelId");
+
+                    b.HasIndex("ItemId", "CreatedAtUtc", "Id");
+
+                    b.ToTable("RecortesConciliacaoOvos", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_RecortesConciliacaoOvos_Conferencia", "\"RevisaoAncora\">=0 AND \"SequenciaAte\">=0 AND length(trim(\"Fronteira\"))>0 AND length(trim(\"FontesConsultadas\"))>0 AND length(trim(\"Motivo\"))>0");
+
+                            t.HasCheckConstraint("CK_RecortesConciliacaoOvos_Ordem", "\"OrdemAprovacao\">0");
+                        });
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.TratamentoPonteOvos", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AutorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("EventoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Evidencia")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<Guid>("GrupoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Motivo")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<Guid>("ResponsavelId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AutorId");
+
+                    b.HasIndex("EventoId");
+
+                    b.HasIndex("ResponsavelId");
+
+                    b.HasIndex("GrupoId", "Tipo")
+                        .IsUnique()
+                        .HasFilter("\"Tipo\" IN ('Invalidacao','Compensacao')");
+
+                    b.ToTable("TratamentosPonteOvos", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_TratamentosPonteOvos_Tipo", "\"Tipo\" IN ('Anotacao','Invalidacao','Compensacao') AND ((\"Tipo\"='Compensacao')=(\"EventoId\" IS NOT NULL)) AND length(trim(\"Evidencia\"))>0");
                         });
                 });
 
@@ -3233,6 +3793,259 @@ namespace GenSW.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("CategoriaId")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.AlocacaoProvaOvos", b =>
+                {
+                    b.HasOne("GenSW.Domain.EggBridge.PonteProducaoOvo", null)
+                        .WithMany()
+                        .HasForeignKey("PonteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.EggBridge.ProvaEntradaOvos", null)
+                        .WithMany()
+                        .HasForeignKey("ProvaId", "MovimentoEstoqueId")
+                        .HasPrincipalKey("Id", "MovimentoEstoqueId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.AncoraConciliacaoOvos", b =>
+                {
+                    b.HasOne("GenSW.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("AutorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.Catalog.Item", null)
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.ComandoPonteOvos", b =>
+                {
+                    b.HasOne("GenSW.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("AutorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.EggBridge.GrupoPonteOvos", null)
+                        .WithMany()
+                        .HasForeignKey("GrupoId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.DecisaoConciliacaoOvo", b =>
+                {
+                    b.HasOne("GenSW.Domain.Animals.ProducaoOvo", null)
+                        .WithMany()
+                        .HasForeignKey("ProducaoOvoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.EggBridge.RecorteConciliacaoOvos", null)
+                        .WithMany()
+                        .HasForeignKey("RecorteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.GrupoPonteOvos", b =>
+                {
+                    b.HasOne("GenSW.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("AutorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.Inventory.EventoEstoque", null)
+                        .WithMany()
+                        .HasForeignKey("EventoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.Catalog.Item", null)
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.Inventory.LocalEstoque", null)
+                        .WithMany()
+                        .HasForeignKey("LocalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.Inventory.LoteMaterial", null)
+                        .WithMany()
+                        .HasForeignKey("LoteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.Inventory.MovimentoEstoque", null)
+                        .WithMany()
+                        .HasForeignKey("MovimentoEstoqueId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.EggBridge.ProvaEntradaOvos", null)
+                        .WithMany()
+                        .HasForeignKey("ProvaId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("GenSW.Domain.EggBridge.RecorteConciliacaoOvos", null)
+                        .WithMany()
+                        .HasForeignKey("RecorteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("ResponsavelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.OrigemLoteOvos", b =>
+                {
+                    b.HasOne("GenSW.Domain.EggBridge.GrupoPonteOvos", null)
+                        .WithMany()
+                        .HasForeignKey("GrupoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.Inventory.LoteMaterial", null)
+                        .WithMany()
+                        .HasForeignKey("LoteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.OrigemRecebimentoOvos", b =>
+                {
+                    b.HasOne("GenSW.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("AutorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.Inventory.EventoEstoque", null)
+                        .WithMany()
+                        .HasForeignKey("EventoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.Catalog.Item", null)
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.EggBridge.RecorteConciliacaoOvos", null)
+                        .WithMany()
+                        .HasForeignKey("RecorteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.PonteProducaoOvo", b =>
+                {
+                    b.HasOne("GenSW.Domain.EggBridge.GrupoPonteOvos", null)
+                        .WithMany()
+                        .HasForeignKey("GrupoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.Animals.ProducaoOvo", null)
+                        .WithMany()
+                        .HasForeignKey("ProducaoOvoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.ProvaEntradaOvos", b =>
+                {
+                    b.HasOne("GenSW.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("AutorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.Inventory.EventoEstoque", null)
+                        .WithMany()
+                        .HasForeignKey("EventoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.Catalog.Item", null)
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.Inventory.MovimentoEstoque", null)
+                        .WithMany()
+                        .HasForeignKey("MovimentoEstoqueId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("ResponsavelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.RecorteConciliacaoOvos", b =>
+                {
+                    b.HasOne("GenSW.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("AutorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.Catalog.Item", null)
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("ResponsavelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GenSW.Domain.EggBridge.TratamentoPonteOvos", b =>
+                {
+                    b.HasOne("GenSW.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("AutorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Domain.Inventory.EventoEstoque", null)
+                        .WithMany()
+                        .HasForeignKey("EventoId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("GenSW.Domain.EggBridge.GrupoPonteOvos", null)
+                        .WithMany()
+                        .HasForeignKey("GrupoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GenSW.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("ResponsavelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("GenSW.Domain.Financial.AuditoriaLancamento", b =>
