@@ -1,0 +1,287 @@
+{
+  "task": 501,
+  "reportDate": "2026-10-29",
+  "timezone": "America/Sao_Paulo",
+  "source": "npm registry advisory audit; installed package-lock unchanged",
+  "scopes": [
+    {
+      "scope": "all",
+      "command": "npm audit --json",
+      "exitCode": 1,
+      "vulnerabilities": {
+        "info": 0,
+        "low": 2,
+        "moderate": 3,
+        "high": 5,
+        "critical": 2,
+        "total": 12
+      },
+      "packages": [
+        {
+          "name": "@eslint/plugin-kit",
+          "severity": "low",
+          "isDirect": false,
+          "affectedRange": "<0.3.4",
+          "fixAvailable": {
+            "name": "eslint",
+            "version": "9.39.5",
+            "isSemVerMajor": false
+          },
+          "advisoryUrls": [
+            "https://github.com/advisories/GHSA-xffm-g5w8-qvg7"
+          ]
+        },
+        {
+          "name": "@vitest/mocker",
+          "severity": "moderate",
+          "isDirect": false,
+          "affectedRange": "<=4.1.11",
+          "fixAvailable": {
+            "name": "vitest",
+            "version": "5.0.5",
+            "isSemVerMajor": true
+          },
+          "advisoryUrls": [
+            "https://github.com/advisories/GHSA-82fw-gwwq-j7x9",
+            "https://github.com/advisories/GHSA-qxg6-89mg-rqv8"
+          ]
+        },
+        {
+          "name": "brace-expansion",
+          "severity": "high",
+          "isDirect": false,
+          "affectedRange": "<=1.1.20 || 2.0.0 - 2.1.6",
+          "fixAvailable": true,
+          "advisoryUrls": [
+            "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr",
+            "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr",
+            "https://github.com/advisories/GHSA-qhr7-859c-m2p7",
+            "https://github.com/advisories/GHSA-qhr7-859c-m2p7",
+            "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p",
+            "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p"
+          ]
+        },
+        {
+          "name": "esbuild",
+          "severity": "moderate",
+          "isDirect": false,
+          "affectedRange": "<=0.24.2",
+          "fixAvailable": {
+            "name": "vite",
+            "version": "5.4.21",
+            "isSemVerMajor": false
+          },
+          "advisoryUrls": [
+            "https://github.com/advisories/GHSA-67mh-4wv8-2f99"
+          ]
+        },
+        {
+          "name": "eslint",
+          "severity": "low",
+          "isDirect": true,
+          "affectedRange": "9.10.0 - 9.26.0",
+          "fixAvailable": {
+            "name": "eslint",
+            "version": "9.39.5",
+            "isSemVerMajor": false
+          },
+          "advisoryUrls": []
+        },
+        {
+          "name": "js-yaml",
+          "severity": "high",
+          "isDirect": false,
+          "affectedRange": "4.0.0 - 4.3.1",
+          "fixAvailable": true,
+          "advisoryUrls": [
+            "https://github.com/advisories/GHSA-2883-xcg3-v3hh"
+          ]
+        },
+        {
+          "name": "postcss",
+          "severity": "high",
+          "isDirect": true,
+          "affectedRange": "<=8.5.22",
+          "fixAvailable": {
+            "name": "postcss",
+            "version": "8.5.32",
+            "isSemVerMajor": false
+          },
+          "advisoryUrls": [
+            "https://github.com/advisories/GHSA-qx2v-qp2m-jg93",
+            "https://github.com/advisories/GHSA-6g55-p6wh-862q",
+            "https://github.com/advisories/GHSA-fxqj-rqcc-2cmp",
+            "https://github.com/advisories/GHSA-r28c-9q8g-f849"
+          ]
+        },
+        {
+          "name": "postcss-selector-parser",
+          "severity": "moderate",
+          "isDirect": false,
+          "affectedRange": "<6.1.5",
+          "fixAvailable": true,
+          "advisoryUrls": [
+            "https://github.com/advisories/GHSA-rj75-hqrm-r3gf"
+          ]
+        },
+        {
+          "name": "source-map-js",
+          "severity": "high",
+          "isDirect": false,
+          "affectedRange": "1.0.0 - 1.2.1",
+          "fixAvailable": true,
+          "advisoryUrls": [
+            "https://github.com/advisories/GHSA-68fv-2mgg-jv7q"
+          ]
+        },
+        {
+          "name": "tinypool",
+          "severity": "critical",
+          "isDirect": false,
+          "affectedRange": "<=2.1.1",
+          "fixAvailable": {
+            "name": "vitest",
+            "version": "5.0.5",
+            "isSemVerMajor": true
+          },
+          "advisoryUrls": [
+            "https://github.com/advisories/GHSA-5gmw-xhrv-c9v3",
+            "https://github.com/advisories/GHSA-85c8-ppgw-ccpr"
+          ]
+        },
+        {
+          "name": "vite",
+          "severity": "high",
+          "isDirect": true,
+          "affectedRange": "<=6.4.3",
+          "fixAvailable": {
+            "name": "vite",
+            "version": "5.4.21",
+            "isSemVerMajor": false
+          },
+          "advisoryUrls": [
+            "https://github.com/advisories/GHSA-vg6x-rcgg-rjx6",
+            "https://github.com/advisories/GHSA-x574-m823-4x7w",
+            "https://github.com/advisories/GHSA-356w-63v5-8wf4",
+            "https://github.com/advisories/GHSA-859w-5945-r5v3",
+            "https://github.com/advisories/GHSA-xcj6-pq6g-qj4x",
+            "https://github.com/advisories/GHSA-g4jq-h2w9-997c",
+            "https://github.com/advisories/GHSA-jqfw-vq24-v9c3",
+            "https://github.com/advisories/GHSA-93m4-6634-74q7",
+            "https://github.com/advisories/GHSA-4r4m-qw57-chr8",
+            "https://github.com/advisories/GHSA-4w7w-66w2-5vf9",
+            "https://github.com/advisories/GHSA-v6wh-96g9-6wx3",
+            "https://github.com/advisories/GHSA-698v-4r3x-3vcv",
+            "https://github.com/advisories/GHSA-r825-w8mm-5pxw",
+            "https://github.com/advisories/GHSA-587h-7wmj-h5pm",
+            "https://github.com/advisories/GHSA-9jrq-w75r-8gcw",
+            "https://github.com/advisories/GHSA-rq7h-c2jc-7f22",
+            "https://github.com/advisories/GHSA-fx2h-pf6j-xcff"
+          ]
+        },
+        {
+          "name": "vitest",
+          "severity": "critical",
+          "isDirect": true,
+          "affectedRange": "0.0.95 - 4.1.10",
+          "fixAvailable": {
+            "name": "vitest",
+            "version": "5.0.5",
+            "isSemVerMajor": true
+          },
+          "advisoryUrls": [
+            "https://github.com/advisories/GHSA-82fw-gwwq-j7x9"
+          ]
+        }
+      ]
+    },
+    {
+      "scope": "production-omit-dev",
+      "command": "npm audit --omit=dev --json",
+      "exitCode": 1,
+      "vulnerabilities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 1,
+        "high": 3,
+        "critical": 0,
+        "total": 4
+      },
+      "packages": [
+        {
+          "name": "esbuild",
+          "severity": "moderate",
+          "isDirect": false,
+          "affectedRange": "<=0.24.2",
+          "fixAvailable": {
+            "name": "vite",
+            "version": "5.4.21",
+            "isSemVerMajor": false
+          },
+          "advisoryUrls": [
+            "https://github.com/advisories/GHSA-67mh-4wv8-2f99"
+          ]
+        },
+        {
+          "name": "postcss",
+          "severity": "high",
+          "isDirect": true,
+          "affectedRange": "<=8.5.22",
+          "fixAvailable": {
+            "name": "postcss",
+            "version": "8.5.32",
+            "isSemVerMajor": false
+          },
+          "advisoryUrls": [
+            "https://github.com/advisories/GHSA-qx2v-qp2m-jg93",
+            "https://github.com/advisories/GHSA-6g55-p6wh-862q",
+            "https://github.com/advisories/GHSA-fxqj-rqcc-2cmp",
+            "https://github.com/advisories/GHSA-r28c-9q8g-f849"
+          ]
+        },
+        {
+          "name": "source-map-js",
+          "severity": "high",
+          "isDirect": false,
+          "affectedRange": "1.0.0 - 1.2.1",
+          "fixAvailable": true,
+          "advisoryUrls": [
+            "https://github.com/advisories/GHSA-68fv-2mgg-jv7q"
+          ]
+        },
+        {
+          "name": "vite",
+          "severity": "high",
+          "isDirect": true,
+          "affectedRange": "<=6.4.3",
+          "fixAvailable": {
+            "name": "vite",
+            "version": "5.4.21",
+            "isSemVerMajor": false
+          },
+          "advisoryUrls": [
+            "https://github.com/advisories/GHSA-vg6x-rcgg-rjx6",
+            "https://github.com/advisories/GHSA-x574-m823-4x7w",
+            "https://github.com/advisories/GHSA-356w-63v5-8wf4",
+            "https://github.com/advisories/GHSA-859w-5945-r5v3",
+            "https://github.com/advisories/GHSA-xcj6-pq6g-qj4x",
+            "https://github.com/advisories/GHSA-g4jq-h2w9-997c",
+            "https://github.com/advisories/GHSA-jqfw-vq24-v9c3",
+            "https://github.com/advisories/GHSA-93m4-6634-74q7",
+            "https://github.com/advisories/GHSA-4r4m-qw57-chr8",
+            "https://github.com/advisories/GHSA-4w7w-66w2-5vf9",
+            "https://github.com/advisories/GHSA-v6wh-96g9-6wx3",
+            "https://github.com/advisories/GHSA-698v-4r3x-3vcv",
+            "https://github.com/advisories/GHSA-r825-w8mm-5pxw",
+            "https://github.com/advisories/GHSA-587h-7wmj-h5pm",
+            "https://github.com/advisories/GHSA-9jrq-w75r-8gcw",
+            "https://github.com/advisories/GHSA-rq7h-c2jc-7f22",
+            "https://github.com/advisories/GHSA-fx2h-pf6j-xcff"
+          ]
+        }
+      ]
+    }
+  ],
+  "productionGraph": "@vitejs/plugin-react@4.3.3 -> vite@5.4.10 -> esbuild@0.21.5; vite@5.4.10 -> postcss@8.4.49 -> source-map-js@1.2.1",
+  "limits": "Audit counts are package findings, not exploitability acceptance. Vite/plugin-react are dependencies and appear with omit-dev; they are build/development tools. No dependency updates, deployment or residual-risk acceptance performed."
+}

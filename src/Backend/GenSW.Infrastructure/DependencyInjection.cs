@@ -66,6 +66,9 @@ public static class DependencyInjection
         services.TryAddScoped<IAuthenticationSessionService, AuthenticationSessionService>();
         services.AddScoped<IPessoaRepository, PessoaRepository>();
         services.AddScoped<GenSW.Application.Inventory.IInventoryRepository, GenSW.Infrastructure.Inventory.InventoryRepository>();
+        services.AddDataProtection();
+        services.AddScoped<GenSW.Application.EggBridge.IEggBridgePreviewProtector, GenSW.Infrastructure.EggBridge.EggBridgePreviewProtector>();
+        services.AddScoped<GenSW.Application.EggBridge.IEggBridgeRepository, GenSW.Infrastructure.EggBridge.EggBridgeRepository>();
         services.AddScoped<GenSW.Application.Production.IProductionRepository, GenSW.Infrastructure.Production.ProductionRepository>();
         services.AddScoped<GenSW.Application.Formulation.IFormulationRepository, GenSW.Infrastructure.Formulation.FormulationRepository>();
         services.AddScoped<GenSW.Application.Properties.IPropriedadeRepository, GenSW.Infrastructure.Properties.PropriedadeRepository>();

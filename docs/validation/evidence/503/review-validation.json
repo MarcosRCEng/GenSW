@@ -1,0 +1,151 @@
+{
+  "task": 503,
+  "revision": "P3.2-503-r1",
+  "recordedOn": "2026-10-31",
+  "timezone": "America/Sao_Paulo",
+  "branch": "codex/501-f03-ponte-ovos",
+  "reviewedInitialCandidate": "09f019c1a55f17204f9c59f0e354063c620edc72",
+  "baseCommit": "16cf66e9ee9c0984d1ef8ab5116ab8a96fd45074",
+  "finding": {
+    "priority": "P2",
+    "file": "src/Backend/GenSW.Infrastructure/Persistence/EggBridgeGuardSql.cs",
+    "originalLines": "100-102,111-133",
+    "description": "A receipt inserted before the dedicated-lot origin marker could commit in the same transaction with active guards and a coherent net balance. No duplicate net balance was demonstrated.",
+    "correction": "Deferred EggCreditConsistency rejects any additional Entrada/Abertura at commit, allowing only the exact F03 root.",
+    "status": "fixed"
+  },
+  "initialCandidateCi": {
+    "id": 41194761850,
+    "conclusion": "SUCCESS",
+    "backend": 734,
+    "frontend": 739,
+    "lint": "PASS",
+    "build": "PASS"
+  },
+  "manifest501": {
+    "verifiedGitBlobs": 11,
+    "allHashesAndSizesMatch": true
+  },
+  "beforeFixDirected": {
+    "sha256": "cfab72c8f84325d2e5f4d465d2fa63515d366fcdd189f7def5014f9e6bb896da",
+    "total": 60,
+    "passed": 60,
+    "failed": 0,
+    "skipped": 0,
+    "f03Cases": 60
+  },
+  "beforeFixReproduction": {
+    "sha256": "7813a89f9aee5a2dd4d1b0e6114acd196f6c0e3e7814e434c498ad49db7922e1",
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "skipped": 0,
+    "f03Cases": 0
+  },
+  "reproductionInterpretation": "The new regression failed because the invalid transaction committed; this is intentional defect reproduction, not a green gate.",
+  "fixedRegression": {
+    "sha256": "36a481b112bce238d32601af9896b8a777c85c082e9c6a405c178a0435fc4fd1",
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0,
+    "f03Cases": 2
+  },
+  "backendFinal": {
+    "command": "dotnet test GenSW.sln --configuration Release --no-restore --logger trx --results-directory output/validation-503/backend-final",
+    "singleFullRun": true,
+    "total": 736,
+    "passed": 736,
+    "failed": 0,
+    "skipped": 0,
+    "f03Cases": 62,
+    "projects": [
+      {
+        "sha256": "79028d0adddd5842ba9c60a99f19ff7c873e4a51ed0dc15a1f328b7c19f1097d",
+        "total": 310,
+        "passed": 310,
+        "failed": 0,
+        "skipped": 0,
+        "f03Cases": 62,
+        "project": "GenSW.API.Tests"
+      },
+      {
+        "sha256": "7978c7ceef0b022b93221f360e2d7c839f4c9605d7b3a4830ee2de50fc8d4498",
+        "total": 147,
+        "passed": 147,
+        "failed": 0,
+        "skipped": 0,
+        "f03Cases": 0,
+        "project": "GenSW.Application.Tests"
+      },
+      {
+        "sha256": "d0e45835a9af53a114d8f26f56609da94eccb2e6b3d979f6b146332e1d531274",
+        "total": 165,
+        "passed": 165,
+        "failed": 0,
+        "skipped": 0,
+        "f03Cases": 0,
+        "project": "GenSW.Domain.Tests"
+      },
+      {
+        "sha256": "614a7c87a0bd30561a820549369e6485dcbb19ab55569d9f986766d5a81123e4",
+        "total": 114,
+        "passed": 114,
+        "failed": 0,
+        "skipped": 0,
+        "f03Cases": 0,
+        "project": "GenSW.Infrastructure.Tests"
+      }
+    ]
+  },
+  "frontendDirected": {
+    "command": "npm test -- src/features/egg-bridge --maxWorkers=2",
+    "passed": 43,
+    "failed": 0,
+    "files": 5,
+    "source": "independent frontend reviewer execution; no frontend source changes"
+  },
+  "modelDrift": {
+    "pendingChanges": false
+  },
+  "sql": [
+    {
+      "path": "docs/validation/evidence/503/egg-bridge-idempotent.sql",
+      "sha256": "c6cc39ee35adc6f0b87c4016978b373fafa86bfe158d9653d6e284e50bff0d19",
+      "bytes": 64223
+    },
+    {
+      "path": "docs/validation/evidence/503/egg-bridge-incremental.sql",
+      "sha256": "19a5614b18d11aa2f400a3dd45045edf485efe13d2cf87c8e4c09631f7064043",
+      "bytes": 53587
+    }
+  ],
+  "checks": {
+    "historicalMigrationsUnchanged": 19,
+    "sqlDeltaFrom501": "Only the five lines of the deferred dedicated-lot check.",
+    "diffCheck": "PASS",
+    "newFilesSecretPatternScan": "No matches"
+  },
+  "dependencyObservations": {
+    "historicalAuditDate": "2026-10-29",
+    "historicalAll": 12,
+    "historicalOmitDev": 4,
+    "initialCiInstallDate": "2026-10-31",
+    "initialCiInstallAll": 21,
+    "initialCiInstallSeverity": {
+      "low": 1,
+      "moderate": 13,
+      "high": 5,
+      "critical": 2
+    },
+    "riskAcceptance": "not granted; exposure/remediation evaluation required before pilot"
+  },
+  "limits": [
+    "Synthetic isolated PostgreSQL fixtures only; no shared or operational database writes.",
+    "No new browser validation in P3.2; #501 browser/image receipts are historical synthetic evidence.",
+    "The original local 734 result reconciles 62 initial SQLite fixture failures with exact successful retests; original CI was fully green. The new 736 result is a separate single full green run.",
+    "Human merge authorization was not found; merge and post-merge CI remain pending.",
+    "Human functional acceptance and pilot validation remain in #493.",
+    "Final commit, push and CI on the delivered SHA are recorded separately in Redmine #503 and PR #33."
+  ]
+}

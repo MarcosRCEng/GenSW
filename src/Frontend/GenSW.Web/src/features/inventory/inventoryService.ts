@@ -31,6 +31,7 @@ export function parseLocal(v: unknown): Local {
   return fields(v, { ...entity, codigo: nonempty, nome: nonempty, descricao: nullable(text), propriedadeId: nullable(nonempty), propriedadeNome: nullable(text), finalidade: x => x === 'Ordinario' || x === 'Segregacao', ativo: bool }) as unknown as Local
 }
 export function parseLote(v: unknown): Lote {
+  fields(v, { geridoPelaPonteOvos: x => x === undefined || bool(x), grupoPonteOvosOrigemId: x => x === undefined || nullable(nonempty)(x) })
   return fields(v, { ...entity, itemId: nonempty, itemCodigo: nonempty, itemNome: nonempty, itemAtivo: bool, codigo: nonempty, codigoExterno: nullable(text), origem: nonempty, fonte: nonempty, responsavelId: nonempty, responsavelNome: nonempty, dataOrigem: nullable(date), fabricacao: nullable(date), coleta: nullable(date), validade: nullable(date), fonteValidade: nullable(text), responsavelValidadeId: nullable(nonempty), situacao: x => ['Liberado', 'Bloqueado', 'Encerrado'].includes(String(x)), ativo: bool, unidade: unit, perfilNutricionalId: nullable(nonempty), conversaoItemId: nullable(nonempty), aplicabilidade: nullable(text) }) as unknown as Lote
 }
 export function parseSaldo(v: unknown): Saldo {

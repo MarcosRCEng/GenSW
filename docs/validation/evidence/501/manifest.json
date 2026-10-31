@@ -1,0 +1,64 @@
+{
+  "task": 501,
+  "revision": "P3.1-501-r1",
+  "recordedOn": "2026-10-31",
+  "baseCommit": "16cf66e9ee9c0984d1ef8ab5116ab8a96fd45074",
+  "textNormalization": "LF; existing UTF-8 BOM preserved; binary screenshots unchanged",
+  "files": [
+    {
+      "path": "docs/validation/evidence/501/backend-validation.json",
+      "sha256": "3021cdc73592f6c89293dbd3dc9cdce1ccdf858a73e7ef9f95882e527ab1dca5",
+      "bytes": 14325
+    },
+    {
+      "path": "docs/validation/evidence/501/browser-validation.json",
+      "sha256": "fef3b64f4940d9117e6c804db8cf4d40cb437861b00c002343f17b15788da207",
+      "bytes": 1916
+    },
+    {
+      "path": "docs/validation/evidence/501/egg-bridge-idempotent.sql",
+      "sha256": "9c2f206c1e8da0d2e4b52c2fb3f606bac4140f97bb5667e26f7da9b53d90cd5f",
+      "bytes": 63781
+    },
+    {
+      "path": "docs/validation/evidence/501/egg-bridge-incremental.sql",
+      "sha256": "708a24aa74325d57d43114f44a9a9309fcb15967269bc0e1ef2265f398a6eac4",
+      "bytes": 53165
+    },
+    {
+      "path": "docs/validation/evidence/501/f03-390px.png",
+      "sha256": "b19e0e40093b9a849600bca4e9c9b5f5aac60ccb3e04c43403aabf1afb8c0de5",
+      "bytes": 136069
+    },
+    {
+      "path": "docs/validation/evidence/501/f03-association-invalidated.png",
+      "sha256": "b1328034b3ee3ce7674d15bbed1c2a35fd04a96fb872ce01835322a9abee32f9",
+      "bytes": 72744
+    },
+    {
+      "path": "docs/validation/evidence/501/f03-compensation-390px.png",
+      "sha256": "d2b2180fb839936d67486383485c233b62579d1e018fe55a56977a7e578de38a",
+      "bytes": 180550
+    },
+    {
+      "path": "docs/validation/evidence/501/f03-desktop.png",
+      "sha256": "8084105d8ed3ace2fd67aec49a685543b472a2ff807c0e5f5b1853ddc2582e7a",
+      "bytes": 160804
+    },
+    {
+      "path": "docs/validation/evidence/501/f03-private-image-rendered.png",
+      "sha256": "5ece0e1c694522be95f904e12fb1f5ae312553dfbcf4087ac3137de9845f4564",
+      "bytes": 27704
+    },
+    {
+      "path": "docs/validation/evidence/501/frontend-audit.json",
+      "sha256": "33d6a36c421f338ca25a281386ca817516ecacd95db61725807934ec32d7c59e",
+      "bytes": 9808
+    },
+    {
+      "path": "docs/validation/evidence/501/test-matrix.md",
+      "sha256": "3bb3b3424648ca5fc4d69f7e80e591c9247093d02756f46ca478471a03bd622c",
+      "bytes": 23800
+    }
+  ]
+}

@@ -42,6 +42,9 @@ import { InventoryOperationPage } from '../features/inventory/InventoryOperation
 import { OrderDetailsPage, OrderFormPage, OrdersPage, ProductionReconciliationPage } from '../features/production/OrderPages'
 import { OrderActionPage } from '../features/production/OrderActionPage'
 import { ProductionGenealogyPage } from '../features/production/GenealogyPage'
+import { EggCandidatesPage } from '../features/egg-bridge/EggCandidatesPage'
+import { EggAdministrationPage } from '../features/egg-bridge/EggAdministrationPage'
+import { EggGroupDetailsPage, EggGroupsPage, EggReconciliationPage } from '../features/egg-bridge/EggGroupPages'
 import { AppShell } from '../shared/layout/AppShell'
 
 function ApplicationLoading() {
@@ -102,6 +105,11 @@ export function AppRoutes() {
         <Route element={<OrderFormPage />} path="/producao/ordens/:id/editar" />
         <Route element={<OrderActionPage />} path="/producao/ordens/:id/acoes/:action" />
         <Route element={<ProductionGenealogyPage />} path="/producao/genealogia/:loteId" />
+        <Route element={<EggCandidatesPage />} path="/producao/ponte-ovos" />
+        <Route element={<EggAdministrationPage />} path="/producao/ponte-ovos/administracao" />
+        <Route element={<EggGroupsPage />} path="/producao/ponte-ovos/grupos" />
+        <Route element={<EggGroupDetailsPage />} path="/producao/ponte-ovos/grupos/:id" />
+        <Route element={<EggReconciliationPage />} path="/producao/ponte-ovos/conciliacao" />
         <Route element={<ItemFormPage />} path="/itens/novo" />
         <Route element={<CategoriesPage />} path="/itens/categorias" />
         <Route element={<ItemDetailsPage />} path="/itens/:id" />

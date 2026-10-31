@@ -5,6 +5,7 @@ using GenSW.Domain.Catalog;
 using GenSW.Domain.Formulation;
 using GenSW.Domain.Inventory;
 using GenSW.Domain.Production;
+using GenSW.Domain.EggBridge;
 using GenSW.Domain.Properties;
 using GenSW.Infrastructure.Identity;
 using GenSW.Infrastructure.Persistence;
@@ -14,7 +15,7 @@ using Npgsql;
 
 namespace GenSW.Infrastructure.Inventory;
 
-public sealed class InventoryRepository(GenSWDbContext db, TimeProvider clock) : IInventoryRepository
+public sealed partial class InventoryRepository(GenSWDbContext db, TimeProvider clock) : IInventoryRepository
 {
     private bool Postgres => db.Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL";
     public async Task<IInventoryScope> BeginMutationAsync(CancellationToken ct)
@@ -142,8 +143,8 @@ public sealed class InventoryRepository(GenSWDbContext db, TimeProvider clock) :
         join i in db.Set<Item>().AsNoTracking() on l.ItemId equals i.Id
         join u in db.Users.AsNoTracking() on l.ResponsavelId equals u.Id
         join p in db.Pessoas.AsNoTracking() on u.PessoaId equals p.Id
-        select new LoteView(default, default, "", "", false, "", null, "", "", default, "", null, null, null, null, null, null, "", false, "", null, null, null, 0, default, default, false)
-        { Id=l.Id, ItemId=l.ItemId, ItemCodigo=i.Codigo, ItemNome=i.Nome, ItemAtivo=i.Ativo, Codigo=l.Codigo, CodigoExterno=l.CodigoExterno, Origem=l.Origem, Fonte=l.Fonte, ResponsavelId=l.ResponsavelId, ResponsavelNome=p.Nome, DataOrigem=l.DataOrigem, Fabricacao=l.Fabricacao, Coleta=l.Coleta, Validade=l.Validade, FonteValidade=l.FonteValidade, ResponsavelValidadeId=l.ResponsavelValidadeId, Situacao=l.Situacao, Ativo=l.Ativo, Unidade=l.Unidade, PerfilNutricionalId=l.PerfilNutricionalId, ConversaoItemId=l.ConversaoItemId, Aplicabilidade=l.Aplicabilidade, Revisao=l.Revisao, CreatedAtUtc=l.CreatedAtUtc, UpdatedAtUtc=l.UpdatedAtUtc, OrigemProducao=db.Set<SaidaProducao>().Any(s => s.LoteId == l.Id) };
+        select new LoteView(default, default, "", "", false, "", null, "", "", default, "", null, null, null, null, null, null, "", false, "", null, null, null, 0, default, default, false, false, null)
+        { Id=l.Id, ItemId=l.ItemId, ItemCodigo=i.Codigo, ItemNome=i.Nome, ItemAtivo=i.Ativo, Codigo=l.Codigo, CodigoExterno=l.CodigoExterno, Origem=l.Origem, Fonte=l.Fonte, ResponsavelId=l.ResponsavelId, ResponsavelNome=p.Nome, DataOrigem=l.DataOrigem, Fabricacao=l.Fabricacao, Coleta=l.Coleta, Validade=l.Validade, FonteValidade=l.FonteValidade, ResponsavelValidadeId=l.ResponsavelValidadeId, Situacao=l.Situacao, Ativo=l.Ativo, Unidade=l.Unidade, PerfilNutricionalId=l.PerfilNutricionalId, ConversaoItemId=l.ConversaoItemId, Aplicabilidade=l.Aplicabilidade, Revisao=l.Revisao, CreatedAtUtc=l.CreatedAtUtc, UpdatedAtUtc=l.UpdatedAtUtc, OrigemProducao=db.Set<SaidaProducao>().Any(s => s.LoteId == l.Id), GeridoPelaPonteOvos=db.Set<AncoraConciliacaoOvos>().Any(a => a.ItemId == l.ItemId), GrupoPonteOvosOrigemId=db.Set<OrigemLoteOvos>().Where(o => o.LoteId == l.Id).Select(o => (Guid?)o.GrupoId).SingleOrDefault() };
     public Task<LoteView?> LoteViewAsync(Guid id, CancellationToken ct) => LoteRows().SingleOrDefaultAsync(x => x.Id == id, ct);
     public Task<InventoryPage<LoteView>> LotesAsync(InventoryQuery q, CancellationToken ct)
     {

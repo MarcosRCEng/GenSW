@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using GenSW.Application.Authentication;
+using GenSW.Application.EggBridge;
 using GenSW.Application.Formulation;
 using GenSW.Domain.Catalog;
 using GenSW.Domain.Inventory;
@@ -205,6 +206,7 @@ public sealed class InventoryService(IInventoryRepository repository, IAuthentic
         ArgumentNullException.ThrowIfNull(c); ValidateShape(c);
         if (c.VersoesEsperadas is null) throw new ArgumentException("Versões esperadas obrigatórias.");
         var preliminary = await repository.LoteAsync(c.LoteId, false, ct) ?? throw Missing(); var item = await repository.ItemAsync(preliminary.ItemId, tracking, ct) ?? throw Missing();
+        if (repository is IInventoryEggBridgePolicy eggPolicy) await eggPolicy.LockItemAsync(item.Id, tracking, ct);
         bool transfer = operation is "Transferencia" or "Segregacao" or "RetornoSegregacao";
         var localIds = transfer ? new[] { c.OrigemLocalId ?? Guid.Empty, c.DestinoLocalId ?? Guid.Empty } : new[] { c.LocalId ?? Guid.Empty };
         foreach (var id in localIds) InventoryRules.Id(id);
@@ -277,6 +279,7 @@ public sealed class InventoryService(IInventoryRepository repository, IAuthentic
             if (transfer && (c.Unidade != lot.Unidade || c.ConversaoItemId.HasValue || c.AceiteQuantizacao is not null)) throw new ArgumentException("Movimentação interna exige quantidade canônica, sem conversão ou quantização.");
             quantity = InventoryRules.Normalize(c.Quantidade, c.Unidade, lot.Unidade, conversion, lot.ItemId); amount = CatalogRules.Decimal(quantity.Normalizada, true);
         }
+        if (repository is IInventoryEggBridgePolicy eggPolicyValidation) await eggPolicyValidation.ValidateAsync(item.Id, lot.Id, operation, addition, c, ct);
         var legs = new List<(LocalEstoque Local, PosicaoEstoque Position, decimal Before, decimal After)>();
         foreach (var id in localIds)
         {
@@ -320,7 +323,10 @@ public sealed class InventoryService(IInventoryRepository repository, IAuthentic
             if (plan.BlockLot && plan.Lot.Situacao != "Bloqueado") plan.Lot.SetState("Bloqueado", plan.Lot.Revisao, registeredAt, registeredDate);
             var snapshot = InventoryJson.Write(new { Pedido = c, Item = plan.Item, Lote = plan.Lot, Locais = plan.Legs.Select(x => x.Local).ToArray(), Conversao = referenceConversion, Perfil = profile, Previa = plan.Preview });
             var entity = new EventoEstoque(id, sequence, operation, actor, c.ResponsavelId, registeredAt, registeredDate, c.DataObservada, CatalogRules.Text(c.Motivo, 2000, "Motivo"), CatalogRules.Optional(c.Documento, 1000), c.EventoReferenciaId, InventoryRules.Algorithm, snapshot);
-            repository.Add(entity); var movements = new List<MovimentoView>();
+            repository.Add(entity);
+            if (plan.Legs.Any(x => x.After > x.Before) && operation is "Entrada" or "Abertura" or "Ajuste" && repository is IInventoryEggBridgePolicy eggPolicyReceipt)
+                await eggPolicyReceipt.RecordReceiptAsync(plan.Item.Id, entity, c, ct);
+            var movements = new List<MovimentoView>();
             int ordinal = 0;
             foreach (var leg in plan.Legs)
             {

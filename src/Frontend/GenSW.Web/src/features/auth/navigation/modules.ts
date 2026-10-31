@@ -88,8 +88,9 @@ export const navigationModules: readonly NavigationModule[] = [
     ],
   },
   {
-    id: 'producao-animal', name: 'Produção animal', area: 'operacoes', state: 'planned',
-    description: 'Gestão integrada da produção animal; registros de ovos já disponíveis em Animais.',
+    id: 'producao-animal', name: 'Produção animal', area: 'operacoes', state: 'available',
+    description: 'Ponte explícita de ovos, conferências de origem e histórico físico.',
+    features: [{ id: 'ponte-ovos', name: 'Ponte de ovos', route: '/producao/ponte-ovos' }],
   },
   {
     id: 'genetica', name: 'Genética', area: 'operacoes', state: 'planned',
