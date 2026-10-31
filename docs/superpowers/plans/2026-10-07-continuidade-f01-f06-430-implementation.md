@@ -1,5 +1,7 @@
 # Plano executável da continuidade F01–F06
 
+Atualização documental em 31/10/2026: a P4.0 [#508](https://devops-lab.tailaf9418.ts.net/issues/508) entrega [contrato proposto F04](../specs/2026-10-31-f04-custos-materiais-508-design.md) e [plano incremental P4.1 condicionado](2026-10-31-f04-custos-materiais-508-implementation.md). F03 foi aceita no recorte entregue e integrada pelo PR #33; F02 permanece Em validação funcional (#495). Prioridade F04 e dependência desse aceite permanecem para decisão; não há autorização de código/migration F04. #493 e F05/F06 não são iniciadas por este plano.
+
 Atualização em 09/10/2026: F01 foi implementada, validada e aceita funcionalmente pelo usuário. Conclusão, commit, push e merge do [PR #22](https://github.com/MarcosRCEng/GenSW/pull/22) foram autorizados na [#438](https://devops-lab.tailaf9418.ts.net/issues/438). Os registros documentais anteriores abaixo preservam os gates da elaboração; F02–F06 continuam dependentes de contratos e autorizações próprios. Produção e migration compartilhada não estão incluídas no encerramento.
 
 Atualização em 08/10/2026: o usuário autorizou **'Implementação autorizada'** e solicitou **'Termine'**. Execução na [#434](https://devops-lab.tailaf9418.ts.net/issues/434), conclusão na [#435](https://devops-lab.tailaf9418.ts.net/issues/435), branch `codex/434-f01-estoque`. As referências abaixo à autorização ainda pendente descrevem a etapa documental anterior e estão superadas para F01. F02–F06, aceite funcional, merge, produção e migration compartilhada conservam seus próprios gates.
