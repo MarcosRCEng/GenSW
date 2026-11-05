@@ -74,6 +74,7 @@ describe('Ordens e execução física F02', () => {
     expect(screen.getByText('Físico')).toBeInTheDocument()
     expect(screen.getByText('Reservado')).toBeInTheDocument()
     expect(screen.getByText('Disponível')).toBeInTheDocument()
+    if (screen.queryByLabelText('Decisão de rateio dos custos')) { fireEvent.change(screen.getByLabelText('Decisão de rateio dos custos'), { target: { value: 'pendente' } }); fireEvent.change(screen.getByLabelText('Motivo da pendência de rateio'), { target: { value: 'Rateio monetário pendente na fixture física' } }) }
     fireEvent.click(screen.getByRole('button', { name: 'Revisar quantidades e disponibilidade' }))
     await screen.findByRole('heading', { name: 'Revise antes de reservar' })
     expect(writeCalls()).toHaveLength(0)
@@ -86,6 +87,7 @@ describe('Ordens e execução física F02', () => {
     fireEvent.change(await screen.findByLabelText('Motivo da operação e dos desvios'), { target: { value: 'Conferido' } })
     fireEvent.submit(screen.getByLabelText('Motivo da operação e dos desvios').closest('form')!)
     expect(writeCalls()).toHaveLength(0)
+    if (screen.queryByLabelText('Decisão de rateio dos custos')) { fireEvent.change(screen.getByLabelText('Decisão de rateio dos custos'), { target: { value: 'pendente' } }); fireEvent.change(screen.getByLabelText('Motivo da pendência de rateio'), { target: { value: 'Rateio monetário pendente na fixture física' } }) }
     fireEvent.click(screen.getByRole('button', { name: 'Revisar quantidades e disponibilidade' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('alocação integral')
     expect(writeCalls()).toHaveLength(0)
@@ -100,10 +102,12 @@ describe('Ordens e execução física F02', () => {
     fireEvent.change(screen.getByLabelText('Quantidade da perda 1'), { target: { value: '3' } })
     fireEvent.change(screen.getByLabelText('Motivo da operação e dos desvios'), { target: { value: 'Medição da execução' } })
     fireEvent.change(screen.getByLabelText('Observação e diferenças não explicadas'), { target: { value: 'Quantidades medidas no processo' } })
+    if (screen.queryByLabelText('Decisão de rateio dos custos')) { fireEvent.change(screen.getByLabelText('Decisão de rateio dos custos'), { target: { value: 'pendente' } }); fireEvent.change(screen.getByLabelText('Motivo da pendência de rateio'), { target: { value: 'Rateio monetário pendente na fixture física' } }) }
     fireEvent.click(screen.getByRole('button', { name: 'Revisar quantidades e disponibilidade' }))
     await screen.findByRole('heading', { name: 'Revise antes de confirmar' })
     fireEvent.change(screen.getByLabelText('Quantidade real da saída 1'), { target: { value: '95' } })
     expect(screen.queryByRole('button', { name: 'Confirmar execução' })).not.toBeInTheDocument()
+    if (screen.queryByLabelText('Decisão de rateio dos custos')) { fireEvent.change(screen.getByLabelText('Decisão de rateio dos custos'), { target: { value: 'pendente' } }); fireEvent.change(screen.getByLabelText('Motivo da pendência de rateio'), { target: { value: 'Rateio monetário pendente na fixture física' } }) }
     fireEvent.click(screen.getByRole('button', { name: 'Revisar quantidades e disponibilidade' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Confirmar execução' }))
     await screen.findByRole('heading', { name: 'Ordem atualizada' })
@@ -121,6 +125,7 @@ describe('Ordens e execução física F02', () => {
     await within(await screen.findByLabelText('Selecionar Destino da saída 1')).findByRole('option', { name: /DEP — Depósito/ })
     fireEvent.change(screen.getByLabelText('Selecionar Destino da saída 1'), { target: { value: local.id } })
     fireEvent.change(screen.getByLabelText('Motivo da operação e dos desvios'), { target: { value: 'Conferido' } })
+    if (screen.queryByLabelText('Decisão de rateio dos custos')) { fireEvent.change(screen.getByLabelText('Decisão de rateio dos custos'), { target: { value: 'pendente' } }); fireEvent.change(screen.getByLabelText('Motivo da pendência de rateio'), { target: { value: 'Rateio monetário pendente na fixture física' } }) }
     fireEvent.click(screen.getByRole('button', { name: 'Revisar quantidades e disponibilidade' }))
     const confirm = await screen.findByRole('button', { name: 'Confirmar execução' })
     expect(confirm).toBeDisabled()
@@ -144,6 +149,7 @@ describe('Ordens e execução física F02', () => {
     await within(await screen.findByLabelText('Selecionar Destino da saída 1')).findByRole('option', { name: /DEP — Depósito/ })
     fireEvent.change(screen.getByLabelText('Selecionar Destino da saída 1'), { target: { value: local.id } })
     fireEvent.change(screen.getByLabelText('Motivo da operação e dos desvios'), { target: { value: 'Declaração reservada conferida' } })
+    if (screen.queryByLabelText('Decisão de rateio dos custos')) { fireEvent.change(screen.getByLabelText('Decisão de rateio dos custos'), { target: { value: 'pendente' } }); fireEvent.change(screen.getByLabelText('Motivo da pendência de rateio'), { target: { value: 'Rateio monetário pendente na fixture física' } }) }
     fireEvent.click(screen.getByRole('button', { name: 'Revisar quantidades e disponibilidade' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Confirmar execução' }))
     await screen.findByRole('heading', { name: 'Ordem atualizada' })
@@ -160,6 +166,7 @@ describe('Ordens e execução física F02', () => {
     await within(await screen.findByLabelText('Selecionar Destino da saída 1')).findByRole('option', { name: /DEP — Depósito/ })
     fireEvent.change(screen.getByLabelText('Selecionar Destino da saída 1'), { target: { value: local.id } })
     fireEvent.change(screen.getByLabelText('Motivo da operação e dos desvios'), { target: { value: 'Posição substituta conferida' } })
+    if (screen.queryByLabelText('Decisão de rateio dos custos')) { fireEvent.change(screen.getByLabelText('Decisão de rateio dos custos'), { target: { value: 'pendente' } }); fireEvent.change(screen.getByLabelText('Motivo da pendência de rateio'), { target: { value: 'Rateio monetário pendente na fixture física' } }) }
     fireEvent.click(screen.getByRole('button', { name: 'Revisar quantidades e disponibilidade' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Confirmar execução' }))
     await screen.findByRole('heading', { name: 'Ordem atualizada' })
@@ -176,10 +183,12 @@ describe('Ordens e execução física F02', () => {
     fireEvent.change(screen.getByLabelText('Selecionar Destino da saída 1'), { target: { value: destination.id } })
     fireEvent.change(screen.getByLabelText('Aptidão comprovada no fato'), { target: { value: 'Apto' } })
     fireEvent.change(screen.getByLabelText('Motivo da operação e dos desvios'), { target: { value: 'Registro do fato ocorrido' } })
+    if (screen.queryByLabelText('Decisão de rateio dos custos')) { fireEvent.change(screen.getByLabelText('Decisão de rateio dos custos'), { target: { value: 'pendente' } }); fireEvent.change(screen.getByLabelText('Motivo da pendência de rateio'), { target: { value: 'Rateio monetário pendente na fixture física' } }) }
     fireEvent.click(screen.getByRole('button', { name: 'Revisar quantidades e disponibilidade' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('evidência')
     expect(writeCalls()).toHaveLength(0)
     fireEvent.change(screen.getByLabelText('Evidência do fato e da conferência física'), { target: { value: 'Material apto na data observada; execução conferida' } })
+    if (screen.queryByLabelText('Decisão de rateio dos custos')) { fireEvent.change(screen.getByLabelText('Decisão de rateio dos custos'), { target: { value: 'pendente' } }); fireEvent.change(screen.getByLabelText('Motivo da pendência de rateio'), { target: { value: 'Rateio monetário pendente na fixture física' } }) }
     fireEvent.click(screen.getByRole('button', { name: 'Revisar quantidades e disponibilidade' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Registrar fato passado (Admin)' }))
     await screen.findByRole('heading', { name: 'Ordem atualizada' })

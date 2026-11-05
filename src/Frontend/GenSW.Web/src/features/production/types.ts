@@ -43,8 +43,9 @@ export interface ProductionOutput {
   fonteValidade: string | null; responsavelValidadeId: string | null; perfilNutricionalId: string | null
   conversaoItemId: string | null; aplicabilidade: string | null; aceiteQuantizacao: QuantizationAcceptance | null; bloqueado: boolean
 }
-export interface ProductionLoss { quantidade: string; unidade: string; motivo: string; linhaId: string | null }
-export interface Confirmation {
+import type { AllocationCost } from '../material-costs/types'
+export interface ProductionLoss { id?: string | null; quantidade: string; unidade: string; motivo: string; linhaId: string | null }
+export interface Confirmation { custoMaterial?: AllocationCost | null;
   versaoEsperada: number; responsavelId: string; entradas: ProductionInput[]; saidas: ProductionOutput[]
   perdas: ProductionLoss[]; motivo: string; observacao: string | null; dataObservada: string | null
   evidencia: string | null; aptidaoNoFato: string | null

@@ -1,0 +1,16 @@
+{
+  "imageFiles": 0,
+  "sqlSha256": "ec8de53a66550307cff59c2ce0a7ff614b1d547e35996de6f45ee2060956d1d8",
+  "connectionIdentityRechecked": true,
+  "imageRecords": 0,
+  "apiAssemblySha256": "3eaccfa271e39ead6fb5f8197cc485c9b5f1ab991e4637dfe3ed72e2c0c4f5d3",
+  "privateImagesConfigured": true,
+  "frontend": "https://localhost:5188",
+  "frontendBundleSha256": "8d1b8a60c3d62de440d362d57b3e0daed903c2d8d6438b599347cc4b84e21e3d",
+  "operationalDatabaseAccessed": false,
+  "databaseAlias": "F04-517",
+  "imageHttpAndRender": "Not applicable: no affected image records; no placeholder used as proof",
+  "api": "https://localhost:7018",
+  "migrations": 21,
+  "task": 517
+}

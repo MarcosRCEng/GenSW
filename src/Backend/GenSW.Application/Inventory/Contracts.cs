@@ -70,12 +70,16 @@ public sealed record InventoryMovementCommand(Guid LoteId, string Quantidade, st
     QuantizationAcceptance? AceiteQuantizacao = null, DateOnly? DataObservada = null, string? Origem = null,
     string? Fonte = null, string? Documento = null, string? Destino = null, string? Evidencia = null,
     Guid? EventoReferenciaId = null, Guid? ExecucaoReferenciaId = null, Guid? ConciliacaoOvosId = null,
-    string? OrigemOvosComprovada = null, Guid? GrupoPonteOvosReferenciaId = null);
+    string? OrigemOvosComprovada = null, Guid? GrupoPonteOvosReferenciaId = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    GenSW.Application.MaterialCosts.MaterialReceiptCommand? CustoMaterial = null);
 public sealed record InventoryPreviewCommand(string Operacao, InventoryMovementCommand Comando);
 public sealed record PreviewPosition(Guid LoteId, Guid LocalId, string SaldoAnterior, string SaldoPosterior, int Revisao, int RevisaoResultante);
 public sealed record InventoryPreview(string Operacao, Guid LoteId, string Unidade, PhysicalQuantity Quantidade,
     IReadOnlyList<PreviewPosition> Posicoes, InventoryVersions VersoesEsperadas, IReadOnlyList<string> Avisos,
-    DateTimeOffset ObservadoEmUtc, string SequenciaAte);
+    DateTimeOffset ObservadoEmUtc, string SequenciaAte,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    GenSW.Application.MaterialCosts.MaterialInventoryPreview? CustoMaterial = null);
 public sealed record InventoryMutationResult(int StatusHttp, string? Location, string RespostaJson, bool Replayed);
 
 public interface IInventoryScope : IAsyncDisposable { Task CommitAsync(CancellationToken ct); }

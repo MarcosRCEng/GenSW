@@ -3,6 +3,7 @@ using System.Net;
 using GenSW.Application.EggBridge;
 using GenSW.Domain.EggBridge;
 using GenSW.Domain.Inventory;
+using GenSW.Domain.MaterialCosts;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Xunit;
@@ -43,7 +44,7 @@ public sealed partial class EggBridgeApiTests
                     var deadline = DateTimeOffset.UtcNow.AddSeconds(3); var waiting = false;
                     while (DateTimeOffset.UtcNow < deadline)
                     {
-                        var count = await Factory.ExecuteDbContextAsync(db => db.Database.SqlQueryRaw<int>("SELECT count(*)::integer AS \"Value\" FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND (query LIKE '%AncorasConciliacaoOvos%' OR query LIKE '%Itens%')").SingleAsync());
+                        var count = await Factory.ExecuteDbContextAsync(db => db.Database.SqlQueryRaw<int>("SELECT count(*)::integer AS \"Value\" FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND (query LIKE '%AncorasConciliacaoOvos%' OR query LIKE '%Itens%' OR (wait_event='advisory' AND query LIKE '%430%1%'))").SingleAsync());
                         if (count >= 1) { waiting = true; break; }
                         if (confirmation.IsCompleted) break;
                         await Task.Delay(20);
@@ -76,13 +77,23 @@ public sealed partial class EggBridgeApiTests
         var quantity = new PhysicalQuantity("5", "un", "5", "5", "0", "un", null, null, null, false);
         var snapshot = InventoryJson.Write(new { Pedido = command, Previa = new { Quantidade = quantity } });
         var position = PosicaoEstoque.Create(m.Lot.Id, m.Local.Id, "un"); position.SetBalance(5, 0);
+        var movementId=Guid.NewGuid();
         db.AddRange(position,
             new EventoEstoque(ev, sequence, "Entrada", actor, actor, now, InventoryRules.Today(TimeProvider.System), null, Evidence, Evidence, null, InventoryRules.Algorithm, snapshot),
-            new MovimentoEstoque(Guid.NewGuid(), ev, 1, m.Lot.Id, m.Local.Id, m.Item.Id, "un", "Entrada", 5, "5", "un", "0", 0, 5, null, null, snapshot, "Entrada"),
+            new MovimentoEstoque(movementId, ev, 1, m.Lot.Id, m.Local.Id, m.Item.Id, "un", "Entrada", 5, "5", "un", "0", 0, 5, null, null, snapshot, "Entrada"),
             new ComandoEstoque(Guid.NewGuid(), actor, "Entrada", m.Lot.Id, Unique(), new string('b', 64), 201, null, "{}", ev, m.Lot.Id, now));
         if (scope != Guid.Empty) db.Add(new OrigemRecebimentoOvos(Guid.NewGuid(), ev, m.Item.Id, scope, Evidence, actor, now));
         await db.SaveChangesAsync();
         Assert.Equal(0, await db.Database.SqlQueryRaw<int>("SELECT count(*)::integer AS \"Value\" FROM pg_locks WHERE pid=pg_backend_pid() AND locktype='advisory'").SingleAsync());
+        // F04 requires explicit unknown monetary coverage for a new physical receipt.
+        // The physical SQL protocol above still proves it did not acquire application locks.
+        var layerId=Guid.NewGuid();var costEventId=Guid.NewGuid();var component=InventoryJson.Write(new CostComponent[]{new(Guid.NewGuid(),layerId,m.Item.Id,"un",5,null,["Custo desconhecido na fixture SQL"])});
+        var gaps=InventoryJson.Write(new[]{"Custo desconhecido na fixture SQL"});var monetarySequence=await db.Database.SqlQueryRaw<long>("SELECT nextval('\"SequenciaCustoMaterial\"') AS \"Value\"").SingleAsync();
+        var costPosition=PosicaoCustoMaterial.Create(layerId,m.Local.Id,"un");costPosition.SetBalance(5,0,component,gaps,"Desconhecido",0);
+        db.AddRange(new EventoCustoMaterial(costEventId,monetarySequence,"Recebimento",actor,actor,now,InventoryRules.Today(TimeProvider.System),Evidence,ev.ToString(),"gensw-material-costs/1.0",InventoryJson.Write(new{CorteFisico=sequence.ToString(),TransacaoId=db.Database.CurrentTransaction!.TransactionId.ToString()}),ev),
+            new CamadaCustoMaterial(layerId,m.Lot.Id,m.Item.Id,"un",5,0,"Desconhecido","Recebimento",sequence,component,gaps,actor,actor,now,InventoryRules.Today(TimeProvider.System),Evidence,ev.ToString(),"gensw-material-costs/1.0",movementId),costPosition,
+            new ParcelaCustoMaterial(Guid.NewGuid(),costEventId,layerId,m.Local.Id,"Entrada",5,0,component,gaps,movementId));
+        await db.SaveChangesAsync();
         inserted?.SetResult();
         if (release is not null) await release.Task.WaitAsync(TimeSpan.FromSeconds(10));
         await tx.CommitAsync();

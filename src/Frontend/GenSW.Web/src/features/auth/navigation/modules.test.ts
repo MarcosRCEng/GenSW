@@ -21,6 +21,8 @@ describe('mapa de navegação', () => {
     ['/producao/receitas/versoes/version/editar', 'transformacoes', '/producao/receitas'],
     ['/producao/formulacao/comparacoes/id', 'transformacoes', '/producao/formulacao'],
     ['/producao/ponte-ovos/grupos/id', 'producao-animal', '/producao/ponte-ovos'],
+    ['/custos-materiais/execucoes/id', 'transformacoes', '/custos-materiais'],
+    ['/custos-materiais/evidencias/id', 'transformacoes', '/custos-materiais'],
     ['/financeiro/lancamentos/id', 'financeiro', '/financeiro'],
     ['/estoque/operacoes/entrada', 'estoque', undefined],
   ])('identifica o destino proprietário de %s', (pathname, moduleId, route) => {

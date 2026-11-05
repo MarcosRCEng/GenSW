@@ -19,7 +19,9 @@ public sealed record EggScopeCommand(Guid ItemId, string Fronteira, string Fonte
 public sealed record EggProofCommand(Guid MovimentoEstoqueId, string Contagem, Guid ResponsavelId, string Motivo, string Evidencia);
 public sealed record EggSelection(Guid ProducaoOvoId, string? Ordinal = null);
 public sealed record EggPreviewCommand(string Operacao, Guid RecorteId, Guid ResponsavelId, string Motivo,
-    string Evidencia, IReadOnlyList<EggSelection> Selecao, Guid? LoteId = null, Guid? LocalId = null, Guid? ProvaId = null);
+    string Evidencia, IReadOnlyList<EggSelection> Selecao, Guid? LoteId = null, Guid? LocalId = null, Guid? ProvaId = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    GenSW.Application.MaterialCosts.MaterialReceiptCommand? CustoMaterial = null);
 public sealed record EggConfirmCommand(string Token);
 public sealed record EggTreatmentCommand(string Tipo, Guid ResponsavelId, string Motivo, string Evidencia,
     bool CoerenciaFisicaConfirmada = false);
@@ -29,7 +31,9 @@ public sealed record EggSourceExpectation(Guid ProducaoOvoId, string HashOrigem,
 public sealed record EggPreview(string Token, string Operacao, IReadOnlyList<EggSourceExpectation> Origens,
     string Quantidade, string DeltaEstoque, string? SaldoAnterior, string? SaldoPosterior,
     string? CapacidadeRestante, string Unidade, string RevisaoAncora, string SequenciaAte,
-    IReadOnlyList<string> Avisos, bool PodeConfirmar, DateTimeOffset ExpiraEmUtc);
+    IReadOnlyList<string> Avisos, bool PodeConfirmar, DateTimeOffset ExpiraEmUtc,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    GenSW.Application.MaterialCosts.MaterialInventoryPreview? CustoMaterial = null);
 public sealed record EggTreatmentPreview(string Token, Guid GrupoId, string Tipo, string DeltaEstoque,
     IReadOnlyList<string> Impedimentos, bool PodeConfirmar, DateTimeOffset ExpiraEmUtc);
 public sealed record EggBridgeDetail(GrupoPonteOvos Grupo, IReadOnlyList<PonteProducaoOvo> Pontes,

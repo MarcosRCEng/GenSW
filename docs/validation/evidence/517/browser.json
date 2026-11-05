@@ -1,0 +1,384 @@
+{
+  "task": 517,
+  "evidence": "Navegador Edge real via Playwright CLI, somente dados sintéticos",
+  "timezone": "America/Sao_Paulo",
+  "runDates": [
+    "2026-11-04",
+    "2026-11-05"
+  ],
+  "branch": "codex/517-f04-custos-materiais",
+  "candidates": {
+    "earlier": {
+      "frontend": "https://localhost:5187",
+      "api": "https://localhost:7017",
+      "alias": "F04-517",
+      "purpose": "Fluxos operacionais e interação antes das correções de apresentação"
+    },
+    "delivery": {
+      "name": "03",
+      "frontend": "https://localhost:5188",
+      "api": "https://localhost:7018",
+      "alias": "F04-517",
+      "migrations": 21,
+      "apiAssemblySha256": "3eaccfa271e39ead6fb5f8197cc485c9b5f1ab991e4637dfe3ed72e2c0c4f5d3",
+      "sqlSha256": "ec8de53a66550307cff59c2ce0a7ff614b1d547e35996de6f45ee2060956d1d8",
+      "connectionIdentityRechecked": true,
+      "operationalDatabaseAccessed": false,
+      "frontendAsset": "/assets/index-DJlHH3--.js",
+      "frontendAssetSha256": "8d1b8a60c3d62de440d362d57b3e0daed903c2d8d6438b599347cc4b84e21e3d"
+    }
+  },
+  "viewports": [
+    "1440x1000",
+    "390x844"
+  ],
+  "deliveryChecks": {
+    "candidate": "03",
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "contentWidth": 390,
+      "scrollWidth": 390,
+      "edge": true
+    },
+    "C02": {
+      "lot": "5025cf47-cf6b-4e69-991c-309b31f2d080",
+      "coverage": "Desconhecido",
+      "total": null,
+      "unit": null,
+      "physicalQuantity": "8",
+      "unknownComponentsRemainNull": true,
+      "unknownLayerDoesNotShowZero": true
+    },
+    "C13": {
+      "execution": "d66cc990-1c25-4a41-9d45-914f1c1dc05d",
+      "coverage": "Parcial",
+      "known": "4.00",
+      "total": null,
+      "lossPercent": "100",
+      "lossUnit": null,
+      "outputLots": 0,
+      "visibleCells": [
+        "Perda 1 · 10 kg",
+        "100%",
+        "R$ 4,00",
+        "Desconhecido",
+        "Não aplicável"
+      ]
+    },
+    "C14": {
+      "execution": "b34ab4c2-40f6-4728-bc3f-aaa1ee3a5d12",
+      "zeroPercent": "0",
+      "zeroTotal": null,
+      "zeroUnit": null,
+      "zeroLot": null,
+      "visibleCells": [
+        "Saída 2 · 0 kg",
+        "0%",
+        "Não aplicável",
+        "Não aplicável",
+        "Não aplicável"
+      ],
+      "positiveOutputLots": 1
+    },
+    "C34": {
+      "execution": "536af26e-a3e8-4aca-9b10-1a17bf394aa9",
+      "quantity": "3",
+      "authoritativeTotal": "0.01",
+      "unit": "0.003333",
+      "rounded": true,
+      "residualInMillionthsOfUnitCost": "1000000/3000000",
+      "residualNumericallyVisibleInRow": true,
+      "visibleCells": [
+        "Saída 1 · 3 un",
+        "100%",
+        "R$ 0,01",
+        "R$ 0,01",
+        "0,003333 · Resíduo exato de (1000000/3000000) × 0,000001 BRL/un."
+      ],
+      "residualVisible": "Resíduo exato de (1000000/3000000) × 0,000001 BRL/un."
+    },
+    "C31": {
+      "case": "C31",
+      "candidate": "03",
+      "referenceStatus": 200,
+      "lotStatus": 200,
+      "substitutionHidden": true,
+      "evaluationHidden": true,
+      "reconciliationHidden": true,
+      "directEvaluationBlocked": true,
+      "directPublicationBlocked": true,
+      "syntheticOperatorLogoutStatus": 204,
+      "loginVisible": true
+    }
+  },
+  "earlierChecks": {
+    "C01": {
+      "result": "Aprovado no recorte browser",
+      "verifiedReceiptKg": "10",
+      "documentedTotal": "20.00",
+      "referencePerKg": "9.000000",
+      "estimatedTenKg": "90.00",
+      "snapshotSeparate": true
+    },
+    "C10": {
+      "result": "Aprovado no recorte browser",
+      "knownConsumed": "10.01",
+      "positiveOutputs": [
+        "5.01",
+        "3.00"
+      ],
+      "loss": "2.00",
+      "unitPrices": [
+        "2.505000",
+        "1.000000"
+      ],
+      "previewAndConfirmation": true,
+      "editInvalidatedPreview": true
+    },
+    "C11": {
+      "result": "Aprovado no recorte browser",
+      "positiveOutputParcels": 2,
+      "separateLotLinks": true,
+      "source": "Confirmação C10, duas parcelas distintas"
+    },
+    "C12": {
+      "result": "Aprovado no recorte browser",
+      "coverage": "Parcial",
+      "known": "4.00",
+      "knownPerDestination": [
+        "2.00",
+        "2.00"
+      ],
+      "completeTotals": null,
+      "unknownInputQty": "1 kg",
+      "gapInheritedPerDestination": true,
+      "viewport": "390x844"
+    },
+    "C21": {
+      "result": "Aprovado no recorte browser",
+      "evaluation": "2b3b237b-f7a2-4af6-ab02-1568784a093f",
+      "postStatus": 201,
+      "identifiedQty": "2 kg",
+      "remainingPrior": "600 kg",
+      "currentKnown": "7.00",
+      "currentCompleteTotal": null,
+      "currentCoverage": "Parcial",
+      "cutBefore": "46",
+      "cutAfter": "48",
+      "physicalCutUnchanged": true,
+      "oldExecutionSnapshotUnchanged": true,
+      "oldExecutionTotal": null
+    },
+    "C22": {
+      "result": "Aprovado no recorte browser",
+      "evaluation": "3cc2d107-4326-4401-8c28-092d341f9164",
+      "postStatus": 201,
+      "identifiedQty": "2 kg",
+      "previousPresentTotal": "4.00",
+      "currentPresentTotal": "6.00",
+      "executionTotalPreserved": "16.00",
+      "originalSnapshotUnchanged": true,
+      "physicalCutUnchanged": true,
+      "reversalStatus": 409,
+      "reversalProblem": "reversao_custo_impedida",
+      "rejectedCommandLookupStatus": 404
+    },
+    "C25": {
+      "result": "Aprovado no recorte browser",
+      "before": "PendenteRateio",
+      "knownOutsideStock": "20.00",
+      "after": "Apurada",
+      "presentResolutionLinkedToOriginal": true
+    },
+    "C26": {
+      "result": "Aprovado no recorte browser",
+      "method": "CDP Fetch no estágio Response, requisição HTTPS nativa do Edge e descarte da resposta após HTTP 2xx",
+      "estimateId": "c1598edf-4806-4062-838b-65ef4981c48b",
+      "sameRequestIdentityBeforeAndAfterReload": true,
+      "editBlockedBeforeAndAfterReload": true,
+      "recoverByOriginalKey": true,
+      "originalEstimateRestored": true,
+      "pendingContextCleared": true,
+      "firstHarnessAttempt": "route.fetch falhou na validação TLS do executor; essa tentativa não prova perda de resposta e não integra o resultado aprovado"
+    },
+    "C32": {
+      "result": "Aprovado no recorte browser exercitado",
+      "activeReferenceVersions": 27,
+      "selectedFromPage": 3,
+      "retainedOnPage": 1,
+      "knownEstimate": "90.00",
+      "completeEstimate": null,
+      "missingReferencePreserved": true,
+      "selectedReferenceSnapshotVisible": true
+    },
+    "C35": {
+      "result": "Aprovado no recorte browser exercitado",
+      "width": 390,
+      "height": 844,
+      "documentWidth": 375,
+      "contentWidth": 375,
+      "tableVisibleWidth": 309,
+      "tableScrollWidth": 672,
+      "focusedByTab": true,
+      "scrolledByArrowRight": true,
+      "openedDetailsByKeyboard": true,
+      "restoredPage": 2,
+      "restoredFilters": [
+        "item",
+        "estado",
+        "data"
+      ],
+      "historicalReferenceVisible": true,
+      "failedCommandRecoveryObserved": true,
+      "editedPreviewInvalidationObserved": true
+    }
+  },
+  "browserScope": {
+    "ordinaryRole": "Edge e API. Leitura de referência e lote permitida ao operador; ações e formulários Admin ausentes ou bloqueados, logout conferido.",
+    "f03Unknown": "Validação API/PostgreSQL. O browser C02 exerceu o recebimento físico sem documento",
+    "referenceExpiryAndConversion": "Oráculos adicionais de API/domínio, não reproduzidos neste recorte browser",
+    "affectedImageRecords": 0,
+    "imageHttpAndRender": "Não aplicável ao recorte sintético sem cadastro com imagem"
+  },
+  "logoutPreviousSyntheticSession": {
+    "syntheticLogoutStatus": 204,
+    "loginVisible": true,
+    "origin": "https://localhost:5187"
+  },
+  "artifacts": [
+    {
+      "artifact": "output/playwright/f04-517/custo-conhecido.png",
+      "sha256": "d9efa7d7d0d26a3fa67fc3f4d0ad396336aa3954a1b4737183422e41ab7b051e"
+    },
+    {
+      "artifact": "output/playwright/f04-517/c10-previa-centavos.png",
+      "sha256": "8bd8515908a9c3322b4a90a0f26eac9c56a1dc0e6312323a180a3830d3d18efd"
+    },
+    {
+      "artifact": "output/playwright/f04-517/c10-apuracao-confirmada.png",
+      "sha256": "0487737a2fbd5673062143ab0f44a2306b33ea6570eea85fd4a6b59d2873804c"
+    },
+    {
+      "artifact": "output/playwright/f04-517/c10-edicao-invalida.snapshot.txt",
+      "sha256": "8763d476e1da1dbbc19e0d15182524d2cc79fc457dce667638e1be2f9164a6c4"
+    },
+    {
+      "artifact": "output/playwright/f04-517/c10-rejected-recovery.snapshot.txt",
+      "sha256": "436cce98fa61332fd332feae53439d147d0d083ab775a86ce1fb969ea365f672"
+    },
+    {
+      "artifact": "output/playwright/f04-517/c12-mobile.snapshot.txt",
+      "sha256": "47688ee2fbfdb12bab1f401750ea6f0ddd31b1d9d9ad897f38589a7a942d839b"
+    },
+    {
+      "artifact": "output/playwright/f04-517/pendente-conhecido-fora-estoque.png",
+      "sha256": "24b189ed76e1e9e24436a2100a8d45832f229fb44db595e7610e44ee7e755678"
+    },
+    {
+      "artifact": "output/playwright/f04-517/resolution-success.snapshot.txt",
+      "sha256": "a35ef0846f70ab4aa05530917d83cfa3784f060cc2414d0316e0051c3e65da72"
+    },
+    {
+      "artifact": "output/playwright/f04-517/c21-before.snapshot.txt",
+      "sha256": "407f06115ff429464e4f68ee0f208d63829913f2c934aec065c9c5a1e65baefc"
+    },
+    {
+      "artifact": "output/playwright/f04-517/c21-avaliacao-presente.png",
+      "sha256": "1dac998e422663311e5ee9e7a63b7a0bd6355912202486ef822ebd786620d37d"
+    },
+    {
+      "artifact": "output/playwright/f04-517/c21-saldo-atual.png",
+      "sha256": "d6045ad2f21d027290c19eded18c320f9126e287ce85c9e7eb852a4f212893ab"
+    },
+    {
+      "artifact": "output/playwright/f04-517/c22-avaliacao-presente.png",
+      "sha256": "0350b1cd01370b4398faeca62877aa267f36b47558d237e169df12384e578b90"
+    },
+    {
+      "artifact": "output/playwright/f04-517/c22-execucao-preservada.png",
+      "sha256": "a2d242ae65d0404ab02b13a9f65d6e0468b8b74d6d3589fb06ad22d6b92ef330"
+    },
+    {
+      "artifact": "output/playwright/f04-517/c22-reversao-impedida.png",
+      "sha256": "5b49818a266258b5a556e44ced716d59e5dd8eccf2433449ca63d57258ad9fde"
+    },
+    {
+      "artifact": "output/playwright/f04-517/c26-resposta-perdida.png",
+      "sha256": "9ca69649349731228b26369191832e566c46a835d02b1d678a93f263e83d1a0d"
+    },
+    {
+      "artifact": "output/playwright/f04-517/c26-pendente-apos-reload.png",
+      "sha256": "bb7313e2209248ca2eb4eacb11286216901d306153b53607329581ff2c9b6191"
+    },
+    {
+      "artifact": "output/playwright/f04-517/c26-estimativa-recuperada.png",
+      "sha256": "fe4af571b65fd585292fde9bde1a06f8e7cfffcaf9f6251c209cf97ce613160d"
+    },
+    {
+      "artifact": "output/playwright/f04-517/c26-after-reload.snapshot.txt",
+      "sha256": "49b536bb68e9a5effad316d481a99c1cb3c6322aab8d4c6f7a94d3f7f8307a07"
+    },
+    {
+      "artifact": "output/playwright/f04-517/c32-page3.snapshot.txt",
+      "sha256": "a5408d468a235b71f812e6fe05a278e45f9c18eee242b4c2b7b17fca27f502cf"
+    },
+    {
+      "artifact": "output/playwright/f04-517/c32-retencao-mobile.png",
+      "sha256": "4b5cc65e3f4f7c8e37466c6cb19437b347c263ad0260ec48c08e8cfdf62d67b1"
+    },
+    {
+      "artifact": "output/playwright/f04-517/c35-teclado-390.png",
+      "sha256": "83be16249911e28ac77d99663c6fc7ea6746a955c4870e9e3153c09b3e1947b0"
+    },
+    {
+      "artifact": "output/playwright/f04-517/c35-referencia-historica-390.png",
+      "sha256": "fb1e6c4b5eb384a8c707d46f18118601713682ea7ea014397b5468b938a97b03"
+    },
+    {
+      "artifact": "output/playwright/f04-517/c35-filtros-retidos-390.png",
+      "sha256": "c67b08c77c24b1454c68107d1a0ab476ec565acea898f41cf1851df9e0b4ccfb"
+    },
+    {
+      "artifact": "output/playwright/f04-517/delivery-c02-desconhecido.png",
+      "sha256": "175bfb561039ca325be186c48ee95b45cc5994d9b72c3b6115392f89b7e8046e"
+    },
+    {
+      "artifact": "output/playwright/f04-517/delivery-c13-perda-total.png",
+      "sha256": "9343bbf1e3fc386efbbeff0693595ec38d5d329eb9d6198036ab578df9627deb"
+    },
+    {
+      "artifact": "output/playwright/f04-517/delivery-c14-saida-zero-390.png",
+      "sha256": "d1aac05f7fb1345063caaf86b2962bb037809ff56cba6827b99e90e06ef7fe49"
+    },
+    {
+      "artifact": "output/playwright/f04-517/delivery-c34-centavo-autoritativo-390.png",
+      "sha256": "034f00b1e77d5b3dfe7165333be132371d48b2de279bfb7dac635c2194ad21d6"
+    },
+    {
+      "artifact": "output/playwright/f04-517/delivery-c31-operador-referencia.png",
+      "sha256": "56a3c7600eb4df8a930b5856974fb93d62c078739f73d013c1aa6f06f7fc4ed9"
+    },
+    {
+      "artifact": "output/playwright/f04-517/delivery-c31-operador-lote.png",
+      "sha256": "c0a5afa7c39fd4cd1995665b8f488b9585cf733134dc20106f62e2dc401fedba"
+    },
+    {
+      "artifact": "output/playwright/f04-517/delivery-c31-avaliacao-bloqueada.png",
+      "sha256": "2b4be27299cfefa725ce063be234c375e06d94cfaa8b11191046e1bf9a15ab82"
+    },
+    {
+      "artifact": "output/playwright/f04-517/delivery-c31-publicacao-bloqueada.png",
+      "sha256": "d57c3a35e0db69a96c1607480ce09d5ced4363b78ac597b0d2ebe511d577c6f5"
+    }
+  ],
+  "harnessNotes": [
+    "Rebuild local intermediário de C34 sem o prefixo da API produziu 404 de login e não integra as provas aprovadas. O artefato final tem o prefixo correto e as duas sessões revalidaram o acesso."
+  ],
+  "artifactSecurity": {
+    "browserTextArtifactsScanned": 241,
+    "credentialOrJwtMatchesInScannedTextArtifacts": 0,
+    "earlierSyntheticSessionLogoutHttp": 204,
+    "operatorSyntheticSessionLogoutHttp": 204
+  }
+}

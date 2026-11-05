@@ -29,7 +29,7 @@ public sealed class EggBridgeMigrationTests
         var rows = await FormulationMigrationTests.RowsAsync(db);
         foreach (var table in Tables) Assert.Empty(rows[table]);
         Assert.Empty(await db.Database.GetPendingMigrationsAsync());
-        Assert.EndsWith("_AddEggBridge", (await db.Database.GetAppliedMigrationsAsync()).Last());
+        Assert.Contains("20261029000136_AddEggBridge", await db.Database.GetAppliedMigrationsAsync());
         Assert.False(db.Database.HasPendingModelChanges());
     }
 
@@ -49,13 +49,13 @@ public sealed class EggBridgeMigrationTests
             await source.BackupAsync(baselineBackup);
             await using var copy = await EphemeralPostgreSql.StartAsync(); await copy.RestoreAsync(baselineBackup); await using var db = Db(copy);
             Assert.Equal(Serialize(before), Serialize(await FormulationMigrationTests.RowsAsync(db)));
-            await db.Database.MigrateAsync();
+            await db.GetService<IMigrator>().MigrateAsync("20261029000136_AddEggBridge");
             var after = await FormulationMigrationTests.RowsAsync(db);
             Assert.Equal(Tables.Order(), after.Keys.Except(before.Keys).Order());
             Assert.Equal(Serialize(before), Serialize(await FormulationMigrationTests.RowsAsync(db, before.Keys)));
             foreach (var table in Tables) Assert.Empty(after[table]);
             Assert.Equal(5m, await db.PosicoesEstoque.SumAsync(x => x.Quantidade));
-            await db.Database.MigrateAsync(); Assert.Equal(Serialize(after), Serialize(await FormulationMigrationTests.RowsAsync(db)));
+            await db.GetService<IMigrator>().MigrateAsync("20261029000136_AddEggBridge"); Assert.Equal(Serialize(after), Serialize(await FormulationMigrationTests.RowsAsync(db)));
             await copy.BackupAsync(upgradedBackup);
             await using var recovered = await EphemeralPostgreSql.StartAsync(); await recovered.RestoreAsync(upgradedBackup); await using var restored = Db(recovered);
             Assert.Equal(Serialize(after), Serialize(await FormulationMigrationTests.RowsAsync(restored)));
@@ -84,7 +84,7 @@ public sealed class EggBridgeMigrationTests
         await command.ExecuteNonQueryAsync();
         Assert.Equal(Serialize(before), Serialize(await FormulationMigrationTests.RowsAsync(db, before.Keys)));
         foreach (var table in Tables) Assert.Empty((await FormulationMigrationTests.RowsAsync(db, Tables))[table]);
-        Assert.Empty(await db.Database.GetPendingMigrationsAsync());
+        Assert.DoesNotContain("20261029000136_AddEggBridge", await db.Database.GetPendingMigrationsAsync());
         if (filename.Contains("idempotent", StringComparison.Ordinal))
         {
             var first = Serialize(await FormulationMigrationTests.RowsAsync(db));
@@ -97,7 +97,7 @@ public sealed class EggBridgeMigrationTests
     public async Task F03_21_destructive_down_refuses_without_schema_or_data_loss()
     {
         await using var pg = await EphemeralPostgreSql.StartAsync(); await using var db = Db(pg);
-        await db.Database.MigrateAsync(); await SeedStock(db);
+        await db.GetService<IMigrator>().MigrateAsync("20261029000136_AddEggBridge"); await SeedStock(db);
         var before = Serialize(await FormulationMigrationTests.RowsAsync(db));
         var history = (await db.Database.GetAppliedMigrationsAsync()).ToArray();
         var failure = await Assert.ThrowsAnyAsync<Exception>(() => db.GetService<IMigrator>().MigrateAsync(Baseline));
