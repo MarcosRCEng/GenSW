@@ -30,7 +30,7 @@ public sealed partial class EggBridgeApiTests
                 {
                     await inserted.Task.WaitAsync(TimeSpan.FromSeconds(10));
                     enrollment = Post(client, "itens", new EggEnrollmentCommand(m.Item.Id, Evidence));
-                    Assert.True(await WaitForLock("(query LIKE '%Itens%' OR query LIKE '%AncorasConciliacaoOvos%')"), "Enrollment must wait for the writer that started before management existed.");
+                    Assert.True(await WaitForLock("(query LIKE '%Itens%' OR query LIKE '%AncorasConciliacaoOvos%' OR (wait_event='advisory' AND query LIKE '%430%1%'))"), "Enrollment must wait for the writer that started before management existed.");
                 }
                 finally { release.TrySetResult(); await sql; }
                 await Success<JsonElement>(await enrollment!);

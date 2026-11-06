@@ -10,7 +10,8 @@ using GenSW.Domain.Inventory;
 
 namespace GenSW.Application.Inventory;
 
-public sealed class InventoryService(IInventoryRepository repository, IAuthenticationSessionService authentication, TimeProvider clock)
+public sealed class InventoryService(IInventoryRepository repository, IAuthenticationSessionService authentication, TimeProvider clock,
+    GenSW.Application.MaterialCosts.IMaterialCostFlow? materialCosts = null)
 {
     private static InventoryException Missing() => new(404, "registro_nao_encontrado", "Registro não encontrado.");
     private static void Conflict(bool condition, string code, string text) { if (condition) throw new InventoryException(409, code, text); }
@@ -35,7 +36,7 @@ public sealed class InventoryService(IInventoryRepository repository, IAuthentic
         {
             JsonValueKind.Object => "{" + string.Join(",", e.EnumerateObject().OrderBy(x => x.Name, StringComparer.Ordinal).Select(p => JsonSerializer.Serialize(p.Name) + ":" + Canonical(p.Value, p.Name))) + "}",
             JsonValueKind.Array => "[" + string.Join(",", e.EnumerateArray().Select(x => Canonical(x))) + "]",
-            JsonValueKind.String when field is "quantidade" or "quantidadeContada" or "calculado" or "normalizado" or "residuo" => NormalizeNumber(e),
+            JsonValueKind.String when field is "quantidade" or "quantidadeContada" or "calculado" or "normalizado" or "residuo" or "totalDocumentado" or "valorUnitario" or "quantidadeBase" or "percentual" => NormalizeNumber(e),
             _ => e.GetRawText()
         };
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Canonical(doc.RootElement))));
@@ -298,7 +299,9 @@ public sealed class InventoryService(IInventoryRepository repository, IAuthentic
     }
     public Task<InventoryPreview> PreviewAsync(InventoryPreviewCommand c, Guid actor, CancellationToken ct) => Read(actor, async () =>
     {
-        var operation = MovementOperation(Required(c).Operacao); await AuthorizeAsync(actor, AdminOperation(operation), ct); return (await Prepare(operation, c.Comando, false, ct)).Preview;
+        var operation = MovementOperation(Required(c).Operacao); await AuthorizeAsync(actor, AdminOperation(operation), ct);
+        var preview = (await Prepare(operation, c.Comando, false, ct)).Preview;
+        return materialCosts is null ? preview : preview with { CustoMaterial = await materialCosts.PreviewInventoryAsync(operation,c.Comando,preview,ct) };
     }, ct);
     public Task<InventoryMutationResult> MoveAsync(string operation, InventoryMovementCommand c, string key, Guid actor, CancellationToken ct)
     {
@@ -327,16 +330,18 @@ public sealed class InventoryService(IInventoryRepository repository, IAuthentic
             if (plan.Legs.Any(x => x.After > x.Before) && operation is "Entrada" or "Abertura" or "Ajuste" && repository is IInventoryEggBridgePolicy eggPolicyReceipt)
                 await eggPolicyReceipt.RecordReceiptAsync(plan.Item.Id, entity, c, ct);
             var movements = new List<MovimentoView>();
+            var monetaryMovements = new List<MovimentoEstoque>();
             int ordinal = 0;
             foreach (var leg in plan.Legs)
             {
                 var revision = leg.Position.Revisao; if (revision == 0) repository.Add(leg.Position);
                 leg.Position.SetBalance(leg.After, revision);
                 var movement = new MovimentoEstoque(Guid.NewGuid(), id, ++ordinal, plan.Lot.Id, leg.Local.Id, plan.Item.Id, plan.Lot.Unidade, leg.After > leg.Before ? "Entrada" : "Saida", Math.Abs(leg.After - leg.Before), plan.Preview.Quantidade.Declarada, plan.Preview.Quantidade.UnidadeDeclarada, plan.Preview.Quantidade.Residuo, leg.Before, leg.After, plan.Lot.ConversaoItemId, plan.Lot.PerfilNutricionalId, snapshot, operation);
-                repository.Add(movement); movements.Add(View(movement));
+                repository.Add(movement); movements.Add(View(movement)); monetaryMovements.Add(movement);
                 // Separate saves intentionally permit a failure barrier between debit and credit. The outer transaction keeps them atomic.
                 await repository.SaveAsync(ct);
             }
+            if (materialCosts is not null) await materialCosts.ApplyInventoryAsync(entity,monetaryMovements,c.CustoMaterial,ct);
             if (beforeLot != InventoryJson.Write(plan.Lot)) await Audit(plan.Lot.Id, "Lote", "BloqueioPorMovimento", actor, c.Motivo, JsonDocument.Parse(beforeLot).RootElement, plan.Lot, ct);
             await Audit(id, "Evento", operation, actor, c.Motivo, null, new { Evento = entity, Movimentos = movements }, ct);
             var view = new EventoView(id, sequence.ToString(CultureInfo.InvariantCulture), operation, actor, c.ResponsavelId, entity.CreatedAtUtc, entity.DataOperacional, c.DataObservada, entity.Motivo, entity.Documento, c.EventoReferenciaId, entity.Algoritmo, snapshot, movements);
@@ -356,6 +361,8 @@ public sealed class InventoryService(IInventoryRepository repository, IAuthentic
     public Task<SaldoView> GetSaldoAsync(Guid lot, Guid local, Guid actor, CancellationToken ct) => Read(actor, async () => await repository.SaldoAsync(lot, local, Today, ct) ?? throw Missing(), ct);
     public Task<EventoView> GetEventoAsync(Guid id, Guid actor, CancellationToken ct) => Read(actor, async () => await repository.EventoAsync(id, ct) ?? throw Missing(), ct);
     public Task<ResponsavelView> GetResponsavelAsync(Guid id, Guid actor, CancellationToken ct) => Read(actor, async () => await repository.ResponsibleAsync(id, false, ct) ?? throw Missing(), ct);
+    public Task<InventoryMutationResult> CommandAsync(Guid resource,string operation,string key,Guid actor,CancellationToken ct)=>Read(actor,async()=>
+    {operation=MovementOperation(operation);var value=await repository.ReplayAsync(actor,operation,resource,key,ct)??throw Missing();await AuthorizeAsync(actor,value.ExigeAdmin,ct);return new InventoryMutationResult(value.StatusHttp,value.Location,value.RespostaJson,true);},ct);
     public Task<ConversionView> GetConversionAsync(Guid id, Guid actor, CancellationToken ct) => Read(actor, async () =>
     { var c = await repository.ConversionAsync(id, ct) ?? throw Missing(); return new ConversionView(c.Id, c.ItemId, c.Numero, c.Origem, c.Destino, CatalogRules.Format(c.Fator), c.Fonte, c.Metodo, c.DataFonte, c.Contexto, c.ReferenciaAmostra, c.Proveniencia); }, ct);
 }

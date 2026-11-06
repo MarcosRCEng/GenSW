@@ -22,6 +22,8 @@ public sealed class EstoqueController(InventoryService service) : ControllerBase
 
     [HttpGet("locais")]
     public async Task<IActionResult> Locais([FromQuery] InventoryQuery query, CancellationToken ct) => Ok(await service.LocaisAsync(query, Actor, ct));
+    [HttpGet("comandos/{operation}/{resource:guid}/{key}")]
+    public Task<IActionResult> Command(Guid resource,string operation,string key,CancellationToken ct)=>Mutation(service.CommandAsync(resource,operation,key,Actor,ct));
     [HttpGet("locais/{id:guid}")]
     public async Task<IActionResult> Local(Guid id, CancellationToken ct) => Ok(await service.GetLocalAsync(id, Actor, ct));
     [HttpPost("locais")]

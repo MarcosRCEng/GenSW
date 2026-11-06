@@ -528,7 +528,7 @@ describe('AppRoutes', () => {
       }
     }
     expect(within(screen.getByRole('main')).getAllByRole('link').map((link) => link.getAttribute('href')).sort()).toEqual([
-      '/animais', '/ciclos-reprodutivos', '/cruzamentos', '/especies',
+      '/animais', '/ciclos-reprodutivos', '/cruzamentos', '/custos-materiais', '/especies',
       '/estoque/locais', '/estoque/lotes', '/estoque/movimentos', '/estoque/reconciliacao', '/estoque/saldos',
       '/financeiro', '/itens', '/itens/categorias', '/pessoas', '/producao/formulacao', '/producao/ordens', '/producao/ponte-ovos', '/producao/receitas', '/proles', '/propriedades', '/racas', '/variedades',
     ])

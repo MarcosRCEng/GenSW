@@ -20,6 +20,9 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
+        services.AddScoped<GenSW.Application.MaterialCosts.MaterialCostFlow>();
+        services.AddScoped<GenSW.Application.MaterialCosts.MaterialCostService>();
+        services.AddScoped<GenSW.Application.MaterialCosts.IMaterialCostFlow>(sp=>sp.GetRequiredService<GenSW.Application.MaterialCosts.MaterialCostFlow>());
         services.AddScoped<GenSW.Application.Financial.FinancialService>();
         services.AddScoped<GenSW.Application.Properties.PropriedadeService>();
         services.AddScoped<GenSW.Application.Formulation.FormulationService>();

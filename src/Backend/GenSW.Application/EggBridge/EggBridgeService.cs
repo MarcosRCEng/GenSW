@@ -12,7 +12,8 @@ using GenSW.Domain.Inventory;
 namespace GenSW.Application.EggBridge;
 
 public sealed class EggBridgeService(IEggBridgeRepository repository, IInventoryRepository inventory,
-    IAuthenticationSessionService authentication, IEggBridgePreviewProtector protector, TimeProvider clock)
+    IAuthenticationSessionService authentication, IEggBridgePreviewProtector protector, TimeProvider clock,
+    GenSW.Application.MaterialCosts.IMaterialCostFlow? materialCosts=null)
 {
     public const string Algorithm = "gensw-egg-bridge/1.0";
     public const int SelectionLimit = 100;
@@ -328,6 +329,18 @@ public sealed class EggBridgeService(IEggBridgeRepository repository, IInventory
         Read(actor, c.Operacao == "Associacao", async () =>
         {
             var plan = await Prepare(c, false, ct);
+            GenSW.Application.MaterialCosts.MaterialInventoryPreview? costPreview=null;
+            if(c.Operacao=="Associacao"&&c.CustoMaterial is not null)throw new ArgumentException("Associação documental não cria quantidade ou custo novo.");
+            if(c.Operacao=="Entrada"&&materialCosts is not null)
+            {
+                var amount=plan.Sources.Count.ToString(CultureInfo.InvariantCulture);
+                var versions=new InventoryVersions(plan.Item.Revisao,plan.Lot.Revisao,plan.Local.Revisao,plan.Position.Revisao);
+                var quantity=new PhysicalQuantity(amount,"un",amount,amount,"0","un",null,null,null,false);
+                var movement=new InventoryMovementCommand(plan.Lot.Id,amount,"un",c.ResponsavelId,c.Motivo,versions,LocalId:plan.Local.Id,DataObservada:Today,Origem:plan.Lot.Origem,Fonte:plan.Lot.Fonte,CustoMaterial:c.CustoMaterial);
+                var preview=new InventoryPreview("Entrada",plan.Lot.Id,"un",quantity,[new(plan.Lot.Id,plan.Local.Id,CatalogRules.Format(plan.Position.Quantidade),CatalogRules.Format(plan.Position.Quantidade+plan.Sources.Count),plan.Position.Revisao,plan.Position.Revisao+1)],versions,[],Now,plan.Cut.ToString(CultureInfo.InvariantCulture));
+                costPreview=await materialCosts.PreviewInventoryAsync("Entrada",movement,preview,ct);
+                if(c.CustoMaterial is not null){c=c with{CustoMaterial=c.CustoMaterial with{SequenciaEsperada=costPreview.SequenciaEsperada}};plan=await Prepare(c,false,ct);}
+            }
             var expiry = Now.AddMinutes(30);
             var token = protector.Protect(InventoryJson.Write(new Seal("Confirmacao", Normalize(c), null, plan.Hash, expiry, Algorithm)));
             var delta = c.Operacao == "Entrada" ? plan.Sources.Count : 0;
@@ -335,7 +348,7 @@ public sealed class EggBridgeService(IEggBridgeRepository repository, IInventory
                 delta.ToString(CultureInfo.InvariantCulture), CatalogRules.Format(plan.Position.Quantidade),
                 CatalogRules.Format(plan.Position.Quantidade + delta), plan.Proof is null ? null : plan.Remaining.ToString(CultureInfo.InvariantCulture),
                 "un", plan.Anchor.Revisao.ToString(CultureInfo.InvariantCulture), plan.Cut.ToString(CultureInfo.InvariantCulture),
-                plan.Warnings, plan.Expectations.All(x => x.Impedimento is null), expiry);
+                plan.Warnings, plan.Expectations.All(x => x.Impedimento is null), expiry,costPreview);
         }, ct);
     public Task<EggMutationResult> ConfirmAsync(EggConfirmCommand c, string key, Guid actor, CancellationToken ct)
     {
@@ -356,6 +369,7 @@ public sealed class EggBridgeService(IEggBridgeRepository repository, IInventory
             var ev = plan.Original?.EventoId ?? Guid.NewGuid();
             var movementId = plan.Original?.Id ?? Guid.NewGuid();
             var beforeLot = InventoryJson.Write(plan.Lot);
+            EventoEstoque? costPhysicalEvent=null;MovimentoEstoque? costPhysicalMovement=null;
             if (plan.BlockLot && plan.Lot.Situacao != "Bloqueado") plan.Lot.SetState("Bloqueado", plan.Lot.Revisao, now, Today);
             if (operation == "Entrada")
             {
@@ -364,13 +378,13 @@ public sealed class EggBridgeService(IEggBridgeRepository repository, IInventory
                     count.ToString(CultureInfo.InvariantCulture), "0", "un", null, null, null, false);
                 var snapshot = InventoryJson.Write(new { Pedido = plan.Command, Item = plan.Item, Lote = plan.Lot,
                     Locais = new[] { plan.Local }, Previa = new { Quantidade = quantity }, F03 = new { GrupoId = groupId } });
-                inventory.Add(new EventoEstoque(ev, await inventory.NextSequenceAsync(ct), "Entrada", actor, plan.Command.ResponsavelId,
-                    now, Today, Today, plan.Command.Motivo, plan.Command.Evidencia, null, Algorithm, snapshot));
+                costPhysicalEvent=new EventoEstoque(ev, await inventory.NextSequenceAsync(ct), "Entrada", actor, plan.Command.ResponsavelId,
+                    now, Today, Today, plan.Command.Motivo, plan.Command.Evidencia, null, Algorithm, snapshot);inventory.Add(costPhysicalEvent);
                 if (plan.Position.Revisao == 0) inventory.Add(plan.Position);
                 var before = plan.Position.Quantidade;
                 plan.Position.SetBalance(checked(before + count), plan.Position.Revisao);
-                inventory.Add(new MovimentoEstoque(movementId, ev, 1, plan.Lot.Id, plan.Local.Id, plan.Item.Id, "un", "Entrada", count,
-                    quantity.Declarada, "un", "0", before, plan.Position.Quantidade, plan.Lot.ConversaoItemId, plan.Lot.PerfilNutricionalId, snapshot, "Entrada"));
+                costPhysicalMovement=new MovimentoEstoque(movementId, ev, 1, plan.Lot.Id, plan.Local.Id, plan.Item.Id, "un", "Entrada", count,
+                    quantity.Declarada, "un", "0", before, plan.Position.Quantidade, plan.Lot.ConversaoItemId, plan.Lot.PerfilNutricionalId, snapshot, "Entrada");inventory.Add(costPhysicalMovement);
                 repository.Add(new OrigemLoteOvos(Guid.NewGuid(), plan.Lot.Id, groupId));
                 if (beforeLot != InventoryJson.Write(plan.Lot))
                     inventory.Add(new HistoricoEstoque(Guid.NewGuid(), plan.Lot.Id, "Lote", "BloqueioPorMovimento", await inventory.NextSequenceAsync(ct), actor,
@@ -388,6 +402,8 @@ public sealed class EggBridgeService(IEggBridgeRepository repository, IInventory
                     repository.Add(new AlocacaoProvaOvos(Guid.NewGuid(), bridge.Id, proof.Id, proof.MovimentoEstoqueId,
                         Count(plan.Command.Selecao.Single(x => x.ProducaoOvoId == source.Id).Ordinal!)));
             }
+            if(operation=="Associacao"&&plan.Command.CustoMaterial is not null)throw new ArgumentException("Associação documental tem delta monetário zero e não recebe custo novo.");
+            if(costPhysicalEvent is not null&&costPhysicalMovement is not null&&materialCosts is not null)await materialCosts.ApplyInventoryAsync(costPhysicalEvent,[costPhysicalMovement],plan.Command.CustoMaterial,ct);
             await repository.SaveAsync(ct);
             return new(await Detail(groupId, ct), Location: $"/api/v1/producao/ponte-ovos/grupos/{groupId}", Group: groupId);
         }, ct);
@@ -457,13 +473,14 @@ public sealed class EggBridgeService(IEggBridgeRepository repository, IInventory
                 var quantity = new PhysicalQuantity(count, plan.Original.Unidade, count, count, "0", plan.Original.Unidade, null, null, null, false);
                 var snapshot = InventoryJson.Write(new { Pedido = plan.Command, F03 = new { GrupoId = groupId },
                     Compensacao = new { MovimentoOriginalId = plan.Original.Id }, Previa = new { Quantidade = quantity } });
-                inventory.Add(new EventoEstoque(ev.Value, await inventory.NextSequenceAsync(ct), "CompensacaoEntradaOvos", actor,
-                    plan.Command.ResponsavelId, Now, Today, Today, plan.Command.Motivo, plan.Command.Evidencia, plan.Group.EventoId, Algorithm, snapshot));
+                var costEvent=new EventoEstoque(ev.Value, await inventory.NextSequenceAsync(ct), "CompensacaoEntradaOvos", actor,
+                    plan.Command.ResponsavelId, Now, Today, Today, plan.Command.Motivo, plan.Command.Evidencia, plan.Group.EventoId, Algorithm, snapshot);inventory.Add(costEvent);
                 var before = plan.Position.Quantidade;
                 plan.Position.SetBalance(before - plan.Original.Quantidade, plan.Position.Revisao);
-                inventory.Add(new MovimentoEstoque(Guid.NewGuid(), ev.Value, 1, plan.Lot.Id, plan.Local.Id, plan.Group.ItemId, plan.Original.Unidade,
+                var costMovement=new MovimentoEstoque(Guid.NewGuid(), ev.Value, 1, plan.Lot.Id, plan.Local.Id, plan.Group.ItemId, plan.Original.Unidade,
                     "Saida", plan.Original.Quantidade, count, plan.Original.Unidade, "0", before, plan.Position.Quantidade,
-                    plan.Original.ConversaoItemId, plan.Original.PerfilNutricionalId, snapshot, "CompensacaoEntradaOvos"));
+                    plan.Original.ConversaoItemId, plan.Original.PerfilNutricionalId, snapshot, "CompensacaoEntradaOvos");inventory.Add(costMovement);
+                if(materialCosts is not null)await materialCosts.ReversePhysicalAsync(costEvent,[costMovement],ct);
                 // Persist the zero projection before the terminal lot state is checked by the physical guard.
                 await repository.SaveAsync(ct);
                 var beforeLot = InventoryJson.Write(plan.Lot);

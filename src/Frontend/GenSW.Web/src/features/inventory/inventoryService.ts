@@ -4,6 +4,8 @@ import type { Conversion, Item, Profile } from '../formulation/types'
 import type { Propriedade } from '../properties/types'
 import type { Event, History, InventoryPage, Local, Lote, Movement, PhysicalQuantity, Preview, Reconciliation, Responsible, Saldo, Versions } from './types'
 
+import { parseCostInventoryPreview } from '../material-costs/materialCostService'
+
 type RecordValue = Record<string, unknown>
 type Predicate = (v: unknown) => boolean
 const text: Predicate = v => typeof v === 'string'
@@ -65,6 +67,7 @@ export function parsePhysicalQuantity(v: unknown): PhysicalQuantity {
 }
 export function parsePreview(v: unknown): Preview {
   const value = fields(v, { operacao: nonempty, loteId: nonempty, unidade: unit, avisos: strings, observadoEmUtc: timestamp, sequenciaAte: sequence, posicoes: Array.isArray })
+  if (value.custoMaterial !== undefined && value.custoMaterial !== null) parseCostInventoryPreview(value.custoMaterial)
   const posicoes = (value.posicoes as unknown[]).map(x => {
     const position = fields(x, { loteId: nonempty, localId: nonempty, saldoAnterior: amount, saldoPosterior: amount, revisao: integer, revisaoResultante: integer })
     canonicalCount(value.unidade, position.saldoAnterior, position.saldoPosterior)

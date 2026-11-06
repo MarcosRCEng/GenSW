@@ -1,3 +1,4 @@
+import { parseCostInventoryPreview } from '../material-costs/materialCostService'
 import { httpRequest } from '../../shared/http/httpClient'
 import { InvalidApiResponseError } from '../../shared/http/httpErrors'
 import { queryPath } from '../inventory/inventoryService'
@@ -34,6 +35,8 @@ export function parseEggScope(value: unknown): EggScope { return fields(value, {
 export function parseEggProof(value: unknown): EggProof { return fields(value, { id: nonempty, movimentoEstoqueId: nonempty, eventoId: nonempty, itemId: nonempty, contagem: count, evidencia: nonempty, motivo: nonempty, responsavelId: nonempty, autorId: nonempty, createdAtUtc: timestamp }) as unknown as EggProof }
 export function parseEggExpectation(value: unknown): EggSourceExpectation { return fields(value, { producaoOvoId: nonempty, hashOrigem: nonempty, updatedAtUtc: timestamp, decisao: text, impedimento: nullable(text) }) as unknown as EggSourceExpectation }
 export function parseEggPreview(value: unknown): EggPreview {
+  const monetary = value && typeof value === 'object' ? (value as Record<string, unknown>).custoMaterial : undefined
+  if (monetary !== undefined && monetary !== null) parseCostInventoryPreview(monetary)
   const row = fields(value, { token: nonempty, operacao: operation, origens: Array.isArray, quantidade: count, deltaEstoque: delta, saldoAnterior: nullable(count), saldoPosterior: nullable(count), capacidadeRestante: nullable(count), unidade: v => v === 'un', revisaoAncora: sequence, sequenciaAte: sequence, avisos: strings, podeConfirmar: bool, expiraEmUtc: timestamp })
   return { ...row, origens: (row.origens as unknown[]).map(parseEggExpectation) } as unknown as EggPreview
 }

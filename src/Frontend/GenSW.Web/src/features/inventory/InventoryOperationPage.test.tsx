@@ -32,12 +32,14 @@ async function fill(operation: Operation) {
   fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'Conferência física' } })
   if (info.admin) fireEvent.change(screen.getByLabelText('Evidência e declaração da conferência física'), { target: { value: 'Contagem verificada' } })
   if (operation === 'saida-manual') fireEvent.change(screen.getByLabelText('Destino e finalidade da saída'), { target: { value: 'Uso documentado' } })
+  if (operation === 'entrada' || operation === 'abertura') { fireEvent.change(screen.getByLabelText('Conhecimento do custo'), { target: { value: 'Desconhecido' } }); fireEvent.change(screen.getByLabelText('Motivo monetário do recebimento'), { target: { value: 'Documento monetário ausente na fixture física' } }) }
   fireEvent.click(screen.getByRole('button', { name: 'Calcular prévia' }))
   await screen.findByRole('heading', { name: 'Revise antes de confirmar' })
 }
 
 describe('Apontamentos físicos F01', () => {
   beforeEach(() => {
+    sessionStorage.clear()
     vi.mocked(useAuth).mockReturnValue(auth())
     vi.mocked(httpRequest).mockImplementation(async (path, options) => {
       if (path === '/estoque/previas') {
@@ -100,7 +102,12 @@ describe('Apontamentos físicos F01', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar movimento' }))
     await screen.findByText('Revisão mudou')
     expect(screen.getByLabelText('Quantidade declarada')).toHaveValue('1,000001')
-    expect(screen.getByRole('button', { name: 'Confirmar movimento' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Repetir pedido original' })).toBeEnabled()
+    expect(screen.getByLabelText('Quantidade declarada')).toBeDisabled()
+    const afterConflict = vi.mocked(httpRequest).getMockImplementation()!
+    vi.mocked(httpRequest).mockImplementation((path, options) => path.startsWith('/estoque/comandos/') ? Promise.reject(new HttpError(404, '', 'Ausente')) : afterConflict(path, options))
+    fireEvent.click(screen.getByRole('button', { name: 'Consultar resultado original' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Liberar edição após consulta' }))
     fireEvent.change(screen.getByLabelText('Quantidade declarada'), { target: { value: '2' } })
     expect(screen.queryByRole('button', { name: 'Confirmar movimento' })).not.toBeInTheDocument()
   })
@@ -110,7 +117,7 @@ describe('Apontamentos físicos F01', () => {
     renderOperation('entrada'); await fill('entrada')
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar movimento' }))
     await screen.findByText('Não foi possível conectar à API.')
-    fireEvent.click(screen.getByRole('button', { name: 'Confirmar movimento' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Repetir pedido original' }))
     await screen.findByRole('heading', { name: 'Movimento registrado' })
     expect(writes()[1][1]).toEqual(writes()[2][1])
   })
@@ -127,7 +134,7 @@ describe('Apontamentos físicos F01', () => {
     const button = screen.getByRole('button', { name: 'Confirmar movimento' })
     fireEvent.click(button); fireEvent.click(button)
     await waitFor(() => expect(writes()).toHaveLength(2))
-    expect(screen.getByRole('button', { name: 'Confirmando…' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Repetir pedido original' })).toBeDisabled()
     complete({ evento: event, previa: preview }); await screen.findByRole('heading', { name: 'Movimento registrado' })
   })
 })

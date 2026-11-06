@@ -52,6 +52,7 @@ async function selectReference(label: string, value: string, option: RegExp) {
   fireEvent.change(select, { target: { value } })
 }
 async function fillEntry() {
+  fireEvent.change(screen.getByLabelText('Conhecimento do custo'), { target: { value: 'Desconhecido' } }); fireEvent.change(screen.getByLabelText('Motivo monetário do recebimento'), { target: { value: 'Documento monetário ausente' } })
   fireEvent.click(await screen.findByLabelText(`Selecionar lançamento ${first.origem.id}`))
   await selectReference('Item de ovos', item.id, /un/)
   await selectReference('Conferência aprovada', eggScope.id, /Origem física/)

@@ -49,6 +49,7 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        MaterialCostModelConfiguration.Configure(builder, Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL");
         EggBridgeModelConfiguration.Configure(builder, Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL");
         ProductionModelConfiguration.Configure(builder, Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL");
         InventoryModelConfiguration.Configure(builder, Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL");

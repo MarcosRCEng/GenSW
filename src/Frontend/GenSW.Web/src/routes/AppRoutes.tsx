@@ -45,6 +45,8 @@ import { ProductionGenealogyPage } from '../features/production/GenealogyPage'
 import { EggCandidatesPage } from '../features/egg-bridge/EggCandidatesPage'
 import { EggAdministrationPage } from '../features/egg-bridge/EggAdministrationPage'
 import { EggGroupDetailsPage, EggGroupsPage, EggReconciliationPage } from '../features/egg-bridge/EggGroupPages'
+import { CostReferencesPage, CostReferenceDetailsPage, CostReferenceFormPage } from '../features/material-costs/ReferencePages'
+import { CostLotsPage, CostLotPage, CostEvidencePage, CostEvaluationsPage, CostEvaluationPage, CostEvaluationFormPage, CostEstimateFormPage, CostEstimatePage, CostExecutionPage, CostReconciliationPage } from '../features/material-costs/CostPages'
 import { AppShell } from '../shared/layout/AppShell'
 
 function ApplicationLoading() {
@@ -97,6 +99,22 @@ export function AppRoutes() {
         <Route element={<EventDetailsPage />} path="/estoque/movimentos/:id" />
         <Route element={<InventoryListPage key="reconciliacao" resource="reconciliacao" />} path="/estoque/reconciliacao" />
         <Route element={<InventoryOperationPage key="operation" />} path="/estoque/operacoes/:type" />
+        <Route element={<Navigate replace to="/custos-materiais/referencias" />} path="/custos-materiais" />
+        <Route element={<CostReferencesPage />} path="/custos-materiais/referencias" />
+        <Route element={<CostReferenceFormPage />} path="/custos-materiais/referencias/nova" />
+        <Route element={<CostReferenceDetailsPage />} path="/custos-materiais/referencias/:id" />
+        <Route element={<CostReferenceFormPage />} path="/custos-materiais/referencias/:id/substituir" />
+        <Route element={<CostLotsPage />} path="/custos-materiais/lotes" />
+        <Route element={<CostLotPage />} path="/custos-materiais/lotes/:id" />
+        <Route element={<CostEvidencePage />} path="/custos-materiais/evidencias/:id" />
+        <Route element={<CostEvaluationsPage />} path="/custos-materiais/avaliacoes" />
+        <Route element={<CostEvaluationFormPage />} path="/custos-materiais/avaliacoes/nova" />
+        <Route element={<CostEvaluationPage />} path="/custos-materiais/avaliacoes/:id" />
+        <Route element={<CostEvaluationFormPage />} path="/custos-materiais/avaliacoes/:id/compensar" />
+        <Route element={<CostEstimateFormPage />} path="/custos-materiais/estimativas/nova" />
+        <Route element={<CostEstimatePage />} path="/custos-materiais/estimativas/:id" />
+        <Route element={<CostExecutionPage />} path="/custos-materiais/execucoes/:id" />
+        <Route element={<CostReconciliationPage />} path="/custos-materiais/reconciliacao" />
         <Route element={<ItemsPage />} path="/itens" />
         <Route element={<OrdersPage />} path="/producao/ordens" />
         <Route element={<OrderFormPage />} path="/producao/ordens/nova" />

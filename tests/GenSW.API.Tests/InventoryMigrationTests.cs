@@ -105,7 +105,7 @@ public sealed class InventoryMigrationTests
     [Fact]
     public async Task Database_guards_reject_immutable_writes_negative_fractional_mismatch_and_unbalanced_transfers()
     {
-        await using var pg = await EphemeralPostgreSql.StartAsync(); await using var db = Db(pg); await db.Database.MigrateAsync();
+        await using var pg = await EphemeralPostgreSql.StartAsync(); await using var db = Db(pg); await db.GetService<IMigrator>().MigrateAsync(InventoryMigration);
         var now = DateTimeOffset.UtcNow; var today = DateOnly.FromDateTime(now.UtcDateTime);
         var person = Pessoa.Criar(TipoPessoa.Fisica, "Responsável sintético", null, now);
         var user = new ApplicationUser { Id=Guid.NewGuid(),PessoaId=person.Id,IsActive=true,CreatedAtUtc=now,UpdatedAtUtc=now,UserName="migrationfixture",NormalizedUserName="MIGRATIONFIXTURE" };

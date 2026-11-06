@@ -39,10 +39,12 @@ async function fill(operation: 'entrada' | 'ajuste') {
   await within(select).findByRole('option', { name: /DEP/ })
   fireEvent.change(select, { target: { value: local.id } })
   fireEvent.change(screen.getByLabelText(operation === 'ajuste' ? 'Quantidade contada (alvo)' : 'Quantidade declarada'), { target: { value: '1' } })
+  if (operation === 'entrada') { fireEvent.change(screen.getByLabelText('Conhecimento do custo'), { target: { value: 'Desconhecido' } }); fireEvent.change(screen.getByLabelText('Motivo monetário do recebimento'), { target: { value: 'Documento monetário ausente' } }) }
   fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'Conferência física e documental' } })
 }
 describe('Recebimento F01 de ovos geridos pela F03', () => {
   beforeEach(() => {
+    sessionStorage.clear()
     vi.mocked(httpRequest).mockReset()
     vi.mocked(useAuth).mockReturnValue({ user: { userId: responsible.id, pessoaId: 'p', nome: responsible.nome, userName: 'marina', roles: ['Admin'] }, isAuthenticated: true, isInitializing: false, bootstrap: vi.fn(), login: vi.fn(), logout: vi.fn() })
     mockApi()

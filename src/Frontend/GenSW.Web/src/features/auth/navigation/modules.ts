@@ -84,6 +84,7 @@ export const navigationModules: readonly NavigationModule[] = [
     features: [
       { id: 'ordens-producao', name: 'Ordens', route: '/producao/ordens' },
       { id: 'receitas', name: 'Receitas', route: '/producao/receitas' },
+      { id: 'custos-materiais', name: 'Custos de materiais', route: '/custos-materiais' },
       { id: 'formulacao', name: 'Formulação e comparação', route: '/producao/formulacao' },
     ],
   },

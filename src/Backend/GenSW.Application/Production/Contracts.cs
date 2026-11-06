@@ -30,10 +30,13 @@ public sealed record OutputCommand(Guid Id, Guid LinhaId, string Quantidade, str
     string? FonteValidade = null, Guid? ResponsavelValidadeId = null, Guid? PerfilNutricionalId = null,
     Guid? ConversaoItemId = null, string? Aplicabilidade = null, QuantizationAcceptance? AceiteQuantizacao = null,
     bool Bloqueado = false);
-public sealed record LossCommand(string Quantidade, string Unidade, string Motivo, Guid? LinhaId = null);
+public sealed record LossCommand(string Quantidade, string Unidade, string Motivo, Guid? LinhaId = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] Guid? Id = null);
 public sealed record ConfirmCommand(int VersaoEsperada, Guid ResponsavelId, IReadOnlyList<InputCommand> Entradas,
     IReadOnlyList<OutputCommand> Saidas, IReadOnlyList<LossCommand> Perdas, string Motivo, string? Observacao = null,
-    DateOnly? DataObservada = null, string? Evidencia = null, string? AptidaoNoFato = null);
+    DateOnly? DataObservada = null, string? Evidencia = null, string? AptidaoNoFato = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    GenSW.Application.MaterialCosts.MaterialAllocationCommand? CustoMaterial = null);
 public sealed record AbortCommand(int VersaoEsperada, bool NenhumConsumoFisico, string Motivo, string Evidencia);
 public sealed record ReverseCommand(int VersaoEsperada, bool CoerenciaFisicaConfirmada, string Motivo, string Evidencia);
 public sealed record OccurrenceCommand(int VersaoEsperada, string Tipo, string Motivo, string Evidencia,
@@ -64,7 +67,9 @@ public sealed record ProductionReconciliation(Guid OrdemId, string Codigo, strin
 public sealed record ProductionMutationResult(int StatusHttp, string? Location, string RespostaJson, bool Replayed);
 public sealed record ProductionPreviewCommand(string Operacao, StartCommand? Inicio = null, ConfirmCommand? Confirmacao = null);
 public sealed record ProductionQuantityPreview(string Papel, Guid LinhaId, Guid Id, PhysicalQuantity Quantidade);
-public sealed record ProductionPreview(IReadOnlyList<ProductionQuantityPreview> Quantidades, IReadOnlyList<string> Avisos);
+public sealed record ProductionPreview(IReadOnlyList<ProductionQuantityPreview> Quantidades, IReadOnlyList<string> Avisos,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    GenSW.Application.MaterialCosts.MaterialProductionPreview? CustoMaterial = null);
 
 public interface IProductionRepository
 {

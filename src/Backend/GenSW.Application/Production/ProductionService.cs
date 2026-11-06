@@ -13,7 +13,8 @@ using GenSW.Domain.Production;
 namespace GenSW.Application.Production;
 
 public sealed class ProductionService(IProductionRepository repository,IInventoryRepository inventory,
-    IFormulationRepository formulation,IAuthenticationSessionService authentication,TimeProvider clock)
+    IFormulationRepository formulation,IAuthenticationSessionService authentication,TimeProvider clock,
+    GenSW.Application.MaterialCosts.IMaterialCostFlow? materialCosts=null)
 {
     public const string Algorithm="gensw-production/1.0";
     private DateTimeOffset Now=>clock.GetUtcNow();
@@ -39,7 +40,7 @@ public sealed class ProductionService(IProductionRepository repository,IInventor
         string Canonical(JsonElement e,string? field=null)=>e.ValueKind switch {
             JsonValueKind.Object=>"{"+string.Join(",",e.EnumerateObject().OrderBy(x=>x.Name,StringComparer.Ordinal).Select(x=>JsonSerializer.Serialize(x.Name)+":"+Canonical(x.Value,x.Name)))+"}",
             JsonValueKind.Array=>"["+string.Join(",",(field=="alocacoes"?e.EnumerateArray().OrderBy(x=>x.GetProperty("id").GetString(),StringComparer.Ordinal):e.EnumerateArray().AsEnumerable()).Select(x=>Canonical(x)))+"]",
-            JsonValueKind.String when field is "quantidade" or "tamanho" or "calculado" or "normalizado" or "residuo"=>decimal.TryParse(e.GetString(),NumberStyles.AllowLeadingSign|NumberStyles.AllowDecimalPoint,CultureInfo.InvariantCulture,out var number)?JsonSerializer.Serialize(CatalogRules.Format(number)):e.GetRawText(),
+            JsonValueKind.String when field is "quantidade" or "tamanho" or "calculado" or "normalizado" or "residuo" or "totalDocumentado" or "valorUnitario" or "quantidadeBase" or "percentual"=>decimal.TryParse(e.GetString(),NumberStyles.AllowLeadingSign|NumberStyles.AllowDecimalPoint,CultureInfo.InvariantCulture,out var number)?JsonSerializer.Serialize(CatalogRules.Format(number)):e.GetRawText(),
             _=>e.GetRawText() };
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Canonical(doc.RootElement))));
     }
@@ -227,7 +228,20 @@ public sealed class ProductionService(IProductionRepository repository,IInventor
         var order=await Order(id,false,ct);Prepared prepared;
         if(c.Operacao=="inicio"&&c.Inicio is {} start){order.Require("Planejada");order.Expect(start.VersaoEsperada);prepared=await Prepare(order,start.Entradas,null,true,false,false,false,ct);}
         else if(c.Operacao is "confirmacao" or "confirmacao-ocorrencia"&&c.Confirmacao is {} confirm){order.Require("Iniciada");order.Expect(confirm.VersaoEsperada);prepared=await Prepare(order,confirm.Entradas,confirm.Saidas,false,c.Operacao=="confirmacao-ocorrencia",false,false,ct);}
-        else throw new ArgumentException("Prévia exige operação e comando correspondentes.");return new ProductionPreview(prepared.Quantities,prepared.Warnings);
+        else throw new ArgumentException("Prévia exige operação e comando correspondentes.");
+        GenSW.Application.MaterialCosts.MaterialProductionPreview? costPreview=null;
+        if(materialCosts is not null&&c.Confirmacao is {} monetaryCommand&&c.Operacao is "confirmacao" or "confirmacao-ocorrencia")
+        {
+            var balances=new Dictionary<(Guid,Guid),decimal>();var fake=new List<MovimentoEstoque>();
+            foreach(var input in prepared.Inputs.Where(x=>x.Amount>0))
+            {
+                var position=(input.Lot.Id,input.Local.Id);var before=balances.TryGetValue(position,out var previous)?previous:input.Position.Quantidade;var after=before-input.Amount;balances[position]=after;
+                fake.Add(new MovimentoEstoque(Guid.NewGuid(),Guid.NewGuid(),1,input.Lot.Id,input.Local.Id,input.Item.Id,input.Lot.Unidade,"Saida",input.Amount,input.Quantity.Declarada,input.Quantity.UnidadeDeclarada,input.Quantity.Residuo,before,after,null,null,"{}","ProducaoConsumo"));
+            }
+            var outputs=monetaryCommand.Saidas.Select(output=>{var normalized=prepared.Quantities.SingleOrDefault(x=>x.Id==output.Id&&x.Papel=="Saida");return new GenSW.Application.MaterialCosts.MaterialOutputQuantity(output.Id,normalized?.Quantidade.Unidade??GenSW.Domain.MaterialCosts.MaterialCostRules.Quantity(output.Quantidade,output.Unidade).Unidade,normalized is null?0:CatalogRules.Decimal(normalized.Quantidade.Normalizada));}).ToArray();
+            costPreview=await materialCosts.PreviewProductionAsync(monetaryCommand,fake,outputs,ct);
+        }
+        return new ProductionPreview(prepared.Quantities,prepared.Warnings,costPreview);
     },ct);
     }
     public Task<ProductionMutationResult> StartAsync(Guid id,StartCommand c,string key,Guid actor,CancellationToken ct)=>Mutate(id,"inicio",c,key,actor,false,async _=>
@@ -251,7 +265,9 @@ public sealed class ProductionService(IProductionRepository repository,IInventor
         var entity=new EventoEstoque(eventId,sequence,operation,actor,responsible,now,date,observed,Text(reason),null,original?.EventoId,Algorithm,snapshot);inventory.Add(entity);
         var before=position.Quantidade;var revision=position.Revisao;if(revision==0)inventory.Add(position);position.SetBalance(checked(before+(credit?amount:-amount)),revision);
         var movement=new MovimentoEstoque(Guid.NewGuid(),eventId,1,lot.Id,local.Id,item.Id,lot.Unidade,credit?"Entrada":"Saida",amount,original is null?quantity.Declarada:CatalogRules.Format(original.Quantidade),original is null?quantity.UnidadeDeclarada:lot.Unidade,original is null?quantity.Residuo:"0",before,position.Quantidade,conversionId,profileId,snapshot,operation);
-        inventory.Add(movement);repository.Add(new ExecucaoMovimento(Guid.NewGuid(),execution,line,allocation,movement.Id,original is null?credit?"Saida":"Entrada":"Compensacao"));await repository.SaveAsync(ct);return movement;
+        inventory.Add(movement);repository.Add(new ExecucaoMovimento(Guid.NewGuid(),execution,line,allocation,movement.Id,original is null?credit?"Saida":"Entrada":"Compensacao"));
+        if(original is not null&&materialCosts is not null)await materialCosts.ReversePhysicalAsync(entity,[movement],ct);
+        await repository.SaveAsync(ct);return movement;
     }
     public Task<ProductionMutationResult> ConfirmAsync(Guid id,ConfirmCommand c,string key,Guid actor,bool exceptional,CancellationToken ct)=>Mutate(id,exceptional?"confirmacao-ocorrencia":"confirmacao",c,key,actor,exceptional,async admin=>
     {
@@ -293,7 +309,8 @@ public sealed class ProductionService(IProductionRepository repository,IInventor
         if(balance is not null and not 0)Text(c.Observacao,"Observação da diferença de massa não explicada");
         var executionId=Guid.NewGuid();var exceptionKind=exceptional?c.AptidaoNoFato=="Apto"?"FatoApto":"ConsumoIrregular":null;
         var result=prepared.Outputs.Count==0?"PerdaTotal":exceptionKind??(prepared.Deviation||c.Perdas.Count>0?"ComDesvio":"Normal");
-        repository.Add(new ExecucaoProducao(executionId,id,result,actor,c.ResponsavelId,Now,OperationalDate,c.DataObservada,InventoryJson.Write(new{Planejado=plan,Realizado=c,ClassificacaoOcorrencia=exceptionKind,Responsavel=await inventory.ResponsibleAsync(c.ResponsavelId,false,ct),Quantidades=prepared.Quantities,BalancoKg=balance is {} b?CatalogRules.Format(b):null,AvisosBalanco=balanceWarnings.Distinct().ToArray(),OcorrenciaProcessamento=plan.Escalonada.Tipo=="MisturaSimples"&&(c.Perdas.Count>0||balance is not null and not 0),AutorId=actor,Algoritmo=Algorithm}),Algorithm));
+        var executionEntity=new ExecucaoProducao(executionId,id,result,actor,c.ResponsavelId,Now,OperationalDate,c.DataObservada,InventoryJson.Write(new{Planejado=plan,Realizado=c,ClassificacaoOcorrencia=exceptionKind,Responsavel=await inventory.ResponsibleAsync(c.ResponsavelId,false,ct),Quantidades=prepared.Quantities,BalancoKg=balance is {} b?CatalogRules.Format(b):null,AvisosBalanco=balanceWarnings.Distinct().ToArray(),OcorrenciaProcessamento=plan.Escalonada.Tipo=="MisturaSimples"&&(c.Perdas.Count>0||balance is not null and not 0),AutorId=actor,Algoritmo=Algorithm}),Algorithm);
+        repository.Add(executionEntity);
         var reservations=await repository.ReservationsAsync(id,true,ct);
         // Reserve supplement before the debit, so each reservation conserves its original quantity independently.
         foreach(var input in prepared.Inputs.Where(x=>x.Amount>0))
@@ -313,6 +330,7 @@ public sealed class ProductionService(IProductionRepository repository,IInventor
             var link=new SaidaProducao(request.Id,executionId,request.LinhaId,lot.Id,output.Local.Id,output.Amount,lot.Revisao,lot.Situacao,lot.Validade,movement.EventoId);repository.Add(link);created.Add(link);await repository.SaveAsync(ct);
         }
         foreach(var input in prepared.Inputs.Where(x=>x.Amount>0).Select(x=>x.Lot.Id).Distinct())foreach(var output in created)repository.Add(new GenealogiaMaterial(Guid.NewGuid(),executionId,input,output.LoteId));
+        if(materialCosts is not null)await materialCosts.ApplyProductionAsync(executionEntity,await repository.StockMovementsAsync(executionId,ct),created,c,ct);
         if(exceptional||prepared.Deviation||c.Perdas.Count>0||balance is not null and not 0)repository.Add(new OcorrenciaProducao(Guid.NewGuid(),id,exceptional?exceptionKind!:plan.Escalonada.Tipo=="MisturaSimples"?"ProcessamentoRealizado":"Desvio",actor,Now,c.DataObservada,c.Motivo,c.Evidencia??c.Observacao??c.Motivo,true));
         order.Transition("Confirmada",c.VersaoEsperada,Now);Audit(order,exceptional?"confirmacao-ocorrencia":"confirmacao",actor,c.Motivo,JsonDocument.Parse(before).RootElement);return order;
     },ct);
