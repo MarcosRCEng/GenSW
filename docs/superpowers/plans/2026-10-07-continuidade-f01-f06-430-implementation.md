@@ -1,5 +1,7 @@
 # Plano executável da continuidade F01–F06
 
+Atualização documental em 09/11/2026: F04 integrada/aceita funcionalmente. A P5.0 [#525](https://devops-lab.tailaf9418.ts.net/issues/525) entrega [contrato proposto F05](../specs/2026-11-09-f05-otimizacao-525-design.md), decisões/cenários, [plano incremental P5.1](2026-11-09-f05-otimizacao-525-implementation.md) e prompt condicionado. N1/B1–B6 aguarda aceite explícito do contrato e autorização do recorte; sem código, dependência ou migration nesta P5.0. As atualizações datadas abaixo permanecem históricas. PR #37/#493/#509/F06 conservam seus gates separados.
+
 Atualização documental em 31/10/2026: a P4.0 [#508](https://devops-lab.tailaf9418.ts.net/issues/508) entrega [contrato proposto F04](../specs/2026-10-31-f04-custos-materiais-508-design.md) e [plano incremental P4.1 condicionado](2026-10-31-f04-custos-materiais-508-implementation.md). F03 foi aceita no recorte entregue e integrada pelo PR #33; F02 permanece Em validação funcional (#495). Prioridade F04 e dependência desse aceite permanecem para decisão; não há autorização de código/migration F04. #493 e F05/F06 não são iniciadas por este plano.
 
 Aceite posterior na [#510](https://devops-lab.tailaf9418.ts.net/issues/510): contrato F04/D04-01–D04-11 e prioridade após aceite funcional F02 aprovados na revisão `9c0d795696a962b1c565926eb363bd0092670f53`; P4.1 C1–C5 autorizada separadamente sob essa condição. A condição ainda não foi cumprida (#495 Em validação); não iniciar código/migration nem perguntar novamente os atos já registrados.
