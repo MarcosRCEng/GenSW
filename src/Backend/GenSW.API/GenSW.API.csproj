@@ -14,5 +14,6 @@
   <ItemGroup>
     <ProjectReference Include="..\GenSW.Application\GenSW.Application.csproj" />
     <ProjectReference Include="..\GenSW.Infrastructure\GenSW.Infrastructure.csproj" />
+    <ProjectReference Include="..\GenSW.OptimizationWorker\GenSW.OptimizationWorker.csproj" />
   </ItemGroup>
 </Project>

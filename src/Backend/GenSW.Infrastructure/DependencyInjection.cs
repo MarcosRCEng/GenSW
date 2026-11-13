@@ -72,6 +72,9 @@ public static class DependencyInjection
         services.AddScoped<GenSW.Application.EggBridge.IEggBridgeRepository, GenSW.Infrastructure.EggBridge.EggBridgeRepository>();
         services.AddScoped<GenSW.Application.Production.IProductionRepository, GenSW.Infrastructure.Production.ProductionRepository>();
         services.AddScoped<GenSW.Application.Formulation.IFormulationRepository, GenSW.Infrastructure.Formulation.FormulationRepository>();
+        services.AddScoped<GenSW.Application.Optimization.IOptimizationRepository, GenSW.Infrastructure.Optimization.OptimizationRepository>();
+        services.AddSingleton<GenSW.Domain.Optimization.IOptimizationSolver, GenSW.Infrastructure.Optimization.HighsProcessSolver>();
+        services.AddHostedService<GenSW.Infrastructure.Optimization.OptimizationRecovery>();
         services.AddScoped<GenSW.Application.Properties.IPropriedadeRepository, GenSW.Infrastructure.Properties.PropriedadeRepository>();
         services.AddScoped<GenSW.Application.Financial.IFinancialRepository, GenSW.Infrastructure.Financial.FinancialRepository>();
         services.AddScoped<IEspecieRepository, EspecieRepository>();

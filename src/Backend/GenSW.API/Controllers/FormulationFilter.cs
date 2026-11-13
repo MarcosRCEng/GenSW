@@ -1,3 +1,4 @@
+using System.Data.Common;
 using GenSW.Application.Formulation;
 using GenSW.Domain.Catalog;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +23,10 @@ public sealed class FormulationFilter : IExceptionFilter
         var pg = exception as Npgsql.PostgresException ?? exception.InnerException as Npgsql.PostgresException;
         if (pg?.SqlState == Npgsql.PostgresErrorCodes.LockNotAvailable) (status, code, message) = (409, "conflito_transitorio", "Outra operação está em andamento. Tente novamente com a mesma chave.");
         if (pg?.SqlState == Npgsql.PostgresErrorCodes.CheckViolation) (status, code, message) = (400, "dados_invalidos", "Dados incompatíveis com as regras de persistência.");
+        if (status == 0 && context.ActionDescriptor is Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor action &&
+            action.ControllerTypeInfo.AsType() == typeof(OptimizationController) &&
+            (exception is DbException || exception.InnerException is DbException))
+            (status, code, message) = (503, "persistencia_indisponivel", "Não foi possível confirmar a operação. Consulte a chave original antes de tentar novamente.");
         if (status == 0) return;
         var problem = new ProblemDetails { Status = status, Title = message }; problem.Extensions["code"] = code;
         context.Result = new ObjectResult(problem) { StatusCode = status }; context.ExceptionHandled = true;

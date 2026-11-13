@@ -82,8 +82,15 @@ public sealed class FormulationService(IFormulationRepository repository, TimePr
     }, ct);
     public async Task<Recipe> GetRecipeAsync(Guid id, CancellationToken ct) => await repository.RecipeAsync(id, false, ct) ?? throw Missing();
     public Task<CatalogPage<Recipe>> RecipesAsync(CatalogQuery q, CancellationToken ct) { q.Validate(); return repository.RecipesAsync(q, ct); }
-    public Task<Recipe> CreateRecipeAsync(RecipeHeader data, Guid actor, CancellationToken ct) => Mutate(() =>
-    { var r = Recipe.Create(data, clock.GetUtcNow()); repository.Add(r); Audit(r.Id, "Receita", "Criacao", actor, null, r); return Task.FromResult(r); }, ct);
+    public Task<Recipe> CreateRecipeAsync(RecipeHeader data, Guid actor, CancellationToken ct) =>
+        Mutate(() => Task.FromResult(CreateRecipeInMutation(data, actor)), ct);
+    internal Recipe CreateRecipeInMutation(RecipeHeader data, Guid actor)
+    {
+        var recipe = Recipe.Create(data, clock.GetUtcNow());
+        repository.Add(recipe);
+        Audit(recipe.Id, "Receita", "Criacao", actor, null, recipe);
+        return recipe;
+    }
     public Task<Recipe> UpdateRecipeAsync(Guid id, RecipeCommand command, Guid actor, CancellationToken ct) => Mutate(async () =>
     { var r = await repository.RecipeAsync(id, true, ct) ?? throw Missing(); var before = FormulationJson.Write(r); r.Update(command.Conteudo, command.VersaoEsperada); Audit(id, "Receita", "Edicao", actor, JsonDocument.Parse(before).RootElement, r); return r; }, ct);
     public Task<Recipe> RecipeStatusAsync(Guid id, StatusCommand command, Guid actor, CancellationToken ct) => Mutate(async () =>
@@ -91,12 +98,14 @@ public sealed class FormulationService(IFormulationRepository repository, TimePr
     public async Task<RecipeVersionView> GetVersionAsync(Guid id, CancellationToken ct) => View(await repository.VersionAsync(id, false, ct) ?? throw Missing());
     public async Task<CatalogPage<RecipeVersionView>> VersionsAsync(Guid? recipe, CatalogQuery q, CancellationToken ct)
     { q.Validate(); if (recipe is { } id) await GetRecipeAsync(id, ct); var p = await repository.VersionsAsync(recipe, q, ct); return new(p.Items.Select(View).ToArray(), p.Page, p.PageSize, p.TotalItems, p.TotalPages); }
-    public Task<RecipeVersionView> CreateVersionAsync(Guid recipe, RecipeData data, Guid actor, CancellationToken ct) => Mutate(async () =>
+    public Task<RecipeVersionView> CreateVersionAsync(Guid recipe, RecipeData data, Guid actor, CancellationToken ct) =>
+        Mutate(async () => await CreateVersionInMutationAsync(await GetRecipeAsync(recipe, ct), data, actor, ct), ct);
+    internal async Task<RecipeVersionView> CreateVersionInMutationAsync(Recipe recipe, RecipeData data, Guid actor, CancellationToken ct)
     {
-        Active((await GetRecipeAsync(recipe, ct)).Ativo); data.Validate(false); await ReferencesAsync(data, ct);
-        var v = RecipeVersion.Create(recipe, await repository.NextVersionAsync(recipe, ct), data, actor, clock.GetUtcNow());
+        Active(recipe.Ativo); data.Validate(false); await ReferencesAsync(data, ct);
+        var v = RecipeVersion.Create(recipe.Id, await repository.NextVersionAsync(recipe.Id, ct), data, actor, clock.GetUtcNow());
         repository.Add(v); Audit(v.Id, "ReceitaVersao", "Criacao", actor, null, View(v)); return View(v);
-    }, ct);
+    }
     public Task<RecipeVersionView> UpdateVersionAsync(Guid id, RecipeVersionCommand command, Guid actor, CancellationToken ct) => Mutate(async () =>
     {
         var v = await repository.VersionAsync(id, true, ct) ?? throw Missing(); var before = View(v);
