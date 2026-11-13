@@ -54,6 +54,7 @@ public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
         ProductionModelConfiguration.Configure(builder, Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL");
         InventoryModelConfiguration.Configure(builder, Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL");
         FormulationModelConfiguration.Configure(builder, Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL");
+        OptimizationModelConfiguration.Configure(builder);
         FinancialModelConfiguration.Configure(builder, Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL");
         ImageModelConfiguration.Configure(builder);
         PropriedadeModelConfiguration.Configure(builder, Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL");

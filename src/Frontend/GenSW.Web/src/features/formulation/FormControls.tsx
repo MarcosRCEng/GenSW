@@ -228,6 +228,8 @@ export function ServerSelect<T extends { id: string }>({
   onChange,
   caption,
   params = {},
+  eligible,
+  selectedCaption,
 }: {
   label: string
   path: string
@@ -235,6 +237,8 @@ export function ServerSelect<T extends { id: string }>({
   onChange: (value: string | null, item?: T) => void
   caption: (item: T) => string
   params?: Record<string, string | number | boolean | undefined>
+  eligible?: (item: T) => boolean
+  selectedCaption?: string
 }) {
   const [search, setSearch] = useState('')
   const [current, setCurrent] = useState(1)
@@ -277,7 +281,8 @@ export function ServerSelect<T extends { id: string }>({
       clearTimeout(timer)
     }
   }, [path, encodedParams, search, current, retry])
-  const contains = result?.items.some((x) => x.id === value)
+  const options = result?.items.filter((item) => !eligible || eligible(item))
+  const contains = options?.some((x) => x.id === value)
   return (
     <fieldset className="min-w-0 space-y-2 rounded-lg border p-3">
       <legend className="px-1 text-sm font-medium">{label}</legend>
@@ -302,7 +307,7 @@ export function ServerSelect<T extends { id: string }>({
         className={control}
         value={value ?? ''}
         onChange={(e) => {
-          const item = result?.items.find((x) => x.id === e.target.value)
+          const item = options?.find((x) => x.id === e.target.value)
           setSelectedLabel(item ? caption(item) : null)
           onChange(e.target.value || null, item)
         }}
@@ -310,10 +315,10 @@ export function ServerSelect<T extends { id: string }>({
         <option value="">Não selecionado</option>
         {value && !contains && (
           <option value={value}>
-            {selectedLabel ?? `Referência selecionada: ${value}`}
+            {selectedCaption ?? selectedLabel ?? `Referência selecionada: ${value}`}
           </option>
         )}
-        {result?.items.map((item) => (
+        {options?.map((item) => (
           <option key={item.id} value={item.id}>
             {caption(item)}
           </option>
@@ -321,6 +326,7 @@ export function ServerSelect<T extends { id: string }>({
       </select>
       {loading && <p role="status">Buscando…</p>}
       <ErrorNotice error={error} />
+      {!loading && !error && options?.length === 0 && eligible && <p>Nenhuma opção elegível nesta página.</p>}
       {error && (
         <button
           type="button"

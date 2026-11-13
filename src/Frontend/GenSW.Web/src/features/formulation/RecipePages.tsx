@@ -12,6 +12,8 @@ import {
   DetailsPage,
 } from '../../shared/details/DetailsPage'
 import { useRecordDetails } from '../../shared/details/useRecordDetails'
+import { DraftOrigin } from '../optimization/DraftOrigin'
+import { isGuid } from '../optimization/api'
 import {
   listReturnState,
   formReturnTarget,
@@ -361,6 +363,8 @@ function RecipeVersionForm() {
   const { id, versionId } = useParams()
   const [params] = useSearchParams()
   const source = params.get('origem')
+  const optimization = params.get('otimizacao')
+  const versionQuery = isGuid(optimization) ? `?${new URLSearchParams({ otimizacao: optimization })}` : ''
   const location = useLocation()
   const navigate = useNavigate()
   const [parentId, setParentId] = useState(id)
@@ -415,7 +419,8 @@ function RecipeVersionForm() {
         versionId ? 'PUT' : 'POST',
       )
       draft.markSaved()
-      navigate(`/producao/receitas/versoes/${v.id}`, { state: savedRecordState(back, `/producao/receitas/versoes/${v.id}`) })
+      const target = `/producao/receitas/versoes/${v.id}${versionQuery}`
+      navigate(target, { state: savedRecordState(back, target) })
     } catch (e) {
       setError(message(e))
     } finally {
@@ -432,13 +437,14 @@ function RecipeVersionForm() {
         className={button}
         to={
           versionId
-            ? `/producao/receitas/versoes/${versionId}`
+            ? `/producao/receitas/versoes/${versionId}${versionQuery}`
             : `/producao/receitas/${id}`
         }
         state={back}
       >
         {versionId ? 'Cancelar edição e voltar para Versão' : 'Cancelar criação e voltar para Receita'}
       </Link>
+      {versionId && !loading && <DraftOrigin versionId={versionId} expected={isGuid(optimization) ? optimization : undefined} />}
       <ErrorNotice error={error} />
       {loading ? (
         <>
@@ -460,6 +466,9 @@ function RecipeVersionForm() {
 }
 export function RecipeVersionDetailsPage() {
   const { versionId } = useParams()
+  const [params] = useSearchParams()
+  const optimization = params.get('otimizacao')
+  const versionQuery = isGuid(optimization) ? `?${new URLSearchParams({ otimizacao: optimization })}` : ''
   const location = useLocation()
   const { record: v, state, retry } = useRecordDetails(versionId, getVersion)
   const [error, setError] = useState<string | null>(null)
@@ -508,12 +517,13 @@ export function RecipeVersionDetailsPage() {
       onRetry={retry}
       editPath={
         v?.estado === 'Rascunho'
-          ? `/producao/receitas/versoes/${v.id}/editar`
+          ? `/producao/receitas/versoes/${v.id}/editar${versionQuery}`
           : undefined
       }
     >
       {v && (
         <>
+          <DraftOrigin versionId={v.id} expected={isGuid(optimization) ? optimization : undefined} />
           <Section title={`Versão ${v.numero} · ${v.estado}`}>
             <ErrorNotice error={error} />
             <div className="flex flex-wrap gap-3">

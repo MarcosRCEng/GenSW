@@ -1,6 +1,6 @@
 # Catálogo e formulação — MVP-1 da Evolução #413
 
-O MVP oferece catálogo de materiais, perfis nutricionais documentais, receitas versionadas e simulações manuais. As telas autenticadas estão em `/itens`, `/producao/receitas` e `/producao/formulacao`. Estoque, lotes físicos, ordens, reservas, vínculo com ovos, custos, preços e otimização automática permanecem adiados.
+O MVP-1 entregou catálogo de materiais, perfis nutricionais documentais, receitas versionadas e simulações manuais. As telas autenticadas estão em `/itens`, `/producao/receitas` e `/producao/formulacao`. Estoque, ordens, vínculo com ovos e custos de materiais vieram nas fases F01–F04. A F05 acrescenta a ação **Otimização assistida** na área de formulação. Consulte o fluxo de ajuste de uma mistura de referência e criação de rascunho no [guia de operação da F05](otimizacao-formulacao.md).
 
 ## Uso e histórico
 

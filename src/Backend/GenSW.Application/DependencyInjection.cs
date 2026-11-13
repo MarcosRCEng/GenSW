@@ -26,6 +26,9 @@ public static class DependencyInjection
         services.AddScoped<GenSW.Application.Financial.FinancialService>();
         services.AddScoped<GenSW.Application.Properties.PropriedadeService>();
         services.AddScoped<GenSW.Application.Formulation.FormulationService>();
+        services.AddScoped<GenSW.Application.Optimization.OptimizationService>();
+        services.AddSingleton<GenSW.Application.Optimization.OptimizationWorkGate>();
+        services.AddSingleton<GenSW.Domain.Optimization.OptimizationEngine>();
         services.AddScoped<GenSW.Application.Inventory.InventoryService>();
         services.AddScoped<GenSW.Application.Production.ProductionService>();
         services.AddScoped<GenSW.Application.EggBridge.EggBridgeService>();

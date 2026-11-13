@@ -36,6 +36,9 @@ import { ItemsPage, ItemFormPage, ItemDetailsPage, CategoriesPage, ConversionFor
 import { ProfileFormPage, ProfileDetailsPage } from '../features/formulation/ProfilePages'
 import { RecipesPage, RecipeHeaderFormPage, RecipeDetailsPage, RecipeVersionFormPage, RecipeVersionDetailsPage } from '../features/formulation/RecipePages'
 import { FormulationPage, SimulationFormPage, SimulationDetailsPage, ComparisonDetailsPage } from '../features/formulation/SimulationPages'
+import { OptimizationDetailsPage, OptimizationsPage } from '../features/optimization/OptimizationPages'
+import { OptimizationFormPage } from '../features/optimization/OptimizationForm'
+import { optimizationPath } from '../features/optimization/api'
 import { InventoryListPage, LocalDetailsPage, LoteDetailsPage, EventDetailsPage } from '../features/inventory/InventoryPages'
 import { LocalFormPage, LoteFormPage, InventoryStatePage } from '../features/inventory/InventoryForms'
 import { InventoryOperationPage } from '../features/inventory/InventoryOperationPage'
@@ -147,6 +150,9 @@ export function AppRoutes() {
         <Route element={<SimulationFormPage />} path="/producao/formulacao/nova" />
         <Route element={<SimulationDetailsPage />} path="/producao/formulacao/:simulationId" />
         <Route element={<ComparisonDetailsPage />} path="/producao/formulacao/comparacoes/:comparisonId" />
+        <Route element={<OptimizationsPage />} path={optimizationPath} />
+        <Route element={<OptimizationFormPage />} path={`${optimizationPath}/nova`} />
+        <Route element={<OptimizationDetailsPage />} path={`${optimizationPath}/:optimizationId`} />
         <Route element={<PropertiesListPage />} path="/propriedades" />
         <Route element={<PropertyFormPage />} path="/propriedades/nova" />
         <Route element={<PropertyFormPage />} path="/propriedades/:id/editar" />

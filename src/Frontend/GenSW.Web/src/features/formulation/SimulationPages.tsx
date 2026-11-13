@@ -5,6 +5,7 @@ import { useRecordDetails } from '../../shared/details/useRecordDetails'
 import { useUnsavedChanges } from '../../shared/navigation/useUnsavedChanges'
 import { savedRecordState } from '../../shared/details/listNavigation'
 import { TableRegion } from '../../shared/layout/TableRegion'
+import { optimizationPath } from '../optimization/api'
 import { useFormDraft } from './useFormDraft'
 import { decimal, display, message, read, send } from './api'
 import { CollectionPanel } from './CatalogPages'
@@ -79,9 +80,10 @@ export function FormulationPage() {
           Compare composições e metas informadas, mantendo versões, fontes e
           hipóteses de cada simulação.
         </p>
-        <Link className={primary} to="/producao/formulacao/nova">
-          Nova simulação
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link className={primary} to="/producao/formulacao/nova">Nova simulação</Link>
+          <Link className={button} to={optimizationPath}>Otimização assistida</Link>
+        </div>
         <div className="flex flex-wrap items-end gap-3">
           <Choice
             label="Base da comparação"

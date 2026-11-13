@@ -17,6 +17,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Backend\GenSW.Infrastructure\GenSW.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Backend\GenSW.OptimizationWorker\GenSW.OptimizationWorker.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\GenSW.API.Tests\EphemeralPostgreSql.cs" Link="EphemeralPostgreSql.cs" />
