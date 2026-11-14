@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Duas propostas navegáveis para o GenSW, com dados exclusivamente sintéticos.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23173c30'/%3E%3Ctext x='8' y='29' font-family='Arial' font-weight='bold' font-size='27' fill='%23ccec83'%3EG%3C/text%3E%3C/svg%3E">
+  <title>GenSW · Escolha da navegação</title>
+  <link rel="stylesheet" href="prototype.css">
+  <script defer src="prototype.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#page-title">Ir para o conteúdo da aplicação</a>
+  <header class="review-header">
+    <div class="review-brand"><span class="review-mark" aria-hidden="true">G</span><div><strong>GenSW / Estudo de navegação</strong><span>Pesquisa #440 · escolha antes da implementação</span></div></div>
+    <button class="button quiet" type="button" id="compare-button">Comparar propostas</button>
+  </header>
+  <section class="review-controls" aria-label="Controles do protótipo">
+    <div class="choice-group"><span class="control-label">Estrutura</span><div class="segmented"><button type="button" data-variant="a" aria-pressed="true">A · Em camadas</button><button type="button" data-variant="b" aria-pressed="false">B · Sidebar única</button></div></div>
+    <div class="choice-group"><span class="control-label">Largura</span><div class="segmented"><button type="button" data-device="desktop" aria-pressed="true">Desktop</button><button type="button" data-device="tablet" aria-pressed="false">768 px</button><button type="button" data-device="mobile" aria-pressed="false">390 px</button></div></div>
+    <label class="state-control"><span class="control-label">Estado demonstrativo</span><select id="state-select"><option value="normal">Operação normal</option><option value="loading">Carregamento</option><option value="empty">Sem resultados</option><option value="error">Erro recuperável</option><option value="session">Sessão expirada</option><option value="permission">Papel insuficiente</option><option value="conflict">Conflito de edição</option><option value="confirmation">Confirmação</option></select></label>
+  </section>
+  <nav class="scenario-bar" aria-label="Cenários comparáveis"><span>Explorar:</span><button type="button" data-scenario="home">Início e menus</button><button type="button" data-scenario="animals">Animais e retorno</button><button type="button" data-scenario="financial">Caixa e painel</button><button type="button" data-scenario="inventory">Estoque e comando</button><button type="button" data-scenario="recipes">Receita e versão</button><button type="button" data-scenario="catalog">Catálogo e perfil</button></nav>
+  <div class="prototype-note"><span class="synthetic-dot" aria-hidden="true"></span><span>Todos os nomes, registros e valores abaixo são sintéticos. Navegação demonstrativa local; nenhuma API ou dado real.</span><span id="layout-caption">A · trilho 56 px + módulos 208 px; painel sob demanda</span></div>
+  <div class="viewport-stage"><div class="application-frame" id="app-frame" data-device="desktop"><div id="app"></div></div></div>
+  <footer class="review-footer"><span>Atalho: Tab percorre controles · Enter ativa links · Escape fecha painéis · recarregar preserva a URL/contexto.</span><a href="README-prototipos.md">Roteiro e limites dos protótipos</a></footer>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <dialog id="dialog" aria-labelledby="dialog-title"></dialog>
+</body>
+</html>
