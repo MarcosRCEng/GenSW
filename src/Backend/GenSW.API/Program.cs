@@ -44,7 +44,14 @@ builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options 
 });
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    var defaultSchemaId = options.SchemaGeneratorOptions.SchemaIdSelector;
+    options.CustomSchemaIds(type =>
+        type == typeof(GenSW.API.Contracts.Varieties.EspecieResumoResponse)
+            ? "VariedadeEspecieResumoResponse"
+            : defaultSchemaId(type));
+});
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(ApiPolicyNames.FrontendCors, policy =>
