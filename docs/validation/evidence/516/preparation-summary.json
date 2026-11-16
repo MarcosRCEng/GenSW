@@ -1,0 +1,436 @@
+{
+  "task": 516,
+  "parentIssue": 430,
+  "gateIssue": 495,
+  "scope": "Instantâneo da preparação técnica via API, anterior à rodada de navegador. Somente dados sintéticos.",
+  "testedRevision": "d2f917c8577a12b0bb046da62fca46a5fb01f793",
+  "databaseAlias": "F02-516",
+  "humanAcceptance": "PENDENTE",
+  "f04ImplementationStarted": false,
+  "sources": [
+    {
+      "name": "connection-proof.json",
+      "sha256": "a9d2f420b7b7be0af1d49f7b6897615f39cc2f0f66d31582aede063f12ffa240"
+    },
+    {
+      "name": "sql-review.json",
+      "sha256": "a3465a00800a35e24a6e8fd23e9d84ca6a4c4dbb63f5473b4bb165ac3e48fea5"
+    },
+    {
+      "name": "migration-proof.json",
+      "sha256": "3086b4c5362733def220a9bd309f8e345000c3ecca9b6d9092a09a70f5d177b3"
+    },
+    {
+      "name": "runtime-proof.json",
+      "sha256": "871155912f9e5e5928df7d82943c93bed827fb61c7f829dbf72b1d4f590e360d"
+    },
+    {
+      "name": "api-results.json",
+      "sha256": "aaabe5f56e2fe2e64261cc3fab09ef9f2c612e744eec0db88741efd157e663cc"
+    },
+    {
+      "name": "fixtures.json",
+      "sha256": "fb41b52cd1ba190bf4cb152b7c665111cc0d2fcffaf82b45077e9dff5f559a1e"
+    },
+    {
+      "name": "e01-fixtures.json",
+      "sha256": "fe064b574de0d67fe5b08360ee2ff68e2897cae63e7e1b4f0d7e8470935c8c69"
+    },
+    {
+      "name": "e01-api-results.json",
+      "sha256": "0620a8aa7a3dd844279e59f835df96667c1e4d2de1d6a1f58b189533ff19e55b"
+    }
+  ],
+  "isolation": {
+    "newEmptyDatabase": true,
+    "loopbackOnly": true,
+    "authenticatedConnection": true,
+    "connectionVerified": true,
+    "runtimeProcessVerified": true,
+    "apiSocketMatchesPostgresActivity": true,
+    "operationalDatabaseAccessed": false,
+    "syntheticOrders": 12
+  },
+  "migrations": {
+    "baselineCount": 0,
+    "requiredCount": 20,
+    "appliedCount": 20,
+    "ids": [
+      "20260820002015_AddIdentityFoundation",
+      "20260828000328_AddPessoaMasterData",
+      "20260901012054_AddEspecies",
+      "20260901230349_AddRacasVariedades",
+      "20260908223306_AddAnimalBase",
+      "20260912152820_AddIdentificacoesAnimal",
+      "20260929120616_AddRegistrosAnimal",
+      "20260929145816_AddFiliacoesAnimal",
+      "20260929151949_AddCruzamentos",
+      "20260929170724_AddCiclosReprodutivos",
+      "20260929180642_AddProles",
+      "20260929225633_AddEggProduction",
+      "20261002133151_AddAnimalWeightsAndImages",
+      "20261002133435_AddGenealogyTraversalIndex",
+      "20261002222623_AddFinancialCash",
+      "20261005132012_AddOperationalProperties",
+      "20261006220939_AddCatalogAndFormulation",
+      "20261007225228_AddManualInventory",
+      "20261025184750_AddProductionOrdersAndExecution",
+      "20261029000136_AddEggBridge"
+    ],
+    "exactHistory": true,
+    "sqlReviewedBeforeApply": true,
+    "idempotentReplay": true,
+    "sqlSha256": "17013933d09b536b142f3b8f74fbdc50fa6fa551131c4acbf78188f2a765f6e6",
+    "sqlLines": 3997,
+    "destructiveStatements": 0,
+    "externalConnectionsOrCommands": 0,
+    "foreignKeyCreationOrderIssues": 0,
+    "f02SqlMatchesVersionedOperationalScript": true,
+    "f03SqlMatchesVersionedReview503": true
+  },
+  "apiPreparation": {
+    "success": true,
+    "totalCalls": 93,
+    "expectedStatusMatches": 93,
+    "unexpectedStatuses": 0,
+    "statusCounts": [
+      {
+        "status": 200,
+        "count": 64
+      },
+      {
+        "status": 201,
+        "count": 25
+      },
+      {
+        "status": 409,
+        "count": 4
+      }
+    ],
+    "checksTotal": 14,
+    "checksPassed": 14,
+    "checks": [
+      {
+        "name": "Conta sintética Admin",
+        "passed": true
+      },
+      {
+        "name": "Planejamento congela a versão publicada exata sem reserva",
+        "passed": true
+      },
+      {
+        "name": "Reserva 100 preserva físico 1000 e disponível 900",
+        "passed": true
+      },
+      {
+        "name": "Confirmação 100 → 98 + perda 2, débito único de 100",
+        "passed": true
+      },
+      {
+        "name": "Genealogia A → execução → B persistida",
+        "passed": true
+      },
+      {
+        "name": "Exceção: perda total Admin sem lote vazio",
+        "passed": true
+      },
+      {
+        "name": "Exceção: aborto sem consumo libera reserva",
+        "passed": true
+      },
+      {
+        "name": "Reversão compensatória conserva execução e encerra saída zerada",
+        "passed": true
+      },
+      {
+        "name": "Reversão impedida após descendente, ancestral permanece confirmado",
+        "passed": true
+      },
+      {
+        "name": "Recuperação: consultar e repetir chave/corpo originais devolve mesma execução",
+        "passed": true
+      },
+      {
+        "name": "Recuperação: mesma chave com corpo divergente é conflito",
+        "passed": true
+      },
+      {
+        "name": "Exceção: ocorrência com consumo impede aborto e conserva reserva",
+        "passed": true
+      },
+      {
+        "name": "Falta de saldo recusa início sem reserva parcial",
+        "passed": true
+      },
+      {
+        "name": "Reconciliação F02 e F01 sem divergências",
+        "passed": true
+      }
+    ]
+  },
+  "orders": [
+    {
+      "scenario": "Ordem: rascunho editável",
+      "code": "F516-01-RASCUNHO-0c84b31f",
+      "state": "Rascunho",
+      "revision": 1,
+      "localUrl": "https://localhost:5186/producao/ordens/b438ac9b-3017-48e4-99ac-3d0d9f48738c"
+    },
+    {
+      "scenario": "Planejamento e revisão: snapshot publicado exato",
+      "code": "F516-02-PLANEJADA-0c84b31f",
+      "state": "Planejada",
+      "revision": 2,
+      "localUrl": "https://localhost:5186/producao/ordens/ac91ca6a-b840-414d-bd1d-206938aa1710"
+    },
+    {
+      "scenario": "Reserva: 100 kg ativos, físico preservado",
+      "code": "F516-03-RESERVADA-0c84b31f",
+      "state": "Iniciada",
+      "revision": 3,
+      "localUrl": "https://localhost:5186/producao/ordens/da582d72-3b0e-4b4a-909a-b10b3c83a540"
+    },
+    {
+      "scenario": "Confirmação com perdas e genealogia A→B",
+      "code": "F516-04-CONFIRMADA-0c84b31f",
+      "state": "Confirmada",
+      "revision": 4,
+      "localUrl": "https://localhost:5186/producao/ordens/013c0031-0d2b-4796-8c4f-d1fa304687b6"
+    },
+    {
+      "scenario": "Exceção Admin: perda total declarada, nenhum lote vazio",
+      "code": "F516-05-PERDA-TOTAL-0c84b31f",
+      "state": "Confirmada",
+      "revision": 4,
+      "localUrl": "https://localhost:5186/producao/ordens/7d1745e4-bcde-484d-b031-a009b5c33b16"
+    },
+    {
+      "scenario": "Exceção Admin: aborto comprovado sem consumo",
+      "code": "F516-06-ABORTADA-0c84b31f",
+      "state": "AbortadaSemConsumo",
+      "revision": 4,
+      "localUrl": "https://localhost:5186/producao/ordens/bca3f9a7-7990-4d7f-8a64-e0055e812781"
+    },
+    {
+      "scenario": "Reversão: compensação aplicada, histórico preservado",
+      "code": "F516-07-REVERTIDA-0c84b31f",
+      "state": "Revertida",
+      "revision": 5,
+      "localUrl": "https://localhost:5186/producao/ordens/1a723b2e-64a6-4b9b-859d-00cf8dfdbb0f"
+    },
+    {
+      "scenario": "Reversão elegível pronta para demonstração humana",
+      "code": "F516-08-REV-ELEGIVEL-0c84b31f",
+      "state": "Confirmada",
+      "revision": 4,
+      "localUrl": "https://localhost:5186/producao/ordens/b2c7af70-fa0e-4cb9-a169-3e5990ff7984"
+    },
+    {
+      "scenario": "Genealogia A→B→C: descendente confirmado; reversão ancestral impedida",
+      "code": "F516-09-DESCENDENTE-0c84b31f",
+      "state": "Confirmada",
+      "revision": 4,
+      "localUrl": "https://localhost:5186/producao/ordens/d8d1f5b7-a9a0-436c-b732-efa6187997cd"
+    },
+    {
+      "scenario": "Recuperação idempotente: consulta/replay mesmos IDs; divergência recusada",
+      "code": "F516-10-RECUPERACAO-0c84b31f",
+      "state": "Confirmada",
+      "revision": 4,
+      "localUrl": "https://localhost:5186/producao/ordens/3491494d-926a-4062-b682-317b83d11270"
+    },
+    {
+      "scenario": "Exceção: interrupção com consumo; resolver por confirmação de reais/perdas",
+      "code": "F516-11-INTERROMPIDA-0c84b31f",
+      "state": "Iniciada",
+      "revision": 4,
+      "localUrl": "https://localhost:5186/producao/ordens/26903372-daa2-4804-be35-d0b6519141b4"
+    },
+    {
+      "scenario": "Exceção: saldo insuficiente, ordem permanece planejada sem reserva",
+      "code": "F516-12-SEM-SALDO-0c84b31f",
+      "state": "Planejada",
+      "revision": 2,
+      "localUrl": "https://localhost:5186/producao/ordens/773d7035-7d60-486f-aa61-af5f3758c9e7"
+    }
+  ],
+  "images": {
+    "applicableToFixture": false,
+    "exactSyntheticImageRootExists": true,
+    "files": 0,
+    "authenticatedOriginalThumbnailAndRender": "Não aplicável ao recorte F02 desta fixture; gate de imagens do piloto não comprovado."
+  },
+  "limits": [
+    "As verificações API não substituem demonstração em navegador ou aceite funcional humano.",
+    "As contagens e estados são do instantâneo de preparação; ações posteriores em navegador podem alterá-los.",
+    "Nenhuma implementação ou migration F04 foi iniciada.",
+    "Não comprova upgrade de base histórica; aplicação realizada em base vazia sintética.",
+    "Avaliação npm #509 e validação geral #493 permanecem separadas."
+  ],
+  "e01Complement": {
+    "scope": "Complemento técnico independente E01; instantâneo das três novas ordens. Não soma consultas pontuais ou ações em navegador.",
+    "success": true,
+    "humanAcceptance": "PENDENTE",
+    "existingProtectedOrdersChanged": false,
+    "totalCalls": 50,
+    "expectedStatusMatches": 50,
+    "unexpectedStatuses": 0,
+    "statusCounts": [
+      {
+        "status": 200,
+        "count": 35
+      },
+      {
+        "status": 201,
+        "count": 10
+      },
+      {
+        "status": 400,
+        "count": 2
+      },
+      {
+        "status": 409,
+        "count": 3
+      }
+    ],
+    "checksTotal": 12,
+    "checksPassed": 12,
+    "checks": [
+      {
+        "name": "13-E01-APTO: rotina recusada conserva estado/reserva/físico",
+        "passed": true
+      },
+      {
+        "name": "13-E01-APTO: E01 exige evidência",
+        "passed": true
+      },
+      {
+        "name": "13-E01-APTO: resultado excepcional FatoApto",
+        "passed": true
+      },
+      {
+        "name": "13-E01-APTO: saída 98 obrigatoriamente Bloqueado/Segregacao e inelegível",
+        "passed": true
+      },
+      {
+        "name": "14-E01-IRREGULAR: rotina recusada conserva estado/reserva/físico",
+        "passed": true
+      },
+      {
+        "name": "14-E01-IRREGULAR: E01 exige evidência",
+        "passed": true
+      },
+      {
+        "name": "14-E01-IRREGULAR: resultado excepcional ConsumoIrregular",
+        "passed": true
+      },
+      {
+        "name": "14-E01-IRREGULAR: saída 98 obrigatoriamente Bloqueado/Segregacao e inelegível",
+        "passed": true
+      },
+      {
+        "name": "15-E01-PENDENTE: rotina recusada conserva estado/reserva/físico",
+        "passed": true
+      },
+      {
+        "name": "Ordem protegida da582d72-3b0e-4b4a-909a-b10b3c83a540 permanece intacta",
+        "passed": true
+      },
+      {
+        "name": "Ordem protegida b2c7af70-fa0e-4cb9-a169-3e5990ff7984 permanece intacta",
+        "passed": true
+      },
+      {
+        "name": "Reconciliação após complemento E01 sem divergências",
+        "passed": true
+      }
+    ],
+    "orders": [
+      {
+        "scenario": "E01 excepcional: FatoApto",
+        "code": "F516-13-E01-APTO-872a1f07",
+        "state": "Confirmada",
+        "fitnessAtFact": "Apto",
+        "result": "FatoApto",
+        "localUrl": "https://localhost:5186/producao/ordens/0c97086a-92de-48cc-ba73-f4ca3287629c"
+      },
+      {
+        "scenario": "E01 excepcional: ConsumoIrregular",
+        "code": "F516-14-E01-IRREGULAR-872a1f07",
+        "state": "Confirmada",
+        "fitnessAtFact": "Irregular",
+        "result": "ConsumoIrregular",
+        "localUrl": "https://localhost:5186/producao/ordens/157e3219-e3f0-429d-bcb5-a374026509c5"
+      },
+      {
+        "scenario": "E01 pendente para demonstração funcional humana",
+        "code": "F516-15-E01-PENDENTE-872a1f07",
+        "state": "Iniciada",
+        "fitnessAtFact": "Apto",
+        "result": "Pendente",
+        "localUrl": "https://localhost:5186/producao/ordens/16bbc3e5-a4d1-4eeb-99ef-3566bdffdd9a"
+      }
+    ],
+    "ordinaryConfirmation": {
+      "expectedHttpStatus": 409,
+      "ordersRejected": 3,
+      "stateAndReservationAndPhysicalPreserved": true
+    },
+    "missingEvidence": {
+      "expectedHttpStatus": 400,
+      "ordersRejected": 2,
+      "stateAndReservationPreserved": true
+    },
+    "exceptionalOutputs": [
+      {
+        "scenario": "13-E01-APTO",
+        "lotState": "Bloqueado",
+        "destinationPurpose": "Segregacao",
+        "physicalQuantity": "98",
+        "eligibleQuantity": "0",
+        "passed": true
+      },
+      {
+        "scenario": "14-E01-IRREGULAR",
+        "lotState": "Bloqueado",
+        "destinationPurpose": "Segregacao",
+        "physicalQuantity": "98",
+        "eligibleQuantity": "0",
+        "passed": true
+      }
+    ],
+    "reconciliation": {
+      "orders": 15,
+      "productionDivergences": 0,
+      "inventoryDivergences": 0
+    }
+  },
+  "apiPreparationTotals": {
+    "scope": "Preparação API inicial mais complemento E01; exclui consultas pontuais e ações em navegador.",
+    "syntheticOrders": 15,
+    "totalCalls": 143,
+    "expectedStatusMatches": 143,
+    "checksTotal": 26,
+    "checksPassed": 26,
+    "statusCounts": [
+      {
+        "status": 200,
+        "count": 99
+      },
+      {
+        "status": 201,
+        "count": 35
+      },
+      {
+        "status": 400,
+        "count": 2
+      },
+      {
+        "status": 409,
+        "count": 7
+      }
+    ],
+    "humanAcceptance": "PENDENTE",
+    "f04ImplementationStarted": false
+  }
+}
