@@ -2,7 +2,7 @@
 
 13/11/2026, America/Sao_Paulo · [Execução #530](https://devops-lab.tailaf9418.ts.net/issues/530) · [Gate #509](https://devops-lab.tailaf9418.ts.net/issues/509) · [Validação geral #493](https://devops-lab.tailaf9418.ts.net/issues/493)
 
-## Auditoria
+## Auditoria de 13/11/2026
 
 Baseline obtido após fetch de `origin/main` em `d078b28b4e48234e9a3ffcddf0409fafa1564d8d`, com [CI pós-merge aprovada](https://github.com/MarcosRCEng/GenSW/actions/runs/43429771514). O levantamento de 21 avisos pós-F03 é histórico. As consultas ao registro npm foram repetidas a partir do lockfile, sem scripts ou mudanças no arquivo durante cada consulta. Ambiente local Windows, Node 24.15.0, npm 11.12.1. O CI usa Ubuntu 24.04 e Node 22.
 
@@ -15,8 +15,8 @@ npm audit --package-lock-only --ignore-scripts --omit=dev --json
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Baseline | Completa | 2 | 10 | 5 | 2 | 19 | 1 |
 | Baseline | `--omit=dev` | 0 | 1 | 3 | 0 | 4 | 1 |
-| Candidato | Completa | 0 | 7 | 0 | 0 | 7 | 1 |
-| Candidato | `--omit=dev` | 0 | 0 | 0 | 0 | 0 | 0 |
+| Candidato original | Completa | 0 | 7 | 0 | 0 | 7 | 1 |
+| Candidato original | `--omit=dev` | 0 | 0 | 0 | 0 | 0 | 0 |
 
 SHA-256 do lockfile no checkout Windows, baseline `608141fda28bc0b03686daa99eb7ede8c26b9e3a51bc7b09f72e30cd64285cdb` e candidato `e807c1f5c26f88db42d3a9fd8be91e8d138f33add04db270fab5fc68ae729657`. O catálogo muda independentemente do lockfile. O npm conta pacotes atingidos, incluindo dependentes de um mesmo advisory.
 
@@ -40,6 +40,10 @@ Foi necessário atualizar typescript-eslint para 8.15.0 porque a combinação an
 - Edge em desktop e 390 × 844 com bundle estático, apenas em loopback e com respostas de API sintéticas. Renderização de CSS/JS, login, `me`, refresh ao recarregar, logout e redirecionamento de rota protegida confirmados. O refresh anônimo retornou 401 conforme a fixture. O host estático de teste retornou 404 para o favicon. O ensaio não avalia o backend real, dados, imagens ou o host efetivo do piloto.
 - A publicação é revisável. O SHA, os jobs e o resultado final da CI são registrados na #530 e na #509.
 
-## Decisão para o piloto
+## Correção de 16/11/2026
 
-O risco remanescente identificado pela auditoria está no lint. A recomendação é permitir o piloto **somente após aceite explícito do responsável** sobre o candidato revisado, mantendo a entrega por artefato estático e sem expor ferramentas de desenvolvimento ou de testes no ambiente do piloto. O responsável pelo piloto decide sobre esse risco e sobre o uso temporário da linha ESLint 9 sem manutenção. O mantenedor do frontend deve acompanhar a correção compatível do parser e a migração do ESLint e reavaliar antes da liberação se o SHA, o catálogo ou a exposição do ambiente mudar. A #493 continua planejada até a decisão de risco que permita a validação e a autorização para executá-la.
+O responsável exigiu a correção do `minimatch` no PR #41 antes da validação geral. A atualização de `typescript-eslint` para `8.73.0` levou a cadeia de `@typescript-eslint/typescript-estree` a `minimatch@11.0.9`, acima da versão corrigida `11.0.1`. A comparação integral das entradas de produção do lockfile mostrou zero diferenças. [Decisão #509](https://devops-lab.tailaf9418.ts.net/issues/509) · [Execução #535](https://devops-lab.tailaf9418.ts.net/issues/535) · [Advisory](https://github.com/isaacs/minimatch/security/advisories/GHSA-g3hv-75wg-m249)
+
+Após `npm ci` no Windows com Node 24.15.0 e npm 11.12.1, `npm audit --json` e `npm audit --omit=dev --json` retornaram zero ocorrências e código 0. O lockfile v3 tem SHA-256 `e7ab55235145120af681f2fbd0fb901d839e2e32fe0136840bcdb6df3c4c52ab`. Os 769 testes, o lint e o build passaram. O aviso de tamanho do bundle persiste.
+
+O ESLint 9.39.5 está fora de suporte. A proposta de exceção para o piloto precisa de decisão explícita sobre a revisão final. Prazo proposto de 16/12/2026 ou até a ampliação do piloto, o que ocorrer primeiro, com acompanhamento pelo mantenedor do frontend. Usar o bundle estático, manter as ferramentas de desenvolvimento e teste fora do ambiente exposto e reavaliar a cada semana ou se a revisão, o lockfile, o advisory aplicável ou a exposição mudarem. A #493 depende da decisão favorável e de autorização explícita. [Suporte do ESLint](https://eslint.org/version-support/) · [Validação geral #493](https://devops-lab.tailaf9418.ts.net/issues/493)
