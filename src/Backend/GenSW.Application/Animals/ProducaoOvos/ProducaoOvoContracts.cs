@@ -7,3 +7,4 @@ public sealed record ProducaoOvoMetricasResult(int TotalLancamentos, decimal? Pe
 public sealed record PagedProducaoOvoResult(IReadOnlyList<ProducaoOvoResult> Items, int Page, int PageSize, int TotalItems, int TotalPages, ProducaoOvoMetricasResult Metricas);
 public sealed class ProducaoOvoNotFoundException(Guid id) : KeyNotFoundException($"Egg production entry {id} was not found.");
 public sealed class ProducaoOvoNotEligibleException(Guid animalId) : InvalidOperationException($"Animal {animalId} is not eligible for egg production.");
+public sealed class ProducaoOvoLinkedException() : InvalidOperationException("Egg production entry is linked to egg reconciliation or inventory.");
