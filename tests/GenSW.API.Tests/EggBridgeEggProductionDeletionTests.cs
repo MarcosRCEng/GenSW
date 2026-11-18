@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using GenSW.Application.EggBridge;
 using GenSW.Domain.EggBridge;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -30,13 +31,31 @@ public sealed partial class EggBridgeApiTests
             using (var response = await client.DeleteAsync(Path(1)))
             {
                 Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-                Assert.Equal("postura_vinculada", (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("code").GetString());
+                var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+                Assert.Equal("postura_vinculada", problem.GetProperty("code").GetString());
+                Assert.Contains("Compensar entrada integral", problem.GetProperty("detail").GetString());
             }
             var preview = await Preview(client, Entry(material, scope.Id, user.UserId, eggs[2]));
-            await Confirm(client, preview);
-            using (var response = await client.DeleteAsync(Path(2))) Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+            var detail = await Confirm(client, preview);
+            var groupPath = $"grupos/{detail.Grupo.Id}";
+            Assert.Equal("1", (await Balance(client, material))!.Quantidade);
+            var beforeDelete = await Snapshot();
+            await Error(await client.DeleteAsync(Path(2)), HttpStatusCode.Conflict);
+            Assert.Equal(beforeDelete, await Snapshot());
+
+            var treatment = new EggTreatmentCommand("Compensacao", user.UserId, "Erro de registro sintético comprovado", Evidence, true);
+            var reversal = await Success<EggTreatmentPreview>(await Post(client, $"{groupPath}/previas-tratamento", treatment));
+            Assert.True(reversal.PodeConfirmar);
+            var compensated = await Success<EggBridgeDetail>(await Post(client, $"{groupPath}/tratamentos", new EggConfirmCommand(reversal.Token)));
+            Assert.Equal("0", (await Balance(client, material))!.Quantidade);
+            Assert.Single(compensated.Tratamentos, x => x.Tipo == "Compensacao");
+            var afterReversal = await Snapshot();
+            await Error(await client.DeleteAsync(Path(2)), HttpStatusCode.Conflict);
+            Assert.Equal(afterReversal, await Snapshot());
+
             Assert.Equal(2, await Factory.ExecuteDbContextAsync(db => db.ProducoesOvos.CountAsync(x => x.AnimalId == eggs[0].AnimalId)));
-            Assert.Equal(1, await Factory.ExecuteDbContextAsync(db => db.Set<PonteProducaoOvo>().CountAsync(x => x.ProducaoOvoId == eggs[2].Id)));
+            Assert.Equal(2, await Factory.ExecuteDbContextAsync(db => db.Set<DecisaoConciliacaoOvo>().CountAsync(x => x.RecorteId == scope.Id)));
+            Assert.Equal(Assert.Single(detail.Pontes), Assert.Single(compensated.Pontes));
         }
     }
 }
