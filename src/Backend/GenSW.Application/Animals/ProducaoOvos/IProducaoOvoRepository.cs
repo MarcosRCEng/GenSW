@@ -4,6 +4,7 @@ public interface IProducaoOvoRepository
 {
     Task AddAsync(ProducaoOvo item, CancellationToken cancellationToken = default);
     Task<ProducaoOvo?> GetForUpdateAsync(Guid id, CancellationToken cancellationToken = default);
+    Task DeleteAsync(ProducaoOvo item, CancellationToken cancellationToken = default);
     Task<ProducaoOvoResult?> GetAsync(Guid id, CancellationToken cancellationToken = default);
     Task<(IReadOnlyList<ProducaoOvoResult> Items, int TotalItems)> ListAsync(Guid animalId, ProducaoOvoListQuery query, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ProducaoOvoResult>> ListAllAsync(Guid animalId, ProducaoOvoListQuery query, CancellationToken cancellationToken = default);

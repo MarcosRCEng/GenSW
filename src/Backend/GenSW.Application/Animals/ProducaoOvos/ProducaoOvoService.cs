@@ -14,6 +14,12 @@ public sealed class ProducaoOvoService(IProducaoOvoRepository repository, TimePr
         await EnsureEligible(item.AnimalId, ct); item.Atualizar(command.DataPostura, command.PesoGramas, command.Observacao, timeProvider.GetUtcNow());
         await repository.SaveChangesAsync(ct); return (await repository.GetAsync(id, ct))!;
     }
+    public async Task DeleteAsync(Guid animalId, Guid id, CancellationToken ct = default)
+    {
+        var item = await repository.GetForUpdateAsync(id, ct) ?? throw new ProducaoOvoNotFoundException(id);
+        if (item.AnimalId != animalId) throw new ProducaoOvoNotFoundException(id);
+        await repository.DeleteAsync(item, ct);
+    }
     public async Task<PagedProducaoOvoResult> ListAsync(Guid animalId, ProducaoOvoListQuery query, CancellationToken ct = default)
     {
         if (query.Page < 1 || query.PageSize is < 1 or > 100 || query.DataFinal < query.DataInicial) throw new ArgumentException("List query is invalid.");
