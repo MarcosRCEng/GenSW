@@ -57,6 +57,23 @@ describe('Detalhes animais e reprodução', () => {
     expect(httpRequest).toHaveBeenCalledWith('/animais/animal-1/pesagens/weight-1', expect.objectContaining({ authenticated: true }))
     expectReadOnly()
   })
+  it('abre Evolução pelo teclado e vincula a ficha à comparação', async () => {
+    vi.mocked(httpRequest).mockImplementation(async path => {
+      if (path === '/animais/animal-1') return animal
+      if (path.endsWith('/filiacoes') || path.endsWith('/registros')) return []
+      return page(path.includes('/pesagens?') ? [weight] : [])
+    })
+    app('/animais/animal-1')
+    const ficha = await screen.findByRole('tab', { name: 'Ficha' })
+    const evolution = screen.getByRole('tab', { name: 'Evolução' })
+    ficha.focus()
+    fireEvent.keyDown(ficha, { key: 'ArrowRight' })
+    expect(evolution).toHaveFocus()
+    expect(evolution).toHaveAttribute('aria-selected', 'true')
+    expect(await screen.findByRole('heading', { name: 'Evolução do peso corporal' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Comparar aves' })).toHaveAttribute('href', '/animais/comparar?animalId=animal-1')
+    expectReadOnly()
+  })
   it('encontra produção antiga além da primeira página ao acessar URL direta', async () => {
     vi.mocked(httpRequest).mockImplementation(async path => path.includes('page=1&') ? page([], 1, 2) : page([{ id: 'egg-1', dataPostura: '2026-09-02', pesoGramas: 12.5, observacao: 'Registro da segunda página' }], 2, 2))
     app('/animais/animal-1/producoes-ovos/egg-1')

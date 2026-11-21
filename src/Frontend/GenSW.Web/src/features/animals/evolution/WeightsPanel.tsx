@@ -4,9 +4,9 @@ import { useUnsavedChanges } from '../../../shared/navigation/useUnsavedChanges'
 import { Link, useLocation } from 'react-router-dom'
 import { useEffect, useState, type FormEvent } from 'react'
 import { api, save, message, type Page, type Weight } from './api'
+import { weightMilestones as milestones } from './weightMilestones'
 import './evolution.css'
 
-const milestones = ['Livre', 'Nascimento', 'Idade em dias', 'Primeira postura', 'Abate', 'Outro']
 export function WeightsPanel({ animalId, birth, readOnly = false }: { animalId: string; birth: string | null; readOnly?: boolean }) {
   const location = useLocation()
   const parentPath = `/animais/${animalId}`

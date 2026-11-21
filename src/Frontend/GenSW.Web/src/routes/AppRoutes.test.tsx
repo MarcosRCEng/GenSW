@@ -455,7 +455,7 @@ describe('AppRoutes', () => {
     '/estoque/lotes', '/estoque/lotes/novo', '/estoque/lotes/id', '/estoque/lotes/id/editar',
     '/estoque/lotes/id/comandos/validade', '/estoque/movimentos', '/estoque/movimentos/id',
     '/estoque/reconciliacao', '/estoque/operacoes/entrada', '/estoque/operacoes/abertura',
-    '/pessoas/id', '/especies/id', '/racas/id', '/variedades/id', '/animais/id',
+    '/pessoas/id', '/especies/id', '/racas/id', '/variedades/id', '/animais/id', '/animais/comparar?animalId=id',
     '/propriedades', '/propriedades/nova', '/propriedades/id', '/propriedades/id/editar',
     '/cruzamentos/id', '/ciclos-reprodutivos/id', '/proles/id',
     '/financeiro/categorias/id', '/financeiro/lancamentos/id',
