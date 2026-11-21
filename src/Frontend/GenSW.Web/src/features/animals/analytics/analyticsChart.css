@@ -1,0 +1,177 @@
+.analytics-chart {
+  min-width: 0;
+  padding: clamp(.75rem, 2vw, 1.25rem);
+  border: 1px solid var(--border-default, #dae3dc);
+  border-radius: .75rem;
+  background: var(--surface-panel, #fff);
+}
+
+.analytics-chart h3 {
+  margin: 0 0 .75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.analytics-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem 1rem;
+  margin: 0 0 .5rem;
+  padding: 0;
+  list-style: none;
+  color: var(--text-muted, #53645a);
+  font-size: .875rem;
+}
+
+.analytics-chart-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.analytics-series-marker {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+  margin-inline-end: .1rem;
+  vertical-align: -.125rem;
+}
+
+.analytics-chart-plot > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.analytics-chart-axes line {
+  stroke: #d8e2db;
+}
+
+.analytics-chart-axes .analytics-chart-axis {
+  stroke: #778b80;
+}
+
+.analytics-chart-axes text {
+  fill: var(--text-muted, #53645a);
+  font-size: 11px;
+}
+
+.analytics-chart-axes .analytics-chart-axis-label {
+  fill: var(--text-primary, #24362f);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.analytics-chart-x-label {
+  margin: 0 0 .25rem;
+  color: var(--text-primary, #24362f);
+  font-size: .75rem;
+  font-weight: 650;
+  text-align: center;
+}
+
+.analytics-chart-line {
+  fill: none;
+  stroke-width: 1.8;
+}
+
+.analytics-chart-bar {
+  opacity: .75;
+}
+
+.analytics-chart-point {
+  cursor: pointer;
+}
+
+.analytics-chart-hit-area {
+  pointer-events: all;
+}
+
+.analytics-chart-marker {
+  stroke: var(--surface-panel, #fff);
+  stroke-width: 1.3;
+}
+
+.analytics-chart-halo {
+  fill: var(--surface-panel, #fff);
+  stroke: var(--focus-ring, #287cd0);
+  stroke-width: 1.5;
+  opacity: 0;
+}
+
+.analytics-chart-point[data-active=true] .analytics-chart-halo,
+.analytics-chart-point:hover .analytics-chart-halo,
+.analytics-chart-point:focus-visible .analytics-chart-halo {
+  opacity: 1;
+}
+
+.analytics-chart-point[data-dense=true][data-active=false]:not(:hover):not(:focus-visible) .analytics-chart-marker {
+  opacity: 0;
+}
+
+.analytics-chart-overlap {
+  fill: var(--text-primary, #24362f);
+  paint-order: stroke;
+  stroke: var(--surface-panel, #fff);
+  stroke-width: 3;
+  font-size: 10px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.analytics-chart-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem .85rem;
+  margin: .5rem 0;
+  padding: .65rem .75rem;
+  border-radius: .5rem;
+  background: #f3f6f3;
+  font-size: .875rem;
+}
+
+.analytics-chart-details div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.analytics-chart-details dt {
+  color: var(--text-muted, #53645a);
+  font-size: .75rem;
+}
+
+.analytics-chart-details dd {
+  margin: 0;
+  font-weight: 650;
+}
+
+.analytics-chart-table summary {
+  padding-block: .7rem;
+  color: var(--action-primary, #176348);
+  cursor: pointer;
+  font-size: .875rem;
+  font-weight: 650;
+}
+
+.analytics-chart-table table {
+  width: 100%;
+  text-align: left;
+  font-size: .875rem;
+}
+
+.analytics-chart-table :is(th, td) {
+  min-width: 5rem;
+  padding: .5rem;
+  border-bottom: 1px solid var(--border-default, #dae3dc);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.analytics-chart-empty {
+  color: var(--text-muted, #53645a);
+  font-size: .875rem;
+}

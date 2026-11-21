@@ -34,6 +34,7 @@ describe('AnimalsListPage', () => {
   it('renders all animal columns and loads every historical catalog page without an active filter', async () => {
     renderPage()
     expect(await screen.findByRole('heading', { name: 'Animais' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Comparar aves' })).toHaveAttribute('href', '/animais/comparar')
     for (const column of ['Código interno', 'Nome', 'Espécie', 'Raça', 'Variedade', 'Sexo', 'Escopo', 'Status']) expect(screen.getByRole('columnheader', { name: column })).toBeInTheDocument()
     await waitFor(() => expect(listEspecies).toHaveBeenCalledWith({ page: 2, pageSize: 100 }))
     expect(listRacas).toHaveBeenCalledWith({ page: 1, pageSize: 100 })

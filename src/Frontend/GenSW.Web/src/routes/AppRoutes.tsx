@@ -5,6 +5,7 @@ import { PeopleDetailsPage } from '../features/people/pages/PeopleDetailsPage'
 import { SpeciesDetailsPage } from '../features/species/pages/SpeciesDetailsPage'
 import { BreedDetailsPage } from '../features/breeds/pages/BreedDetailsPage'
 import { VarietyDetailsPage } from '../features/varieties/pages/VarietyDetailsPage'
+import { CompareAnimalsPage } from '../features/animals/analytics/CompareAnimalsPage'
 import { AnimalDetailsPage } from '../features/animals/pages/AnimalDetailsPage'
 import { AnimalRelatedDetailsPage } from '../features/animals/pages/AnimalRelatedDetailsPage'
 import { AuthenticatedHomePage } from '../features/auth/pages/AuthenticatedHomePage'
@@ -184,6 +185,7 @@ export function AppRoutes() {
         <Route element={<VarietyFormPage />} path="/variedades/nova" />
         <Route element={<VarietyFormPage />} path="/variedades/:id/editar" />
         <Route element={<AnimalsListPage />} path="/animais" />
+        <Route element={<CompareAnimalsPage />} path="/animais/comparar" />
         <Route element={<AnimalFormPage />} path="/animais/nova" />
         <Route element={<AnimalFormPage />} path="/animais/:id/editar" />
         <Route element={<BreedingListPage />} path="/cruzamentos" />

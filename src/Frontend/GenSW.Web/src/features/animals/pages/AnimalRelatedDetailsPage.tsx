@@ -5,6 +5,7 @@ import { DetailField, DetailStatus, DetailsPage } from '../../../shared/details/
 import { useRecordDetails } from '../../../shared/details/useRecordDetails'
 import { HttpError } from '../../../shared/http/httpErrors'
 import { api, type Page, type Photo, type Weight } from '../evolution/api'
+import { weightMilestones as milestones } from '../evolution/weightMilestones'
 import { AuthenticatedPhoto } from '../evolution/AuthenticatedPhoto'
 import { getAnimalIdentification } from '../identifications/services/identificationsService'
 import type { AnimalIdentification } from '../identifications/types'
@@ -16,7 +17,6 @@ type EggEntry = { id: string; dataPostura: string; pesoGramas: number; observaca
 type RelatedRecord = { section: 'identificacoes'; item: AnimalIdentification } | { section: 'registros'; item: AnimalRegistration } | { section: 'pesagens'; item: Weight } | { section: 'producoes-ovos'; item: EggEntry } | { section: 'imagens'; item: Photo }
 const titles: Record<AnimalRelatedSection, string> = { identificacoes: 'identificação física', registros: 'registro institucional', pesagens: 'pesagem', 'producoes-ovos': 'produção de ovos', imagens: 'imagem' }
 const identificationTypes = ['Anilha', 'Brinco', 'Microchip', 'Tatuagem', 'Marca', 'Outro']
-const milestones = ['Livre', 'Nascimento', 'Idade em dias', 'Primeira postura', 'Abate', 'Outro']
 const date = (value: string | null) => value?.split('-').reverse().join('/') ?? 'Não informada'
 
 // Some existing APIs expose a collection only. Walk every page until the stable

@@ -1,0 +1,126 @@
+.analytics-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  min-width: 0;
+  padding: clamp(0.75rem, 3vw, 1.5rem);
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 1px 2px #0f172a0d;
+}
+
+.analytics-field {
+  display: grid;
+  gap: 0.375rem;
+  color: #334155;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.analytics-field input,
+.analytics-field select,
+.analytics-button {
+  min-height: 2.75rem;
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid #94a3b8;
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.5rem 0.75rem;
+}
+
+.analytics-field input[type="number"] {
+  width: 100%;
+  max-width: 12rem;
+}
+
+.analytics-field input:focus-visible,
+.analytics-field select:focus-visible,
+.analytics-button:focus-visible {
+  outline: 2px solid #047857;
+  outline-offset: 2px;
+}
+
+.analytics-button:hover {
+  background: #f1f5f9;
+}
+
+.analytics-button[aria-pressed="true"],
+.analytics-button[aria-selected="true"] {
+  border-color: #047857;
+  background: #ecfdf5;
+  color: #065f46;
+  font-weight: 700;
+}
+
+.analytics-results {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.analytics-results caption {
+  padding: 0.5rem;
+  text-align: left;
+  font-weight: 700;
+}
+
+.analytics-results th,
+.analytics-results td {
+  padding: 0.625rem;
+  vertical-align: top;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.analytics-results thead th {
+  min-width: 7rem;
+  background: #f1f5f9;
+}
+
+.analytics-results thead th[aria-sort] {
+  background: #ecfdf5;
+}
+
+.analytics-bird {
+  display: inline-flex;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.analytics-results small {
+  display: block;
+  margin-top: 0.25rem;
+  color: #475569;
+  font-weight: 400;
+}
+
+.analytics-leader {
+  display: block;
+  margin-top: 0.25rem;
+  color: #065f46;
+}
+
+.analytics-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: 0.5rem;
+}
+
+.analytics-summary div {
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+}
+
+.analytics-summary dt {
+  color: #475569;
+  font-size: 0.875rem;
+}
+
+.analytics-summary dd {
+  margin-top: 0.125rem;
+  color: #0f172a;
+  font-weight: 700;
+}
