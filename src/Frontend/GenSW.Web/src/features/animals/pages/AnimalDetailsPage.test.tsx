@@ -1,8 +1,9 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { httpRequest } from '../../../shared/http/httpClient'
 import { HttpError } from '../../../shared/http/httpErrors'
+import { parentReturnState } from '../../../shared/details/listNavigation'
 import { AnimalDetailsPage } from './AnimalDetailsPage'
 import { AnimalRelatedDetailsPage } from './AnimalRelatedDetailsPage'
 import { BreedingDetailsPage } from '../../breedings/BreedingDetailsPage'
@@ -15,7 +16,9 @@ const animal = { id: 'animal-1', codigoInterno: 'AN-001', nome: 'Animal históri
 const page = (items: unknown[] = [], number = 1, totalPages = 1) => ({ items, page: number, pageSize: 100, totalItems: items.length, totalPages })
 const weight = { id: 'weight-1', dataMedicao: '2026-09-01', pesoGramas: 125, tipoMarco: 1, descricaoMarco: null, idadeReferenciaDias: null, idadeDiasNaMedicao: 243, observacao: 'Peso consultado' }
 const photo = { id: 'photo-1', legenda: 'Imagem histórica', dataCaptura: null, ordem: 0, ativa: false, representativa: false, thumbnailPath: '/conteudo-miniatura', conteudoPath: '/conteudo-privado' }
-function app(path: string) { return render(<MemoryRouter initialEntries={[path]}><Routes>
+const species = { ...animal.especie, nomeCientifico: null, createdAtUtc: animal.createdAtUtc, updatedAtUtc: animal.updatedAtUtc }
+const eggEntry = { id: 'egg-1', dataPostura: '2026-09-02', pesoGramas: 12.5, observacao: 'Registro da segunda página' }
+function app(path: string, state?: unknown) { return render(<MemoryRouter initialEntries={[{ pathname: path, state }]}><Routes>
   <Route path="/animais/:id" element={<AnimalDetailsPage />} />
   <Route path="/animais/:animalId/pesagens/:recordId" element={<AnimalRelatedDetailsPage section="pesagens" />} />
   <Route path="/animais/:animalId/producoes-ovos/:recordId" element={<AnimalRelatedDetailsPage section="producoes-ovos" />} />
@@ -33,7 +36,7 @@ function expectReadOnly() {
 
 describe('Detalhes animais e reprodução', () => {
   beforeEach(() => { vi.mocked(httpRequest).mockReset() })
-  it('consulta animal inativo e painéis sem montar operações de gravação', async () => {
+  it('carrega os dados gerais e só consulta cada histórico na primeira abertura da aba', async () => {
     vi.mocked(httpRequest).mockImplementation(async (path) => {
       if (path === '/animais/animal-1') return animal
       if (path.endsWith('/filiacoes') || path.endsWith('/registros')) return []
@@ -41,11 +44,22 @@ describe('Detalhes animais e reprodução', () => {
       return page()
     })
     app('/animais/animal-1')
-    await screen.findByText('Animal histórico')
-    await screen.findByText('Nenhuma identificação física cadastrada.')
-    await screen.findByText('Nenhuma pesagem registrada.')
-    expect(screen.getByText('Inativo')).toBeInTheDocument()
+    const ficha = await screen.findByRole('tab', { name: 'Dados gerais' })
+    expect(ficha).toHaveAttribute('aria-selected', 'true')
+    expect(vi.mocked(httpRequest).mock.calls.map(([path]) => path)).toEqual(['/animais/animal-1'])
+    expect(screen.queryByRole('tab', { name: 'Postura' })).not.toBeInTheDocument()
+    expect(within(screen.getByRole('tabpanel')).getByText('Inativo')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Espécie histórica' })).toHaveAttribute('href', '/especies/species-1')
+    fireEvent.click(screen.getByRole('tab', { name: 'Identificações' }))
+    await screen.findByText('Nenhuma identificação física cadastrada.')
+    const weightsTab = screen.getByRole('tab', { name: 'Pesagens' })
+    fireEvent.click(weightsTab)
+    await screen.findByText('Nenhuma pesagem registrada.')
+    fireEvent.click(ficha)
+    expect(screen.queryByRole('region', { name: 'Pesagens' })).not.toBeInTheDocument()
+    fireEvent.click(weightsTab)
+    expect(screen.getByRole('region', { name: 'Pesagens' })).toBeVisible()
+    expect(vi.mocked(httpRequest).mock.calls.filter(([path]) => path.includes('/pesagens?'))).toHaveLength(1)
     expect(screen.queryByRole('button', { name: /Inativar|Adicionar|Salvar|Corrigir|Definir pai/ })).not.toBeInTheDocument()
     expectReadOnly()
   })
@@ -64,18 +78,74 @@ describe('Detalhes animais e reprodução', () => {
       return page(path.includes('/pesagens?') ? [weight] : [])
     })
     app('/animais/animal-1')
-    const ficha = await screen.findByRole('tab', { name: 'Ficha' })
+    const ficha = await screen.findByRole('tab', { name: 'Dados gerais' })
     const evolution = screen.getByRole('tab', { name: 'Evolução' })
     ficha.focus()
-    fireEvent.keyDown(ficha, { key: 'ArrowRight' })
+    fireEvent.keyDown(ficha, { key: 'ArrowLeft' })
     expect(evolution).toHaveFocus()
     expect(evolution).toHaveAttribute('aria-selected', 'true')
     expect(await screen.findByRole('heading', { name: 'Evolução do peso corporal' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Comparar aves' })).toHaveAttribute('href', '/animais/comparar?animalId=animal-1')
+    fireEvent.keyDown(evolution, { key: 'Home' })
+    expect(ficha).toHaveFocus()
+    expect(ficha).toHaveAttribute('aria-selected', 'true')
     expectReadOnly()
   })
+
+  it('mostra a aba Postura para fêmea de espécie ovípara e consulta 10 registros ao abrir', async () => {
+    vi.mocked(httpRequest).mockImplementation(async path => {
+      if (path === '/animais/animal-1') return { ...animal, sexo: 2 }
+      if (path === '/especies/species-1') return { ...species, ovipara: true }
+      return page()
+    })
+    app('/animais/animal-1')
+    const postureTab = await screen.findByRole('tab', { name: 'Postura' })
+    expect(vi.mocked(httpRequest).mock.calls.map(([path]) => path)).toEqual(['/animais/animal-1', '/especies/species-1'])
+    fireEvent.click(postureTab)
+    expect(await screen.findByText('Nenhuma produção de ovos registrada.')).toBeVisible()
+    expect(httpRequest).toHaveBeenCalledWith('/animais/animal-1/producoes-ovos?page=1&pageSize=10&includeHistory=false', expect.objectContaining({ authenticated: true }))
+    expectReadOnly()
+  })
+
+  it('volta do detalhe de pesagem para a aba, página e filtros anteriores', async () => {
+    vi.mocked(httpRequest).mockImplementation(async path => {
+      if (path === '/animais/animal-1') return animal
+      if (path.endsWith('/weight-1')) return weight
+      return page([weight], 2, 2)
+    })
+    const path = '/animais/animal-1'
+    app(path, parentReturnState(undefined, path, { section: 'pesagens', page: 2, filters: { from: '2026-09-01', filter: '1' } }))
+    expect(await screen.findByRole('tab', { name: 'Pesagens' })).toHaveAttribute('aria-selected', 'true')
+    fireEvent.click(await screen.findByRole('link', { name: 'Visualizar' }))
+    await screen.findByRole('heading', { name: 'Visualizar pesagem' })
+    fireEvent.click(screen.getByRole('link', { name: 'Voltar para Animal' }))
+    const region = await screen.findByRole('region', { name: 'Pesagens' })
+    expect(region).toHaveFocus()
+    expect(within(region).getByLabelText('De')).toHaveValue('2026-09-01')
+    expect(within(region).getByLabelText('Filtrar marco')).toHaveValue('1')
+    expect(await within(region).findByText('Página 2 de 2')).toBeVisible()
+  })
+
+  it('restaura Postura e sua página depois de verificar a elegibilidade da espécie', async () => {
+    vi.mocked(httpRequest).mockImplementation(async path => {
+      if (path === '/animais/animal-1') return { ...animal, sexo: 2 }
+      if (path === '/especies/species-1') return { ...species, ovipara: true }
+      return {
+        ...page([eggEntry], 2, 2),
+        pageSize: 10,
+        totalItems: 11,
+        metricas: { totalLancamentos: 11, pesoMedioGramas: 12.5, pesoMinimoGramas: 12, pesoMaximoGramas: 13, pesoPadraoGramas: null, diasAtePesoPadrao: null },
+      }
+    })
+    const path = '/animais/animal-1'
+    app(path, parentReturnState(undefined, path, { section: 'producoes-ovos', page: 2 }))
+    expect(await screen.findByRole('tab', { name: 'Postura' })).toHaveAttribute('aria-selected', 'true')
+    expect(document.getElementById('record-producoes-ovos')).toHaveFocus()
+    expect(await screen.findByText(/Página 2 de 2/)).toBeVisible()
+    expect(httpRequest).toHaveBeenCalledWith('/animais/animal-1/producoes-ovos?page=2&pageSize=10&includeHistory=false', expect.objectContaining({ authenticated: true }))
+  })
   it('encontra produção antiga além da primeira página ao acessar URL direta', async () => {
-    vi.mocked(httpRequest).mockImplementation(async path => path.includes('page=1&') ? page([], 1, 2) : page([{ id: 'egg-1', dataPostura: '2026-09-02', pesoGramas: 12.5, observacao: 'Registro da segunda página' }], 2, 2))
+    vi.mocked(httpRequest).mockImplementation(async path => path.includes('page=1&') ? page([], 1, 2) : page([eggEntry], 2, 2))
     app('/animais/animal-1/producoes-ovos/egg-1')
     expect(await screen.findByText('Registro da segunda página')).toBeInTheDocument()
     expect(httpRequest).toHaveBeenCalledWith('/animais/animal-1/producoes-ovos?page=2&pageSize=100', expect.objectContaining({ authenticated: true }))

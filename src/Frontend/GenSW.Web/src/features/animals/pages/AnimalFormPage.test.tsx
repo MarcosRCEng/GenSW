@@ -1,21 +1,26 @@
 vi.mock('../evolution/WeightsPanel', () => ({ WeightsPanel: () => null }))
 vi.mock('../evolution/ImageGallery', () => ({ ImageGallery: () => null }))
-vi.mock('../filiations/components/AnimalFiliationsPanel', () => ({ AnimalFiliationsPanel: () => null }))
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { parentReturnState, recordEditState } from '../../../shared/details/listNavigation'
 import { HttpError } from '../../../shared/http/httpErrors'
 import { listRacas } from '../../breeds/services/breedsService'
-import { listEspecies } from '../../species/services/speciesService'
+import { getEspecieById, listEspecies } from '../../species/services/speciesService'
 import { listVariedades } from '../../varieties/services/varietiesService'
 import { createAnimal, getAnimalById, updateAnimal } from '../services/animalsService'
+import { listFiliations } from '../filiations/services/filiationsService'
 import { listAnimalIdentifications } from '../identifications/services/identificationsService'
 import { AnimalFormPage } from './AnimalFormPage'
 
-vi.mock('../../species/services/speciesService', () => ({ listEspecies: vi.fn() }))
+vi.mock('../../species/services/speciesService', () => ({ getEspecieById: vi.fn(), listEspecies: vi.fn() }))
 vi.mock('../../breeds/services/breedsService', () => ({ listRacas: vi.fn() }))
 vi.mock('../../varieties/services/varietiesService', () => ({ listVariedades: vi.fn() }))
 vi.mock('../services/animalsService', () => ({ createAnimal: vi.fn(), getAnimalById: vi.fn(), updateAnimal: vi.fn() }))
+vi.mock('../filiations/services/filiationsService', () => ({ listFiliations: vi.fn() }))
+vi.mock('../egg-production/AnimalEggProductionPanel', () => ({
+  AnimalEggProductionPanel: () => <section><h2>Produção de ovos</h2><label>Observação da postura<input /></label></section>,
+}))
 vi.mock('../identifications/services/identificationsService', () => ({
   createAnimalIdentification: vi.fn(),
   listAnimalIdentifications: vi.fn(),
@@ -24,16 +29,20 @@ vi.mock('../identifications/services/identificationsService', () => ({
   updateAnimalIdentificationMetadata: vi.fn(),
 }))
 
-const speciesA = { id: 'species-a', nomeComum: 'Canina', nomeCientifico: null, ativo: true, createdAtUtc: '2026-09-08T12:00:00Z', updatedAtUtc: '2026-09-08T12:00:00Z' }
-const speciesB = { ...speciesA, id: 'species-b', nomeComum: 'Felina' }
+const speciesA = { id: 'species-a', nomeComum: 'Canina', nomeCientifico: null, ovipara: false, ativo: true, createdAtUtc: '2026-09-08T12:00:00Z', updatedAtUtc: '2026-09-08T12:00:00Z' }
+const speciesB = { ...speciesA, id: 'species-b', nomeComum: 'Galinha', ovipara: true }
 const breedA = { id: 'breed-a', especieId: speciesA.id, nome: 'Pastor', ativo: true, createdAtUtc: '2026-09-08T12:00:00Z', updatedAtUtc: '2026-09-08T12:00:00Z', especie: { id: speciesA.id, nomeComum: speciesA.nomeComum, ativo: true } }
 const breedB = { ...breedA, id: 'breed-b', especieId: speciesB.id, nome: 'Siamês', especie: { id: speciesB.id, nomeComum: speciesB.nomeComum, ativo: true } }
 const varietyA = { id: 'variety-a', especieId: speciesA.id, nome: 'Curto', ativo: true, createdAtUtc: '2026-09-08T12:00:00Z', updatedAtUtc: '2026-09-08T12:00:00Z', especie: { id: speciesA.id, nomeComum: speciesA.nomeComum, ativo: true } }
 const varietyB = { ...varietyA, id: 'variety-b', especieId: speciesB.id, nome: 'Longo', especie: { id: speciesB.id, nomeComum: speciesB.nomeComum, ativo: true } }
 const savedAnimal = { id: 'animal-1', codigoInterno: 'AN-000001', nome: 'Bela', especieId: speciesA.id, racaId: breedA.id, variedadeId: varietyA.id, sexo: 2 as const, dataNascimento: '2020-02-29', escopo: 1 as const, ativo: true, createdAtUtc: '2026-09-08T12:00:00Z', updatedAtUtc: '2026-09-08T12:00:00Z', especie: { id: speciesA.id, nomeComum: speciesA.nomeComum, ativo: true }, raca: { id: breedA.id, nome: breedA.nome, ativo: true }, variedade: { id: varietyA.id, nome: varietyA.nome, ativo: true } }
+const savedBird = {
+  ...savedAnimal, especieId: speciesB.id, racaId: null, variedadeId: null, raca: null, variedade: null,
+  especie: { id: speciesB.id, nomeComum: speciesB.nomeComum, ativo: true },
+}
 
-function renderPage(path = '/animais/nova') {
-  return render(<MemoryRouter initialEntries={[path]}><Routes><Route element={<AnimalFormPage />} path="/animais/nova" /><Route element={<AnimalFormPage />} path="/animais/:id/editar" /><Route element={<h1>Animal destino</h1>} path="/animais/:id" /><Route element={<p>Lista de animais</p>} path="/animais" /></Routes></MemoryRouter>)
+function renderPage(path = '/animais/nova', state?: unknown) {
+  return render(<MemoryRouter initialEntries={[{ pathname: path, state }]}><Routes><Route element={<AnimalFormPage />} path="/animais/nova" /><Route element={<AnimalFormPage />} path="/animais/:id/editar" /><Route element={<h1>Animal destino</h1>} path="/animais/:id" /><Route element={<p>Lista de animais</p>} path="/animais" /></Routes></MemoryRouter>)
 }
 
 function SwitchToSecondAnimal() {
@@ -43,27 +52,113 @@ function SwitchToSecondAnimal() {
 
 beforeEach(() => {
   vi.resetAllMocks()
+  vi.mocked(getEspecieById).mockResolvedValue(speciesA)
   vi.mocked(listEspecies).mockImplementation(({ page = 1 } = {}) => Promise.resolve(page === 1 ? { items: [speciesA], page: 1, pageSize: 100, totalItems: 2, totalPages: 2 } : { items: [speciesB], page: 2, pageSize: 100, totalItems: 2, totalPages: 2 }))
   vi.mocked(listRacas).mockImplementation(({ page = 1 } = {}) => Promise.resolve(page === 1 ? { items: [breedA], page: 1, pageSize: 100, totalItems: 2, totalPages: 2 } : { items: [breedB], page: 2, pageSize: 100, totalItems: 2, totalPages: 2 }))
   vi.mocked(listVariedades).mockImplementation(({ page = 1 } = {}) => Promise.resolve(page === 1 ? { items: [varietyA], page: 1, pageSize: 100, totalItems: 2, totalPages: 2 } : { items: [varietyB], page: 2, pageSize: 100, totalItems: 2, totalPages: 2 }))
   vi.mocked(createAnimal).mockResolvedValue(savedAnimal)
   vi.mocked(getAnimalById).mockResolvedValue(savedAnimal)
   vi.mocked(updateAnimal).mockResolvedValue(savedAnimal)
+  vi.mocked(listFiliations).mockResolvedValue([])
   vi.mocked(listAnimalIdentifications).mockResolvedValue({ items: [], page: 1, pageSize: 10, totalItems: 0, totalPages: 0 })
 })
 
 describe('AnimalFormPage', () => {
-  it('keeps identifiers out of creation and renders a separate edit-only panel after the animal loads', async () => {
+  it('keeps record tabs out of creation and loads the identification panel when its edit tab opens', async () => {
     const creationPage = renderPage()
     await screen.findByRole('heading', { name: 'Novo animal' })
-    expect(screen.queryByRole('heading', { name: 'Identificações físicas' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
     expect(listAnimalIdentifications).not.toHaveBeenCalled()
     creationPage.unmount()
 
     renderPage('/animais/animal-1/editar')
-    expect(await screen.findByRole('heading', { name: 'Identificações físicas' })).toBeInTheDocument()
+    expect(await screen.findByRole('tab', { name: 'Dados gerais' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.queryByRole('tab', { name: 'Evolução' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Identificações físicas' })).not.toBeInTheDocument()
+    expect(listAnimalIdentifications).not.toHaveBeenCalled()
     expect(screen.getByLabelText('Código interno')).toHaveValue(savedAnimal.codigoInterno)
+    fireEvent.click(screen.getByRole('tab', { name: 'Identificações' }))
+    expect(await screen.findByRole('heading', { name: 'Identificações físicas' })).toBeVisible()
     await waitFor(() => expect(listAnimalIdentifications).toHaveBeenCalledWith(savedAnimal.id, { page: 1, pageSize: 10 }))
+  })
+
+  it('keeps drafts from general data and an opened record tab without reloading the record', async () => {
+    renderPage('/animais/animal-1/editar')
+    const general = await screen.findByRole('tab', { name: 'Dados gerais' })
+    const identifications = screen.getByRole('tab', { name: 'Identificações' })
+    fireEvent.click(identifications)
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar identificação' }))
+    fireEvent.change(screen.getByLabelText('Valor'), { target: { value: 'Anilha em edição' } })
+
+    fireEvent.click(general)
+    expect(screen.queryByRole('heading', { name: 'Nova identificação' })).not.toBeInTheDocument()
+    const unload = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(unload)
+    expect(unload.defaultPrevented).toBe(true)
+    fireEvent.change(screen.getByLabelText('Nome'), { target: { value: 'Nome em edição' } })
+
+    fireEvent.click(identifications)
+    expect(screen.getByLabelText('Valor')).toHaveValue('Anilha em edição')
+    expect(await screen.findByText('Nenhuma identificação física cadastrada.')).toBeVisible()
+    expect(listAnimalIdentifications).toHaveBeenCalledTimes(1)
+    fireEvent.click(general)
+    expect(screen.getByLabelText('Nome')).toHaveValue('Nome em edição')
+  })
+
+  it('opens the matching edit tab when coming from its consultation tab', async () => {
+    const path = '/animais/animal-1'
+    const state = recordEditState(parentReturnState(undefined, path, { section: 'identificacoes' }), '/animais', path)
+    renderPage(`${path}/editar`, state)
+
+    expect(await screen.findByRole('tab', { name: 'Identificações' })).toHaveAttribute('aria-selected', 'true')
+    expect(await screen.findByRole('heading', { name: 'Identificações físicas' })).toBeVisible()
+    expect(screen.getByRole('link', { name: 'Voltar para animal' })).toHaveAttribute('href', path)
+  })
+
+  it('uses saved classification for Postura and keeps genealogy edits blocked until the general data is saved', async () => {
+    renderPage('/animais/animal-1/editar')
+    await screen.findByRole('tab', { name: 'Dados gerais' })
+    expect(screen.queryByRole('tab', { name: 'Postura' })).not.toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Espécie'), { target: { value: speciesB.id } })
+    expect(screen.queryByRole('tab', { name: 'Postura' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Genealogia' }))
+    expect(await screen.findByText('Sem filiações cadastradas.')).toBeVisible()
+    expect(screen.getByText(/Salve as alterações de espécie, raça ou sexo/)).toBeVisible()
+    expect(screen.getByRole('combobox', { name: 'Pesquisar progenitor por nome ou código' })).toBeDisabled()
+  })
+
+  it('preserves the Postura draft while saved eligibility still applies', async () => {
+    vi.mocked(getAnimalById).mockResolvedValue(savedBird)
+    renderPage('/animais/animal-1/editar')
+    const general = await screen.findByRole('tab', { name: 'Dados gerais' })
+    const posture = screen.getByRole('tab', { name: 'Postura' })
+    expect(screen.queryByRole('heading', { name: 'Produção de ovos' })).not.toBeInTheDocument()
+    fireEvent.click(posture)
+    expect(screen.getByRole('heading', { name: 'Produção de ovos' })).toBeVisible()
+    fireEvent.change(screen.getByLabelText('Observação da postura'), { target: { value: 'Rascunho' } })
+
+    fireEvent.click(general)
+    fireEvent.change(screen.getByLabelText('Sexo'), { target: { value: '1' } })
+    fireEvent.click(posture)
+    expect(screen.getByLabelText('Observação da postura')).toHaveValue('Rascunho')
+    expect(getEspecieById).not.toHaveBeenCalled()
+  })
+
+  it('checks an inactive species for Postura without blocking the general form', async () => {
+    vi.mocked(getAnimalById).mockResolvedValue({ ...savedBird, especie: { ...savedBird.especie, ativo: false } })
+    let finishSpeciesLoad!: (species: typeof speciesB) => void
+    vi.mocked(getEspecieById).mockImplementationOnce(() => new Promise(resolve => { finishSpeciesLoad = resolve }))
+    renderPage('/animais/animal-1/editar')
+
+    expect(await screen.findByRole('tab', { name: 'Dados gerais' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('option', { name: 'Galinha (inativa)' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Salvar' })).toBeEnabled()
+    expect(screen.queryByRole('tab', { name: 'Postura' })).not.toBeInTheDocument()
+    expect(getEspecieById).toHaveBeenCalledWith(speciesB.id)
+
+    finishSpeciesLoad({ ...speciesB, ativo: false })
+    expect(await screen.findByRole('tab', { name: 'Postura' })).toBeVisible()
   })
 
   it('does not keep the previous animal panel while switching edit routes', async () => {
@@ -75,15 +170,19 @@ describe('AnimalFormPage', () => {
     render(<MemoryRouter initialEntries={['/animais/animal-1/editar']}><SwitchToSecondAnimal /><Routes>
       <Route element={<AnimalFormPage />} path="/animais/:id/editar" />
     </Routes></MemoryRouter>)
+    fireEvent.click(await screen.findByRole('tab', { name: 'Identificações' }))
     expect(await screen.findByRole('heading', { name: 'Identificações físicas' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Trocar animal' }))
     expect(screen.queryByRole('heading', { name: 'Identificações físicas' })).not.toBeInTheDocument()
     expect(listAnimalIdentifications).toHaveBeenCalledTimes(1)
-    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Identificações físicas' })).not.toBeInTheDocument())
     finishSecondLoad({ ...savedAnimal, id: 'animal-2', codigoInterno: 'AN-000002' })
-    expect(await screen.findByRole('heading', { name: 'Identificações físicas' })).toBeInTheDocument()
+    expect(await screen.findByRole('tab', { name: 'Dados gerais' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.queryByRole('heading', { name: 'Identificações físicas' })).not.toBeInTheDocument()
     expect(screen.getByLabelText('Código interno')).toHaveValue('AN-000002')
+    fireEvent.click(screen.getByRole('tab', { name: 'Identificações' }))
+    expect(await screen.findByText('Nenhuma identificação física cadastrada.')).toBeVisible()
+    expect(listAnimalIdentifications).toHaveBeenLastCalledWith('animal-2', { page: 1, pageSize: 10 })
   })
 
   it('shows automatic-code help and omits untouched empty code, but rejects a touched empty value locally', async () => {
