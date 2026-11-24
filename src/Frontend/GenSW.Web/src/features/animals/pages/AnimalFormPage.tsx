@@ -1,14 +1,16 @@
-import { formReturnTarget, listReturnState, savedRecordState } from '../../../shared/details/listNavigation'
+import { DetailStatus } from '../../../shared/details/DetailsPage'
+import { formReturnTarget, listReturnState, readParentReturnState, savedRecordState } from '../../../shared/details/listNavigation'
+import { useRecordDetails } from '../../../shared/details/useRecordDetails'
 import { useUnsavedChanges } from '../../../shared/navigation/useUnsavedChanges'
 import { PageHeader } from '../../../shared/layout/PageHeader'
 import { WeightsPanel } from '../evolution/WeightsPanel'
 import { ImageGallery } from '../evolution/ImageGallery'
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { isHttpError } from '../../../shared/http/httpErrors'
 import { listRacas } from '../../breeds/services/breedsService'
 import type { Raca } from '../../breeds/types/breeds'
-import { listEspecies } from '../../species/services/speciesService'
+import { getEspecieById, listEspecies } from '../../species/services/speciesService'
 import type { Especie } from '../../species/types/species'
 import { listVariedades } from '../../varieties/services/varietiesService'
 import type { Variedade } from '../../varieties/types/varieties'
@@ -19,6 +21,7 @@ import { AnimalRegistrationsPanel } from '../registrations/components/AnimalRegi
 import { AnimalFiliationsPanel } from '../filiations/components/AnimalFiliationsPanel'
 import { AnimalEggProductionPanel } from '../egg-production/AnimalEggProductionPanel'
 import { AnimalPropertiesPanel } from '../../properties/AnimalPropertiesPanel'
+import { AnimalRecordTabs } from '../components/AnimalRecordTabs'
 
 type LoadState = 'loading' | 'ready' | 'not-found' | 'error'
 const CATALOG_PAGE_SIZE = 100
@@ -44,14 +47,19 @@ function appendCurrent<T extends { id: string; ativo: boolean }>(items: T[], cur
 
 export function AnimalFormPage() {
   const { id } = useParams<{ id: string }>()
+  return <AnimalForm id={id} key={id} />
+}
+
+function AnimalForm({ id }: { id?: string }) {
   const navigate = useNavigate()
   const location = useLocation()
   const isEdit = id !== undefined
-  const returnTarget = formReturnTarget(location.state, '/animais', id ? `/animais/${id}` : undefined)
+  const detailPath = id ? `/animais/${id}` : undefined
+  const returnTarget = formReturnTarget(location.state, '/animais', detailPath)
+  const initialSection = detailPath ? readParentReturnState(location.state, detailPath)?.parentReturn.section : undefined
   const listState = listReturnState(location.state, '/animais')
   const [dirty, setDirty] = useState(false)
   const { markSaved } = useUnsavedChanges(dirty)
-  useEffect(() => setDirty(false), [id])
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [retryKey, setRetryKey] = useState(0)
   const [currentAnimal, setCurrentAnimal] = useState<Animal | null>(null)
@@ -85,7 +93,7 @@ export function AnimalFormPage() {
       try {
         const [activeSpecies, activeBreeds, activeVarieties] = await Promise.all([loadAllActive(listEspecies), loadAllActive(listRacas), loadAllActive(listVariedades)])
         if (!current) return
-        const historicalSpecies = animal && !animal.especie.ativo ? { id: animal.especie.id, nomeComum: animal.especie.nomeComum, nomeCientifico: null, ovipara: false, pesoPadraoOvoGramas: null, ativo: false, createdAtUtc: animal.createdAtUtc, updatedAtUtc: animal.updatedAtUtc } : null
+        const historicalSpecies = animal && !animal.especie.ativo ? { id: animal.especie.id, nomeComum: animal.especie.nomeComum, nomeCientifico: null, ativo: false, createdAtUtc: animal.createdAtUtc, updatedAtUtc: animal.updatedAtUtc } : null
         const historicalBreed = animal?.raca && !animal.raca.ativo ? { id: animal.raca.id, especieId: animal.especieId, nome: animal.raca.nome, ativo: false, createdAtUtc: animal.createdAtUtc, updatedAtUtc: animal.updatedAtUtc, especie: { id: animal.especieId, nomeComum: animal.especie.nomeComum, ativo: animal.especie.ativo } } : null
         const historicalVariety = animal?.variedade && !animal.variedade.ativo ? { id: animal.variedade.id, especieId: animal.especieId, nome: animal.variedade.nome, ativo: false, createdAtUtc: animal.createdAtUtc, updatedAtUtc: animal.updatedAtUtc, especie: { id: animal.especieId, nomeComum: animal.especie.nomeComum, ativo: animal.especie.ativo } } : null
         setSpecies(appendCurrent(activeSpecies, historicalSpecies)); setBreeds(appendCurrent(activeBreeds, historicalBreed)); setVarieties(appendCurrent(activeVarieties, historicalVariety))
@@ -137,7 +145,7 @@ export function AnimalFormPage() {
   if (isEdit && loadState === 'not-found') return <main className="min-h-screen bg-slate-50 px-4 py-8"><section className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm"><h1>Animal não encontrado.</h1>{backLink}</section></main>
   if (loadState === 'error') return <main className="min-h-screen bg-slate-50 px-4 py-8"><section className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm"><p role="alert">Não foi possível carregar {isEdit ? 'o animal' : 'os catálogos'}.</p><button onClick={() => setRetryKey((key) => key + 1)} type="button">Tentar novamente</button></section></main>
 
-  return <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8"><div className="mx-auto max-w-2xl"><PageHeader title={isEdit ? 'Editar animal' : 'Novo animal'} back={{to: returnTarget.to, state: returnTarget.state, label: id && returnTarget.to === `/animais/${id}` ? 'Voltar para animal' : 'Voltar para Animais'}} /><form className="mt-8 space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" noValidate onChangeCapture={() => setDirty(true)} onSubmit={handleSubmit}>
+  const generalForm = <form className="max-w-2xl space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" noValidate onChangeCapture={() => setDirty(true)} onSubmit={handleSubmit}>
     <div><label className="text-sm font-medium text-slate-700" htmlFor="animal-code">Código interno</label><input aria-invalid={codigoError} className={control} id="animal-code" onChange={(event) => { setCodigoInterno(event.target.value); setCodigoTouched(true); setCodigoError(false) }} onFocus={() => setCodigoTouched(true)} type="text" value={codigoInterno} />{!isEdit && !codigoTouched && codigoInterno === '' ? <p className="mt-1 text-sm text-slate-600">O código será gerado automaticamente se permanecer vazio.</p> : null}{codigoError ? <p className="mt-1 text-sm text-red-700">Informe um código interno não vazio.</p> : null}</div>
     <div><label className="text-sm font-medium text-slate-700" htmlFor="animal-name">Nome</label><input className={control} id="animal-name" maxLength={200} onChange={(event) => setNome(event.target.value)} type="text" value={nome} /></div>
     <div><label className="text-sm font-medium text-slate-700" htmlFor="animal-species">Espécie</label><select aria-invalid={especieError} className={control} id="animal-species" onChange={(event) => { setEspecieId(event.target.value); setEspecieError(false); setClassificationError(false) }} required value={especieId}><option value="">Selecione uma espécie</option>{species.map((item) => <option key={item.id} value={item.id}>{label(item.nomeComum, item.ativo)}</option>)}</select>{especieError ? <p className="mt-1 text-sm text-red-700">Selecione uma espécie ativa.</p> : null}</div>
@@ -147,5 +155,64 @@ export function AnimalFormPage() {
     <div><label className="text-sm font-medium text-slate-700" htmlFor="animal-scope">Escopo</label><select className={control} id="animal-scope" onChange={(event) => setEscopo(Number(event.target.value) as EscopoAnimal)} value={escopo}><option value="1">Operacional</option><option value="2">Referência</option></select></div>
     <div><label className="text-sm font-medium text-slate-700" htmlFor="animal-birth-date">Data de nascimento</label><input className={control} id="animal-birth-date" onChange={(event) => setDataNascimento(event.target.value)} type="date" value={dataNascimento} /></div>
     {!isEdit && <p className="text-sm text-slate-600">A propriedade é opcional. Após salvar, você pode vincular uma unidade física na edição do animal.</p>}{saveError ? <p className="text-sm font-medium text-red-700" role="alert">{saveError}</p> : null}<div className="flex flex-wrap gap-3"><button className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60" disabled={isSaving} type="submit">{isSaving ? 'Salvando…' : 'Salvar'}</button><Link className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold" to={returnTarget.to} state={returnTarget.state}>Cancelar</Link></div>
-  </form>{id && currentAnimal && currentAnimal.id === id ? <><AnimalPropertiesPanel key={`properties-${currentAnimal.id}`} animalId={currentAnimal.id} /><AnimalIdentificationsPanel animalId={currentAnimal.id} /><AnimalRegistrationsPanel animalId={currentAnimal.id} /><WeightsPanel animalId={currentAnimal.id} birth={currentAnimal.dataNascimento} /><ImageGallery ownerId={currentAnimal.id} kind="animais" /><AnimalFiliationsPanel animalId={currentAnimal.id} pendingClassification={especieId !== currentAnimal.especieId || racaId !== (currentAnimal.racaId ?? '') || sexo !== currentAnimal.sexo} />{sexo === 2 && species.find((item) => item.id === especieId)?.ovipara === true ? <AnimalEggProductionPanel animalId={currentAnimal.id} /> : null}</> : null}</div></main>
+  </form>
+
+  const pendingClassification = currentAnimal !== null && (
+    especieId !== currentAnimal.especieId ||
+    racaId !== (currentAnimal.racaId ?? '') ||
+    sexo !== currentAnimal.sexo
+  )
+  return <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
+    <div className={isEdit ? 'mx-auto max-w-5xl' : 'mx-auto max-w-2xl'}>
+      <PageHeader
+        title={isEdit ? 'Editar animal' : 'Novo animal'}
+        context={currentAnimal && <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <strong className="text-slate-900">{currentAnimal.nome || currentAnimal.codigoInterno}</strong>
+          {currentAnimal.nome && <span>{currentAnimal.codigoInterno}</span>}
+          <DetailStatus active={currentAnimal.ativo} />
+        </span>}
+        back={{ to: returnTarget.to, state: returnTarget.state, label: detailPath === returnTarget.to ? 'Voltar para animal' : 'Voltar para Animais' }}
+      />
+      <div className="mt-8 space-y-4">
+        {currentAnimal ? <EditAnimalTabs
+          animal={currentAnimal}
+          generalForm={generalForm}
+          initialSection={initialSection}
+          pendingClassification={pendingClassification}
+          speciesOviparous={species.find((item) => item.id === currentAnimal.especieId)?.ovipara}
+        /> : generalForm}
+      </div>
+    </div>
+  </main>
+}
+
+interface EditAnimalTabsProps {
+  animal: Animal
+  generalForm: ReactNode
+  initialSection?: string
+  pendingClassification: boolean
+  speciesOviparous?: boolean
+}
+
+function EditAnimalTabs({ animal, generalForm, initialSection, pendingClassification, speciesOviparous }: EditAnimalTabsProps) {
+  const speciesIdToCheck = animal.sexo === 2 && speciesOviparous === undefined ? animal.especieId : undefined
+  const { record: species, state, retry } = useRecordDetails(speciesIdToCheck, getEspecieById)
+  const showEggProduction = animal.sexo === 2 && (speciesOviparous ?? species?.ovipara) === true
+
+  return <>
+    {speciesIdToCheck && state !== 'ready' && state !== 'loading' && <div className="flex flex-wrap items-center gap-3 text-sm">
+      <p role="alert">Não foi possível verificar se a aba Postura se aplica a este animal.</p>
+      <button className="page-back" onClick={retry} type="button">Consultar espécie novamente</button>
+    </div>}
+    <AnimalRecordTabs initialSection={initialSection} panels={{
+      ficha: generalForm,
+      'producoes-ovos': showEggProduction ? <AnimalEggProductionPanel animalId={animal.id} /> : undefined,
+      pesagens: <WeightsPanel animalId={animal.id} birth={animal.dataNascimento} />,
+      genealogia: <AnimalFiliationsPanel animalId={animal.id} pendingClassification={pendingClassification} />,
+      propriedade: <AnimalPropertiesPanel animalId={animal.id} />,
+      identificacoes: <AnimalIdentificationsPanel animalId={animal.id} />,
+      registros: <AnimalRegistrationsPanel animalId={animal.id} />,
+      imagens: <ImageGallery ownerId={animal.id} kind="animais" />,
+    }} />
+  </>
 }

@@ -8,7 +8,13 @@ import { httpRequest } from '../../../shared/http/httpClient'
 import { isHttpError } from '../../../shared/http/httpErrors'
 
 type Entry = { id: string; dataPostura: string; pesoGramas: number; observacao: string | null }
-type Response = { items: Entry[]; page: number; totalPages: number; metricas: { totalLancamentos: number; pesoMedioGramas: number | null; pesoMinimoGramas: number | null; pesoMaximoGramas: number | null; pesoPadraoGramas: number | null; diasAtePesoPadrao: number | null } }
+type Response = { items: Entry[]; totalPages: number; metricas: { totalLancamentos: number; pesoMedioGramas: number | null; pesoMinimoGramas: number | null; pesoMaximoGramas: number | null; pesoPadraoGramas: number | null; diasAtePesoPadrao: number | null } }
+const pageSize = 10
+const cellClass = 'px-1 py-2 sm:px-2'
+const pageButton = 'min-h-11 rounded-lg border border-slate-300 px-3 text-sm font-semibold text-emerald-700 enabled:hover:bg-emerald-50 disabled:opacity-50'
+const weightFormat = new Intl.NumberFormat('pt-BR')
+const formatWeight = (value: number | null) => value === null ? '—' : weightFormat.format(value)
+const formatDate = (value: string) => value.split('-').reverse().join('/')
 
 export function AnimalEggProductionPanel({ animalId, readOnly = false }: { animalId: string; readOnly?: boolean }) {
   const location = useLocation()
@@ -31,7 +37,7 @@ export function AnimalEggProductionPanel({ animalId, readOnly = false }: { anima
   useEffect(() => {
     const controller = new AbortController()
     setResult(null); setError(null)
-    void httpRequest<Response>(`/animais/${animalId}/producoes-ovos?page=${page}&pageSize=100`, { authenticated: true, signal: controller.signal }).then(data => {
+    void httpRequest<Response>(`/animais/${animalId}/producoes-ovos?page=${page}&pageSize=${pageSize}&includeHistory=false`, { authenticated: true, signal: controller.signal }).then(data => {
       if (controller.signal.aborted) return
       const lastPage = Math.max(1, data.totalPages)
       if (page > lastPage) setPage(lastPage)
@@ -70,7 +76,7 @@ export function AnimalEggProductionPanel({ animalId, readOnly = false }: { anima
     } finally { setDeleting(false) }
   }
   const metrics = result?.metricas
-  return <section id="record-producoes-ovos" tabIndex={-1} className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><h2 className="text-xl font-bold text-slate-900">Produção de ovos</h2><p className="mt-1 text-sm text-slate-600">Lançamentos independentes dos ciclos reprodutivos.</p><Link className="mt-3 inline-flex min-h-11 items-center rounded-lg border border-slate-300 px-3 py-2 font-semibold text-emerald-700" to={`/producao/ponte-ovos?animalId=${encodeURIComponent(animalId)}`}>Conferir lançamentos na ponte de ovos</Link>
+  return <section id="record-producoes-ovos" tabIndex={-1} className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"><h2 className="text-xl font-bold text-slate-900">Produção de ovos</h2><p className="mt-1 text-sm text-slate-600">Lançamentos independentes dos ciclos reprodutivos.</p><Link className="mt-3 inline-flex min-h-11 items-center rounded-lg border border-slate-300 px-3 py-2 font-semibold text-emerald-700" to={`/producao/ponte-ovos?animalId=${encodeURIComponent(animalId)}`}>Conferir lançamentos na ponte de ovos</Link>
     {!readOnly && <form className="mt-4 grid gap-3 md:grid-cols-4" onChangeCapture={() => setDirty(true)} onSubmit={submit}><input aria-label="Data da postura" className="rounded-lg border border-slate-300 px-3 py-2" onChange={(e) => setDate(e.target.value)} type="date" value={date} /><input aria-label="Peso em gramas" className="rounded-lg border border-slate-300 px-3 py-2" min="0.01" onChange={(e) => setWeight(e.target.value)} placeholder="Peso (g)" step="0.01" type="number" value={weight} /><input aria-label="Observação" className="rounded-lg border border-slate-300 px-3 py-2" maxLength={2000} onChange={(e) => setNote(e.target.value)} placeholder="Observação" value={note} /><div className="flex gap-2"><button className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white" type="submit">{editing ? 'Atualizar' : 'Adicionar'}</button>{editing ? <button className="rounded-lg border px-3 py-2 text-sm" onClick={() => confirmDiscard(() => { setDirty(false); setEditing(null); setWeight(''); setNote('') })} type="button">Cancelar</button> : null}</div></form>}
     {pendingDelete && <ModalDialog open title="Excluir lançamento de postura?" onClose={cancelDelete} closeLabel="Fechar confirmação de exclusão" initialFocusRef={cancelDeleteButton} footer={<>
       <button ref={cancelDeleteButton} className="rounded border border-slate-300 bg-white px-3 py-2" disabled={deleting} onClick={cancelDelete} type="button">Cancelar</button>
@@ -79,9 +85,38 @@ export function AnimalEggProductionPanel({ animalId, readOnly = false }: { anima
     {notice && <p className="mt-3 text-sm text-emerald-700" role="status">{notice}</p>}
     {error ? <div><p className="mt-3 text-sm text-red-700" role="alert">{error}</p><button className="mt-2 rounded border px-3 py-2" type="button" onClick={() => setRevision(value => value + 1)}>Recarregar produção</button></div> : null}
     {!result && !error && <p className="mt-4" role="status">Carregando produção de ovos…</p>}
-    {metrics ? <div className="mt-5 grid grid-cols-2 gap-3 text-sm md:grid-cols-4"><p><strong>{metrics.totalLancamentos}</strong><br />lançamentos</p><p><strong>{metrics.pesoMedioGramas ?? '—'} g</strong><br />peso médio</p><p><strong>{metrics.pesoMinimoGramas ?? '—'}–{metrics.pesoMaximoGramas ?? '—'} g</strong><br />evolução de peso</p><p><strong>{metrics.pesoPadraoGramas ? `${metrics.diasAtePesoPadrao ?? '—'} dias` : 'Não definido'}</strong><br />até peso padrão</p></div> : null}
-    <TableRegion label="Produção de ovos" className="mt-5 overflow-x-auto"><table className="min-w-full text-sm"><thead><tr className="border-b text-left"><th className="p-2">Postura</th><th className="p-2">Peso</th><th className="p-2">Observação</th><th className="p-2">Ações</th></tr></thead><tbody>{result?.items.map((entry) => <tr className="border-b" key={entry.id}><td className="p-2">{entry.dataPostura}</td><td className="p-2">{entry.pesoGramas} g</td><td className="p-2">{entry.observacao ?? '—'}</td><td className="p-2"><div className="flex gap-3"><Link className="font-semibold text-emerald-700 underline" state={parentReturnState(location.state, parentPath, { section: 'producoes-ovos', page })} to={`/animais/${animalId}/producoes-ovos/${entry.id}`}>Visualizar</Link>{!readOnly && <><button className="font-semibold text-emerald-700" onClick={() => confirmDiscard(() => { setDirty(false); beginEdit(entry) })} type="button">Editar</button><button aria-label={`Excluir postura de ${entry.dataPostura}, ${entry.pesoGramas} g`} className="font-semibold text-red-700" onClick={() => beginDelete(entry)} type="button">Excluir</button></>}</div></td></tr>)}</tbody></table></TableRegion>
+    {metrics ? <div className="mt-5 grid grid-cols-2 gap-3 text-sm md:grid-cols-4"><p><strong>{metrics.totalLancamentos}</strong><br />lançamentos</p><p><strong>{formatWeight(metrics.pesoMedioGramas)} g</strong><br />peso médio</p><p><strong>{formatWeight(metrics.pesoMinimoGramas)}–{formatWeight(metrics.pesoMaximoGramas)} g</strong><br />menor e maior peso</p><p><strong>{metrics.pesoPadraoGramas ? `${metrics.diasAtePesoPadrao ?? '—'} dias` : 'Não definido'}</strong><br />até peso padrão</p></div> : null}
+    <TableRegion label="Produção de ovos" className="mt-5 overflow-x-auto">
+      <table className="w-full table-fixed text-xs sm:table-auto sm:text-sm">
+        <thead><tr className="border-b text-left">
+          <th className={`${cellClass} w-[30%] sm:w-auto`} scope="col">Postura</th>
+          <th className={`${cellClass} w-[15%] sm:w-auto`} scope="col">Peso</th>
+          <th className={`${cellClass} w-[32%] sm:w-auto`} scope="col">Observação</th>
+          <th className={`${cellClass} w-[23%] sm:w-auto`} scope="col">Ações</th>
+        </tr></thead>
+        <tbody>{result?.items.map(entry => <tr className="border-b" key={entry.id}>
+          <td className={`${cellClass} tabular-nums`}>{formatDate(entry.dataPostura)}</td>
+          <td className={`${cellClass} break-words tabular-nums`}>{formatWeight(entry.pesoGramas)} g</td>
+          <td className={`${cellClass} whitespace-pre-wrap break-words`}>{entry.observacao ?? '—'}</td>
+          <td className={cellClass}>
+            <div className="flex flex-wrap gap-x-3 gap-y-2">
+              <Link className="font-semibold text-emerald-700 underline" state={parentReturnState(location.state, parentPath, { section: 'producoes-ovos', page })} to={`/animais/${animalId}/producoes-ovos/${entry.id}`}>Visualizar</Link>
+              {!readOnly && <>
+                <button className="font-semibold text-emerald-700" onClick={() => confirmDiscard(() => { setDirty(false); beginEdit(entry) })} type="button">Editar</button>
+                <button aria-label={`Excluir postura de ${entry.dataPostura}, ${entry.pesoGramas} g`} className="font-semibold text-red-700" onClick={() => beginDelete(entry)} type="button">Excluir</button>
+              </>}
+            </div>
+          </td>
+        </tr>)}</tbody>
+      </table>
+    </TableRegion>
     {result?.items.length === 0 && <p className="mt-4">Nenhuma produção de ovos registrada.</p>}
-    {result && result.totalPages > 1 && <nav className="mt-4 flex flex-wrap items-center gap-3" aria-label="Paginação da produção de ovos"><button type="button" disabled={page === 1} onClick={() => setPage(value => value - 1)}>Produções anteriores</button><span>Página {page} de {result.totalPages}</span><button type="button" disabled={page >= result.totalPages} onClick={() => setPage(value => value + 1)}>Próximas produções</button></nav>}
+    {result && result.totalPages > 1 && <nav className="mt-4 flex flex-wrap items-center justify-between gap-3" aria-label="Paginação da produção de ovos">
+      <p aria-live="polite">{(page - 1) * pageSize + 1}–{(page - 1) * pageSize + result.items.length} de {result.metricas.totalLancamentos} · Página {page} de {result.totalPages}</p>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" aria-label="Produções anteriores" className={pageButton} disabled={page === 1} onClick={() => setPage(value => value - 1)}>Anterior</button>
+        <button type="button" aria-label="Próximas produções" className={pageButton} disabled={page >= result.totalPages} onClick={() => setPage(value => value + 1)}>Próxima</button>
+      </div>
+    </nav>}
   </section>
 }

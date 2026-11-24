@@ -22,6 +22,7 @@ describe('Exclusão de postura', () => {
     })
     show()
     fireEvent.click(await screen.findByRole('button', { name: 'Editar' }))
+    expect(httpRequest).toHaveBeenCalledWith('/animais/animal-1/producoes-ovos?page=1&pageSize=10&includeHistory=false', expect.objectContaining({ authenticated: true }))
     fireEvent.change(screen.getByRole('textbox', { name: 'Observação' }), { target: { value: 'Rascunho da postura' } })
     fireEvent.click(screen.getByRole('button', { name: /Excluir postura de 2026-11-15/ }))
     const dialog = screen.getByRole('dialog', { name: 'Excluir lançamento de postura?' })
@@ -64,22 +65,26 @@ describe('Exclusão de postura', () => {
   })
 
   it('volta à última página existente se a página atual sumir durante a exclusão', async () => {
-    const second = { ...entry, id: 'egg-2', dataPostura: '2026-11-14', observacao: 'Outra postura' }
     const firstPageEntry = { ...entry, id: 'egg-3', dataPostura: '2026-11-16', observacao: 'Postura da primeira página' }
+    const firstPage = Array.from({ length: 10 }, (_, index) => index === 0 ? firstPageEntry : {
+      ...firstPageEntry, id: `first-${index}`, observacao: '',
+    })
     let deleted = false
     vi.mocked(httpRequest).mockImplementation(async (path, options) => {
       if (options?.method === 'DELETE') { deleted = true; return undefined }
-      if (path === '/animais/animal-1/producoes-ovos?page=2&pageSize=100') return deleted ? page([], 2, 1, 100) : page([entry, second], 2, 2, 102)
-      return page([firstPageEntry], 1, deleted ? 1 : 2, deleted ? 100 : 102)
+      if (path === '/animais/animal-1/producoes-ovos?page=2&pageSize=10&includeHistory=false') return deleted ? page([], 2, 1, 10) : page([entry], 2, 2, 11)
+      return page(firstPage, 1, deleted ? 1 : 2, deleted ? 10 : 11)
     })
     show()
-    fireEvent.click(await screen.findByRole('button', { name: 'Editar' }))
+    await screen.findByText(firstPageEntry.observacao)
+    fireEvent.click(screen.getAllByRole('button', { name: 'Editar' })[0])
     fireEvent.change(screen.getByRole('textbox', { name: 'Observação' }), { target: { value: 'Rascunho da primeira página' } })
     fireEvent.click(screen.getByRole('button', { name: 'Próximas produções' }))
     fireEvent.click(await screen.findByRole('button', { name: /Excluir postura de 2026-11-15/ }))
+    expect(screen.getByRole('navigation', { name: 'Paginação da produção de ovos' })).toHaveTextContent('11–11 de 11 · Página 2 de 2')
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar exclusão' }))
     expect(await screen.findByText(firstPageEntry.observacao)).toBeInTheDocument()
-    expect(screen.getByText('lançamentos')).toHaveTextContent(/^100\s*lançamentos$/)
+    expect(screen.getByText('lançamentos')).toHaveTextContent(/^10\s*lançamentos$/)
     expect(screen.getByRole('textbox', { name: 'Observação' })).toHaveValue('Rascunho da primeira página')
   })
 })
