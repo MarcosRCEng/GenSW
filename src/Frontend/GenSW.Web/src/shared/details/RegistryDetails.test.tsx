@@ -77,8 +77,8 @@ describe('consulta dos cadastros básicos', () => {
   it.each(cases)('abre $path diretamente por ID e consulta inativo sem gravar', async (entry) => {
     const { container } = renderRegistry(entry)
     expect(screen.getByRole('status')).toHaveTextContent('Carregando detalhes')
-    expect(await screen.findByText(entry.name)).toBeInTheDocument()
-    expect(screen.getByText('Inativo')).toBeInTheDocument()
+    expect((await screen.findAllByText(entry.name))[0]).toBeInTheDocument()
+    expect(screen.getAllByText('Inativo')[0]).toBeInTheDocument()
     expect(httpRequest).toHaveBeenCalledWith(`${entry.path}/${entry.record.id}`, { authenticated: true })
     expect(container.querySelector('dl')).toBeInTheDocument()
     expect(container.querySelector('form')).not.toBeInTheDocument()
@@ -93,7 +93,12 @@ describe('consulta dos cadastros básicos', () => {
     }
     if (entry.path === '/racas' || entry.path === '/variedades') expect(screen.getByText('Espécie de teste (inativa)')).toBeInTheDocument()
     if (entry.path === '/especies') expect(screen.getByText('25,5 g')).toBeInTheDocument()
-    if (entry.path === '/variedades') await screen.findByText('Nenhuma imagem ativa.')
+    if (entry.path === '/variedades') {
+      expect(screen.getByRole('tab', { name: 'Dados gerais' })).toHaveAttribute('aria-selected', 'true')
+      expect(vi.mocked(httpRequest).mock.calls.map(([path]) => path)).toEqual([`/variedades/${variety.id}`])
+      fireEvent.click(screen.getByRole('tab', { name: 'Imagens' }))
+      expect(await screen.findByText('Nenhuma imagem ativa.')).toBeInTheDocument()
+    }
     expectReadOnlyRequests()
   })
 
@@ -107,7 +112,7 @@ describe('consulta dos cadastros básicos', () => {
     expect(row.querySelector('a')).toBe(view)
     fireEvent.click(view)
     expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('Detalhes')
-    await screen.findByText(entry.name)
+    await screen.findAllByText(entry.name)
     expectReadOnlyRequests()
   })
 

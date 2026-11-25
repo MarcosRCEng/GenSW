@@ -4,6 +4,7 @@ import { useLocation, useParams } from 'react-router-dom'
 import { DetailField, DetailStatus, DetailsPage } from '../../../shared/details/DetailsPage'
 import { useRecordDetails } from '../../../shared/details/useRecordDetails'
 import { HttpError } from '../../../shared/http/httpErrors'
+import { varietyImageReturnState } from '../../varieties/navigation/varietyImageNavigation'
 import { api, type Page, type Photo, type Weight } from '../evolution/api'
 import { weightMilestones as milestones } from '../evolution/weightMilestones'
 import { AuthenticatedPhoto } from '../evolution/AuthenticatedPhoto'
@@ -60,7 +61,9 @@ export function AnimalRelatedDetailsPage({ section, kind = 'animais' }: { sectio
     throw new HttpError(404)
   }, [kind, ownerId, section])
   const parentPath = `/${kind}/${ownerId}`
-  const returnState = readParentReturnState(location.state, parentPath) ?? parentReturnState(location.state, parentPath, { section })
+  const returnState = kind === 'variedades'
+    ? varietyImageReturnState(location.state, parentPath, recordId)
+    : readParentReturnState(location.state, parentPath) ?? parentReturnState(location.state, parentPath, { section })
   const { record, state, retry } = useRecordDetails(recordId, load)
   return <DetailsPage title={`Visualizar ${titles[section]}`} listPath={parentPath} backState={returnState} listLabel={kind === 'animais' ? 'Animal' : 'Variedade'} state={state} onRetry={retry}>
     {record && <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><dl className="grid gap-5 sm:grid-cols-2">
