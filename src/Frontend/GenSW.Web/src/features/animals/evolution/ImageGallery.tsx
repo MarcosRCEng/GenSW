@@ -1,7 +1,8 @@
 import { parentReturnState, useRestoredParentSection } from '../../../shared/details/listNavigation'
 import { useUnsavedChanges } from '../../../shared/navigation/useUnsavedChanges'
-import { Link, useLocation } from 'react-router-dom'
-import { useEffect, useState, type FormEvent } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from 'react'
+import { varietyImageNavigationState, type VarietyImageContext } from '../../varieties/navigation/varietyImageNavigation'
 import { api, save, message, type Page, type Photo, type PhotoSummary } from './api'
 import { AuthenticatedPhoto } from './AuthenticatedPhoto'
 import './evolution.css'
@@ -15,10 +16,23 @@ function PhotoEditor({ item, root, run, draft, onDraftChange }: { item: Photo; r
   </form></details>
 }
 
-export function ImageGallery({ ownerId, kind, readOnly = false }: { ownerId: string; kind: 'animais' | 'variedades'; readOnly?: boolean }) {
+export function ImageGallery({ ownerId, kind, readOnly = false, imageContext, panelActive = true }: {
+  ownerId: string
+  kind: 'animais' | 'variedades'
+  readOnly?: boolean
+  imageContext?: VarietyImageContext
+  panelActive?: boolean
+}) {
   const location = useLocation()
+  const navigate = useNavigate()
   const parentPath = `/${kind}/${ownerId}`
-  const initial = useRestoredParentSection(parentPath, 'imagens', { page: 1, active: true })
+  const defaults = { page: 1, active: true }
+  const restoredSection = useRestoredParentSection(parentPath, 'imagens', defaults)
+  const [restoration] = useState(imageContext)
+  const initial = kind === 'variedades' ? restoration ?? defaults : restoredSection
+  const sectionRef = useRef<HTMLElement>(null)
+  const imageLinkRef = useRef<HTMLAnchorElement>(null)
+  const focusRestored = useRef(false)
   const [dirty, setDirty] = useState(false)
   // Drafts stay in memory by image ID when local pagination/filter/refetch
   // temporarily unmount an editor. No draft is put in history or storage.
@@ -34,9 +48,47 @@ export function ImageGallery({ ownerId, kind, readOnly = false }: { ownerId: str
   useEffect(() => {
     const controller = new AbortController(); setItems(null); setError('')
     void Promise.all([api<Page<Photo>>(`${root}?ativo=${active}&page=${page}&pageSize=50`, controller.signal), api<{ origem: string; imagem: PhotoSummary | null }>(`${root}/preferencial`, controller.signal)])
-      .then(([list, preference]) => { setItems(list); setPreferred(preference) }).catch(e => { if (!controller.signal.aborted) setError(message(e)) })
+      .then(([list, preference]) => {
+        if (controller.signal.aborted) return
+        setItems(list)
+        setPreferred(preference)
+      }).catch(e => { if (!controller.signal.aborted) setError(message(e)) })
     return () => controller.abort()
   }, [root, active, page, revision])
+  useEffect(() => {
+    if (!restoration || focusRestored.current || !panelActive || (!items && !error)) return
+    const frame = requestAnimationFrame(() => {
+      const target = imageLinkRef.current ?? sectionRef.current
+      target?.focus({ preventScroll: true })
+      target?.scrollIntoView?.({ block: 'nearest' })
+      focusRestored.current = true
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [error, items, panelActive, restoration])
+
+  function imageLink(item: Photo) {
+    const to = `${root}/${item.id}`
+    const context = { active, page, imageId: item.id }
+    const state = kind === 'variedades'
+      ? varietyImageNavigationState(location.state, parentPath, context)
+      : parentReturnState(location.state, parentPath, { section: 'imagens', page, filters: { active } })
+    async function rememberOrigin(event: MouseEvent<HTMLAnchorElement>) {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+      event.preventDefault()
+      const { pathname, search, hash } = location
+      // Save only the visual context in this entry before the child is pushed.
+      await navigate({ pathname, search, hash }, {
+        replace: true,
+        preventScrollReset: true,
+        state: varietyImageNavigationState(location.state, pathname, context),
+      })
+      await navigate(to, { state })
+    }
+    return <Link className="font-semibold text-emerald-700 underline"
+      onClick={kind === 'variedades' ? rememberOrigin : undefined}
+      ref={item.id === restoration?.imageId ? imageLinkRef : undefined} state={state} to={to}>Visualizar</Link>
+  }
+
   async function run(action: () => Promise<unknown>) {
     if (readOnly) return
     setBusy(true); setError('')
@@ -54,7 +106,7 @@ export function ImageGallery({ ownerId, kind, readOnly = false }: { ownerId: str
     const ids = items.items.map(x => x.id); [ids[index], ids[index + delta]] = [ids[index + delta], ids[index]]
     void run(() => save(`${root}/ordem`, { ids }))
   }
-  return <section id="record-imagens" tabIndex={-1} className="animal-panel" aria-label={kind === 'animais' ? 'Imagens do animal' : 'Imagens da variedade'}><h2>{kind === 'animais' ? 'Imagens do animal' : 'Imagens da variedade'}</h2>
+  return <section id="record-imagens" ref={sectionRef} tabIndex={-1} className="animal-panel" aria-label={kind === 'animais' ? 'Imagens do animal' : 'Imagens da variedade'}><h2>{kind === 'animais' ? 'Imagens do animal' : 'Imagens da variedade'}</h2>
     <p>{kind === 'animais' ? 'Aparência deste indivíduo ao longo do tempo.' : 'Catálogo visual da variedade. Estas imagens não representam indivíduos na árvore.'}</p>{!readOnly && <p>JPEG, PNG ou WebP estático · até 5 MiB · 50 imagens ativas.</p>}
     {Object.keys(drafts).length > 0 && <p className="animal-notice" role="status">Metadados não salvos em {Object.keys(drafts).length} imagem(ns). O preenchimento é mantido nesta tela ao paginar, filtrar ou atualizar a galeria.</p>}
     {error && <><p role="alert">{error}</p><button onClick={() => { setError(''); setRevision(x => x + 1) }}>Recarregar galeria</button></>}
@@ -63,7 +115,7 @@ export function ImageGallery({ ownerId, kind, readOnly = false }: { ownerId: str
     <label>Exibir imagens<select value={String(active)} onChange={e => { setActive(e.target.value === 'true'); setPage(1) }}><option value="true">Ativas</option><option value="false">Inativas</option></select></label>
     {!items ? !error && <p role="status">Carregando imagens…</p> : <><fieldset disabled={busy} className="animal-gallery">{items.items.map((x, index) => <article key={x.id}>
       <AuthenticatedPhoto path={x.ativa ? x.thumbnailPath : undefined} name={x.legenda ?? 'animal'} /><p>{x.legenda || 'Sem legenda'}</p><p>{x.dataCaptura || 'Data não informada'}</p><p>{x.representativa ? '★ Representativa' : preferred?.imagem?.id === x.id ? 'Preferencial pela ordem' : x.ativa ? 'Ativa' : 'Inativa'}</p>
-      <Link className="font-semibold text-emerald-700 underline" state={parentReturnState(location.state, parentPath, { section: 'imagens', page, filters: { active } })} to={`/${kind}/${ownerId}/imagens/${x.id}`}>Visualizar</Link>
+      {imageLink(x)}
       {!readOnly && <><PhotoEditor item={x} root={root} draft={drafts[x.id]} onDraftChange={draft => setDrafts(current => { const next = { ...current }; if (draft) next[x.id] = draft; else delete next[x.id]; return next })} run={action => void run(action)} />
       <div className="animal-actions">{x.ativa && <><button onClick={() => void run(() => save(`${root}/${x.id}/representativa`, { representativa: !x.representativa }))}>{x.representativa ? 'Remover preferência' : 'Usar como representativa'}</button><button aria-label={`Mover ${x.legenda || 'imagem'} para antes`} disabled={index === 0} onClick={() => move(index, -1)}>↑ Antes</button><button aria-label={`Mover ${x.legenda || 'imagem'} para depois`} disabled={index === items.items.length - 1} onClick={() => move(index, 1)}>↓ Depois</button></>}<button onClick={() => void run(() => save(`${root}/${x.id}/ativo`, { ativo: !x.ativa }))}>{x.ativa ? 'Inativar imagem' : 'Reativar imagem'}</button></div></>}
     </article>)}</fieldset>{!items.items.length && <p>Nenhuma imagem {active ? 'ativa' : 'inativa'}.</p>}<div className="animal-actions"><button disabled={page === 1} onClick={() => setPage(x => x - 1)}>Imagens anteriores</button><span>Página {page} de {Math.max(1, items.totalPages)}</span><button disabled={page >= items.totalPages} onClick={() => setPage(x => x + 1)}>Próximas imagens</button></div></>}
