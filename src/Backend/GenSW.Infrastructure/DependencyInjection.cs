@@ -83,7 +83,9 @@ public static class DependencyInjection
         services.AddScoped<IAnimalRepository, AnimalRepository>();
         services.AddScoped<IAnimalMutationGuard, AnimalMutationGuard>();
         services.AddScoped<GenSW.Application.Images.IImageRepository, GenSW.Infrastructure.Images.ImageRepository>();
-        services.AddSingleton<GenSW.Application.Images.IPrivateImageStorage, GenSW.Infrastructure.Images.PrivateImageStorage>();
+        services.AddSingleton<GenSW.Infrastructure.Images.PrivateImageStorage>();
+        services.AddSingleton<GenSW.Application.Images.IPrivateImageStorage>(provider =>
+            provider.GetRequiredService<GenSW.Infrastructure.Images.PrivateImageStorage>());
         services.AddSingleton<GenSW.Application.Images.IImageProcessor, GenSW.Infrastructure.Images.MagickImageProcessor>();
         services.AddScoped<GenSW.Application.Animals.Pesagens.IPesagemRepository, GenSW.Infrastructure.Animals.Pesagens.PesagemRepository>();
         services.AddScoped<IIdentificacaoAnimalRepository, IdentificacaoAnimalRepository>();

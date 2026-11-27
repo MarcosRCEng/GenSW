@@ -23,14 +23,30 @@ public sealed class PrivateImageStorage(IConfiguration configuration) : IPrivate
         return Path.Combine(Root(), key);
     }
     public bool Available(string key) { try { return File.Exists(Resolve(key)); } catch (AnimalEvolutionException) { return false; } }
+    public void VerifyWritable()
+    {
+        var root = Root();
+        EnsureFreeSpace(root, 1);
+
+        var path = Path.Combine(root, $".readiness-{Guid.NewGuid():N}.tmp");
+        using var probe = new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 1, FileOptions.DeleteOnClose);
+        probe.WriteByte(0);
+    }
+
+    private void EnsureFreeSpace(string root, long payloadBytes)
+    {
+        var minimumFree = configuration.GetValue<long?>("Images:MinimumFreeBytes") ?? 100L * 1024 * 1024;
+        var volume = OperatingSystem.IsWindows() ? Path.GetPathRoot(root)! : root;
+        if (new DriveInfo(volume).AvailableFreeSpace - payloadBytes < minimumFree) throw Unavailable();
+    }
+
     public async Task<StoredImage> PublishAsync(ImageDerivatives image, CancellationToken ct)
     {
         var files = new StoredImage($"{Guid.NewGuid():N}.png", $"{Guid.NewGuid():N}.png");
         try
         {
             var root = Root();
-            var minimumFree = configuration.GetValue<long?>("Images:MinimumFreeBytes") ?? 100L * 1024 * 1024;
-            if (new DriveInfo(Path.GetPathRoot(root)!).AvailableFreeSpace < minimumFree + image.View.LongLength + image.Thumbnail.LongLength) throw Unavailable();
+            EnsureFreeSpace(root, image.View.LongLength + image.Thumbnail.LongLength);
             await PublishOne(Resolve(files.ViewKey), image.View, ct);
             await PublishOne(Resolve(files.ThumbnailKey), image.Thumbnail, ct);
             return files;

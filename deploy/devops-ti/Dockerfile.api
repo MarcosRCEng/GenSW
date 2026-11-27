@@ -1,0 +1,24 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0-bookworm-slim AS build
+WORKDIR /src
+COPY src/Backend/ ./
+RUN dotnet publish GenSW.API/GenSW.API.csproj -c Release -r linux-x64 --no-self-contained -o /out/api \
+    && dotnet publish GenSW.AdminBootstrap/GenSW.AdminBootstrap.csproj -c Release -r linux-x64 --no-self-contained -o /out/admin \
+    && test -f /out/api/GenSW.OptimizationWorker.runtimeconfig.json \
+    && test -f /out/api/ThirdParty/HiGHS.LICENSE.txt \
+    && test -f /out/api/ThirdParty/HiGHS.THIRD_PARTY_NOTICES.md \
+    && test -f /out/api/highs.so
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-bookworm-slim
+ARG GENSW_RELEASE
+LABEL org.opencontainers.image.source="https://github.com/MarcosRCEng/GenSW" \
+      org.opencontainers.image.revision="${GENSW_RELEASE}"
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y curl \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY --from=build /out/api/ ./
+COPY --from=build /out/admin/ ./admin/
+USER $APP_UID
+ENV HOME=/home/app
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "GenSW.API.dll"]

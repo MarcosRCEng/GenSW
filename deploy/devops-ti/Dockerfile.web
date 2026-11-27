@@ -1,0 +1,14 @@
+FROM node:22-bookworm-slim AS build
+WORKDIR /src
+COPY src/Frontend/GenSW.Web/package.json src/Frontend/GenSW.Web/package-lock.json ./
+RUN npm ci
+COPY src/Frontend/GenSW.Web/ ./
+ENV VITE_API_BASE_URL=/api/v1
+RUN npm run build
+
+FROM nginxinc/nginx-unprivileged:1.28-alpine
+ARG GENSW_RELEASE
+LABEL org.opencontainers.image.source="https://github.com/MarcosRCEng/GenSW" \
+      org.opencontainers.image.revision="${GENSW_RELEASE}"
+COPY deploy/devops-ti/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /src/dist/ /usr/share/nginx/html/

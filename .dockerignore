@@ -1,0 +1,17 @@
+**
+!src
+!src/Backend
+!src/Backend/**
+!src/Frontend
+!src/Frontend/GenSW.Web
+!src/Frontend/GenSW.Web/**
+!deploy
+!deploy/devops-ti
+!deploy/devops-ti/nginx.conf
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/.env*
+**/.npmrc
+**/appsettings.*.json
