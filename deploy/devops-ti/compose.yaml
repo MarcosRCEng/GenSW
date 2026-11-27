@@ -50,7 +50,9 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "false"
       Images__PrivateRoot: /var/lib/gensw/images
+      ReverseProxy__TrustedAddress: 172.30.77.2
     volumes:
       - type: bind
         source: ${GENSW_DATA_ROOT}/images
@@ -70,7 +72,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 12
-    networks: [database, frontend]
+    networks: [database, proxy]
     restart: "on-failure:5"
     stop_grace_period: 45s
     logging: *logging
@@ -97,7 +99,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 6
-    networks: [frontend]
+    networks:
+      proxy:
+        ipv4_address: 172.30.77.2
     restart: "on-failure:5"
     stop_grace_period: 30s
     logging: *logging
@@ -105,7 +109,13 @@ services:
 networks:
   database:
     internal: true
-  frontend:
+  proxy:
+    # Nginx trusts only this bridge's host-side gateway for Serve headers.
+    ipam:
+      config:
+        - subnet: 172.30.77.0/29
+          ip_range: 172.30.77.4/30
+          gateway: 172.30.77.1
 
 secrets:
   postgres_password:
