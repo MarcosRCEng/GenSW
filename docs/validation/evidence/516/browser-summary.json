@@ -1,0 +1,119 @@
+{
+  "browser": "Microsoft Edge, real, headed via Playwright CLI",
+  "cosmeticFinding": "favicon.ico404 no navegador, sem impedir os fluxos",
+  "observed": [
+    "Login/refresh e navegação autenticada com conta Admin exclusivamente sintética",
+    "Lista com cenários; rascunho editável e planejamento congelado",
+    "Reserva ativa; confirmação100→98+perda2; perda total sem lote vazio; reversão com histórico",
+    "Genealogia em direção Ancestrais mostra somente A→B→C; ancestral indica impedimento de reversão após uso",
+    "Prévia real de confirmação da ordem03 via UI100→98+perda2; confirmação final não executada, mantendo cenário humano",
+    "E01 FatoApto e lote produzido Bloqueado na UI, destino Segregação",
+    "Contexto recovery reconstituído em sessionStorage com pedido sintético original; campos bloqueados",
+    "Consultar resultado e Repetir pedido original executados na UI; ambos resolvem para mesma ordemConfirmada/revisão4/execução",
+    "Layout estreito390px sem overflow horizontal do documento; captura visual conferida"
+  ],
+  "limitations": [
+    "Aceite humano pendente",
+    "Não foi simulada perda real de resposta HTTP",
+    "Não foi repetida matriz de permissões com conta comum no navegador",
+    "Nenhuma fixture com imagem: gate de imagens não demonstrado",
+    "Não é suíte completa nem matriz C01–C35 F04"
+  ],
+  "viewports": [
+    {
+      "kind": "initial detail captures",
+      "width": 906
+    },
+    {
+      "horizontalDocumentOverflow": false,
+      "documentWidth": 375,
+      "width": 390,
+      "height": 844
+    },
+    {
+      "width": 1280,
+      "kind": "final desktop",
+      "height": 900
+    }
+  ],
+  "preparationCorrection": "Configuração inicial frontend omitia /api/v1, causando refresh404; recompilada com URL correta antes da validação autenticada. Nenhuma alteração de produto.",
+  "httpsCertificateBypass": false,
+  "task": 516,
+  "recovery": {
+    "exactReplayPassed": true,
+    "sameExecutionId": "76bea47e-08eb-4bec-86cb-d4be60980a03",
+    "consultPassed": true,
+    "newPhysicalExecution": false,
+    "sameRevision": 4,
+    "mode": "Contexto de comando pendente reconstituído; não é falha real de transporte"
+  },
+  "f04Started": false,
+  "captures": [
+    {
+      "sha256": "17a824abcd161e3c120a3d50a8088dcdf419ee91d57e797fa29dd8ad031e0e8b",
+      "file": "output/playwright/f02-516/01-rascunho.png"
+    },
+    {
+      "sha256": "50f248ce38611f2d4f3d0ffe2b78c1d3d57729f8e548cba3bcea3f5aef981e0d",
+      "file": "output/playwright/f02-516/02-PLANEJADA.png"
+    },
+    {
+      "sha256": "cbcf0f573cce78094415b347154b7f4555968987343f03c99fe9c9f67f6ba2a6",
+      "file": "output/playwright/f02-516/03-RESERVADA.png"
+    },
+    {
+      "sha256": "ca3cc66361e612d792cb1b0a836df331bff31e979951f0c7f7a9c216b14045c5",
+      "file": "output/playwright/f02-516/04-CONFIRMADA.png"
+    },
+    {
+      "sha256": "bc351439581978b51632481f961c956c8f21a69bf909660e93f275f2bcb90621",
+      "file": "output/playwright/f02-516/05-PERDA-TOTAL.png"
+    },
+    {
+      "sha256": "0edc2a51d895a65e242b753fe0f5fe7dbf93287d6157826229fb9ec30c706bae",
+      "file": "output/playwright/f02-516/07-REVERTIDA.png"
+    },
+    {
+      "sha256": "c3f172bed448c77b539b4accbd644b17cec9716e9a1403c23564245ef52f7c11",
+      "file": "output/playwright/f02-516/09-DESCENDENTE.png"
+    },
+    {
+      "sha256": "ad705b1c50b6b66310e592c2230fdd9a99ef5844fb31afdc10934358f16c8afb",
+      "file": "output/playwright/f02-516/13-GENEALOGIA.png"
+    },
+    {
+      "sha256": "6a622e5d75aa28a04b55ef9947eb9ce8a3d662cfdd6601d4471197ec84d18d62",
+      "file": "output/playwright/f02-516/14-RECOVERY-PENDING.png"
+    },
+    {
+      "sha256": "52a9a37ba4b27756fd9253e628872299342c5ce62d0954e560808ab495faaae1",
+      "file": "output/playwright/f02-516/17-RECOVERY-RESOLVED.png"
+    },
+    {
+      "sha256": "0db463e54f7b7fb3e818752126d7a97f7b5483c25b2ddd2baaeb5494175f9586",
+      "file": "output/playwright/f02-516/18-MOBILE.png"
+    },
+    {
+      "sha256": "80c734f444f5acf43bd38a2ac2906e7cb72175fc128e675ff2f2bad8d93b068d",
+      "file": "output/playwright/f02-516/19-MOBILE-VIEWPORT.png"
+    },
+    {
+      "sha256": "5a709483f3a46a5e370e9b2453ea42e38735dcf05add9dfa60bc61fcc3505d28",
+      "file": "output/playwright/f02-516/20-READY-LIST.png"
+    },
+    {
+      "sha256": "866e76a99d53c3ee604b55c0c96085201925d15e9a68fd6e1a07d5218f2e4311",
+      "file": "output/playwright/f02-516/23-PREVIEW.png"
+    },
+    {
+      "sha256": "658ca799c839ed679bd7cb254d0cc3680be4558bd48ede9ff6b76b8df9d479bd",
+      "file": "output/playwright/f02-516/24-E01-APTO.png"
+    },
+    {
+      "sha256": "7cabf604455e3df9b2fe6d6dd633c00d4d81e4215895523946ae2bf6427c6089",
+      "file": "output/playwright/f02-516/25-E01-LOT.png"
+    }
+  ],
+  "humanAcceptance": "PENDENTE",
+  "runtimeSha": "d2f917c8577a12b0bb046da62fca46a5fb01f793"
+}
