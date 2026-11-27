@@ -52,7 +52,7 @@ No DEVOPS-TI, um administrador instala a unidade e habilita o boot. Antes de hab
 cd /srv/apps/gensw-ensaio-576
 getent passwd gensw-ensaio >/dev/null ||
   sudo useradd --system --user-group --no-create-home --shell /usr/sbin/nologin gensw-ensaio
-# Para o layout local de configuração srv/apps/gensw-ensaio-576/config:
+# Para a configuração no subdiretório config da aplicação
 sudo chgrp gensw-ensaio stack.env config config/api.env config/postgres-password
 chmod 0750 config
 chmod 0640 stack.env config/api.env config/postgres-password
@@ -67,17 +67,26 @@ Use `sudo systemctl start gensw-ensaio-576.service` e `sudo systemctl stop gensw
 
 Consulte `journalctl -u gensw-ensaio-576.service -b` para eventos do ciclo de vida. Para detalhes dos contêineres, use `sh "$stack" compose "$conf" ps` e `sh "$stack" compose "$conf" logs --tail 100 db api web`. Os logs têm rotação por contêiner. Use `curl -fsS http://127.0.0.1:3086/api/v1/ready` para conferir a prontidão atual. Evite exibir a configuração resolvida do Compose ou o ambiente dos processos, que podem conter segredos.
 
-A parada do Compose ocorre na ordem web, API e PostgreSQL. A API recebe tempo para finalizar trabalhos. O mecanismo existente de recuperação de otimização conserva o recibo e registra como interrompidas as execuções pendentes cujo prazo expirou. Os binds e as imagens de contêiner permanecem disponíveis para retomada. Reinicie o servidor inteiro somente em uma janela coordenada com o Redmine e as rotinas de backup. A #578 trata os agendamentos e a recuperação dos backups.
+A parada do Compose ocorre na ordem web, API e PostgreSQL. A API recebe tempo para finalizar trabalhos. O mecanismo existente de recuperação de otimização conserva o recibo e registra como interrompidas as execuções pendentes cujo prazo expirou. Os binds e as imagens de contêiner permanecem disponíveis para retomada. Reinicie o servidor inteiro somente em uma janela coordenada com o Redmine e as rotinas de backup. Pare a unidade GenSW antes de uma manutenção do Docker que exija manter o daemon desligado. A #578 trata os agendamentos e a recuperação dos backups.
 
 ## Atualizar ou reverter
 
 1. Prepare e teste a nova revisão em ambiente isolado. Retenha a pasta e as imagens Docker da revisão anterior, assim como a referência exata do PostgreSQL. Registre IDs dos artefatos e o histórico de migrations. Antes de mudanças de esquema, guarde um conjunto validado do banco, das imagens privadas e das chaves do mesmo ponto de parada.
 2. Pare a unidade GenSW e confirme seus três contêineres parados. Troque o alvo de `current` e `GENSW_RELEASE` em `stack.env` enquanto a unidade estiver parada. Instale novamente e recarregue a unidade se o arquivo de serviço tiver mudado.
 3. Se a revisão exige migrations, inicie só o banco e aplique o SQL previamente revisado no ambiente autorizado. Inicie a unidade e confirme prontidão, login, leitura e conteúdo das imagens do ensaio.
-4. Se precisar reverter, pare a unidade e volte o symlink e o SHA de `stack.env` para a revisão anterior. Reutilize os binds quando o esquema continuar compatível. Quando o esquema for incompatível, restaure o conjunto anterior em diretórios dedicados segundo o procedimento aprovado de banco e imagens. Preserve o conjunto pós-falha para inspeção. Inicie e repita as verificações. A primeira publicação permite reverter ao estado de serviço ausente por `sudo systemctl disable --now gensw-ensaio-576.service`, preservando a persistência do ensaio.
+4. Se precisar reverter, pare a unidade e volte o symlink e o SHA de `stack.env` para a revisão anterior. Reutilize os binds quando o esquema continuar compatível. Quando o esquema for incompatível, restaure o conjunto anterior em diretórios dedicados segundo o procedimento aprovado de banco e imagens. Preserve o conjunto pós-falha para inspeção. Inicie e repita as verificações. Para restaurar, prepare e confira o conjunto isoladamente antes de promovê-lo à raiz esperada pela unidade. A primeira publicação permite reverter ao estado de serviço ausente por `sudo systemctl disable --now gensw-ensaio-576.service`, preservando a persistência do ensaio.
 
 ## Repetir o ensaio
 
-Acesse a origem de loopback via encaminhamento SSH autorizado. Execute o script `deploy/devops-ti/validation/smoke.py` com Python 3 e uma conta sintética. O comando `create` pede confirmação da identidade do banco e gera um recibo com os IDs e hashes dos PNGs. A opção `--solver` executa o HiGHS Linux. Depois de parar e retomar, use `verify` com o mesmo recibo. Abra o cadastro pela SPA, confira a miniatura e o original e compare os hashes do recibo aos dois arquivos na raiz privada, pelas chaves registradas no banco. Registre somente resultados e identificadores sintéticos.
+Acesse a origem de loopback via encaminhamento SSH autorizado. Execute o script `deploy/devops-ti/validation/smoke.py` com Python 3 e uma conta sintética. O comando `create` pede confirmação da identidade do banco e gera um recibo com os IDs e hashes dos PNGs. A opção `--solver` executa o HiGHS Linux. Depois de parar e retomar, use `verify` com o mesmo recibo.
+
+```sh
+python3 deploy/devops-ti/validation/smoke.py create --username "$TEST_USER" \
+  --receipt "$TEST_RECEIPT" --synthetic-db-confirmed --solver
+python3 deploy/devops-ti/validation/smoke.py verify --username "$TEST_USER" \
+  --receipt "$TEST_RECEIPT"
+```
+
+Abra o cadastro pela SPA, confira a miniatura e o original e compare os hashes do recibo aos dois arquivos na raiz privada, pelas chaves registradas no banco. Registre somente resultados e identificadores sintéticos.
 
 Para ensaiar o atraso, use uma cópia de teste do Compose com atraso no processo do PostgreSQL, mantendo sua checagem de saúde. Observe a API e o Nginx aguardarem o banco e confira a prontidão pela origem web. No reboot autorizado, verifique a nova sessão de boot, o início do serviço antes de uma sessão de login, a prontidão e o mesmo recibo. Confira também a disponibilidade do Redmine após a janela.
