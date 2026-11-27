@@ -1,6 +1,6 @@
 # Operação do GenSW no DEVOPS-TI
 
-O ensaio da #576 usa o projeto Compose `gensw-ensaio-576` no DEVOPS-TI. O systemd acompanha o estado do host. O Nginx serve a SPA e encaminha `/api/v1` em `http://127.0.0.1:3086`. O PostgreSQL e a API usam redes Docker sem publicação direta de portas. A publicação HTTPS privada é tratada na #577.
+O ensaio da #576 usa o projeto Compose `gensw-ensaio-576` no DEVOPS-TI. O systemd acompanha o estado do host. O Nginx serve a SPA e encaminha `/api/v1` em `http://127.0.0.1:3086`. O PostgreSQL e a API usam redes Docker sem publicação direta de portas. A #577 descreve o procedimento de [acesso móvel privado](devops-ti-mobile.md).
 
 ## Preparar a revisão
 

@@ -1,8 +1,10 @@
+using System.Net;
 using System.Threading.RateLimiting;
 using GenSW.API.Authentication;
 using GenSW.API.Deployment;
 using GenSW.Application;
 using GenSW.Infrastructure;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -81,6 +83,27 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
+
+var trustedProxy = builder.Configuration["ReverseProxy:TrustedAddress"];
+if (!string.IsNullOrWhiteSpace(trustedProxy))
+{
+    if (!IPAddress.TryParse(trustedProxy, out var proxyAddress) ||
+        proxyAddress.Equals(IPAddress.Any) || proxyAddress.Equals(IPAddress.IPv6Any))
+    {
+        throw new InvalidOperationException("ReverseProxy:TrustedAddress must be a single proxy IP address.");
+    }
+
+    var forwardedHeaders = new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+        ForwardLimit = 1,
+        RequireHeaderSymmetry = true
+    };
+    forwardedHeaders.KnownNetworks.Clear();
+    forwardedHeaders.KnownProxies.Clear();
+    forwardedHeaders.KnownProxies.Add(proxyAddress);
+    app.UseForwardedHeaders(forwardedHeaders);
+}
 
 if (app.Environment.IsDevelopment())
 {
