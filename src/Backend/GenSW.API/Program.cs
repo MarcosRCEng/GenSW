@@ -1,5 +1,6 @@
 using System.Threading.RateLimiting;
 using GenSW.API.Authentication;
+using GenSW.API.Deployment;
 using GenSW.Application;
 using GenSW.Infrastructure;
 using Microsoft.AspNetCore.RateLimiting;
@@ -30,6 +31,9 @@ if (loginPermitLimit <= 0 || loginWindowSeconds <= 0)
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseReadinessCheck>("database", timeout: TimeSpan.FromSeconds(4))
+    .AddCheck<ImageStorageReadinessCheck>("private_images");
 builder.Services.AddControllers(options => { options.Filters.Add<GenSW.API.Controllers.AnimalEvolutionFilter>(); options.Filters.Add<GenSW.API.Controllers.FormulationFilter>(); options.Filters.Add<GenSW.API.Controllers.InventoryFilter>(); options.Filters.Add<GenSW.API.Controllers.ProductionFilter>(); options.Filters.Add<GenSW.API.Controllers.EggBridgeFilter>(); options.Filters.Add<GenSW.API.Controllers.MaterialCostsFilter>(); });
 builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
 {
@@ -91,6 +95,7 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHealthChecks("/api/v1/ready").AllowAnonymous();
 
 app.Run();
 

@@ -1,0 +1,106 @@
+#!/bin/sh
+set -eu
+
+if [ "$#" -lt 2 ]; then
+    printf 'Uso: %s {check|run|stop|compose} stack.env [argumentos]\n' "$0" >&2
+    exit 2
+fi
+
+action=$1
+config=$2
+shift 2
+deployment=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd -P)
+set -a
+. "$config"
+set +a
+
+: "${GENSW_RELEASE:?Informe a revisão instalada}"
+: "${GENSW_MOUNT_UUID:?Informe o UUID aprovado do disco de dados}"
+: "${GENSW_DATA_ROOT:?Informe o diretório de persistência do ensaio}"
+: "${GENSW_WEB_PORT:=3086}"
+
+compose() {
+    docker compose --project-name gensw-ensaio-576 --env-file "$config" \
+        --file "$deployment/compose.yaml" "$@"
+}
+
+check_storage() {
+    # O disco no fstab usa nofail. Exigir sua identidade antes de abrir binds.
+    mount=/srv/dados
+    uuid=$(findmnt -nr --mountpoint "$mount" --output UUID) || return 1
+    [ "$uuid" = "$GENSW_MOUNT_UUID" ] || return 1
+    [ "$GENSW_DATA_ROOT" = "$mount/gensw-ensaio-576" ] || return 1
+
+    for directory in "$GENSW_DATA_ROOT" "$GENSW_DATA_ROOT/postgres" \
+        "$GENSW_DATA_ROOT/images" "$GENSW_DATA_ROOT/data-protection"; do
+        [ -d "$directory" ] && [ ! -L "$directory" ] || return 1
+        [ "$(findmnt -nr --target "$directory" --output UUID)" = "$uuid" ] || return 1
+    done
+
+    mount_flags=$(findmnt -nr --mountpoint "$mount" --output OPTIONS) || return 1
+    case ",$mount_flags," in
+        *,rw,*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+require_storage() {
+    if ! check_storage; then
+        printf 'GenSW: disco de dados ou diretórios do ensaio indisponíveis.\n' >&2
+        exit 1
+    fi
+}
+
+ready() {
+    curl --fail --silent --max-time 5 --output /dev/null \
+        --noproxy '*' "http://127.0.0.1:$GENSW_WEB_PORT/api/v1/ready"
+}
+
+case "$action" in
+    check)
+        require_storage
+        compose config --quiet
+        ;;
+    run)
+        require_storage
+        printf 'GenSW: iniciando revisão %s.\n' "$GENSW_RELEASE"
+        compose up --detach --no-build --pull never --wait --wait-timeout 180
+        ready || { printf 'GenSW: prontidão HTTP indisponível.\n' >&2; exit 1; }
+        if [ -n "${NOTIFY_SOCKET:-}" ]; then
+            systemd-notify --ready --status="GenSW pronto ($GENSW_RELEASE)"
+        fi
+        printf 'GenSW: revisão %s pronta.\n' "$GENSW_RELEASE"
+
+        failures=0
+        while sleep 5; do
+            require_storage
+            if ready; then
+                if [ "$failures" -gt 0 ]; then
+                    printf 'GenSW: prontidão recuperada.\n'
+                fi
+                failures=0
+            else
+                failures=$((failures + 1))
+                if [ "$failures" -eq 1 ]; then
+                    printf 'GenSW: prontidão perdida.\n' >&2
+                fi
+                if [ "$failures" -ge 6 ]; then
+                    printf 'GenSW: dependência indisponível após seis verificações.\n' >&2
+                    exit 1
+                fi
+            fi
+        done
+        ;;
+    stop)
+        # Compose para na ordem inversa das dependências, sem remover os binds.
+        compose stop web api db
+        ;;
+    compose)
+        require_storage
+        compose "$@"
+        ;;
+    *)
+        printf 'Operação desconhecida: %s\n' "$action" >&2
+        exit 2
+        ;;
+esac

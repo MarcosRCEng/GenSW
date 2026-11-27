@@ -1,0 +1,112 @@
+name: gensw-ensaio-576
+
+x-logging: &logging
+  driver: local
+  options:
+    max-size: 10m
+    max-file: "3"
+
+services:
+  db:
+    image: ${GENSW_POSTGRES_IMAGE:-postgres:18-bookworm}
+    pull_policy: never
+    environment:
+      POSTGRES_DB: gensw_ensaio_576
+      POSTGRES_USER: gensw
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    volumes:
+      - type: bind
+        source: ${GENSW_DATA_ROOT:?Defina GENSW_DATA_ROOT}/postgres
+        target: /var/lib/postgresql
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 4s
+      retries: 24
+    networks: [database]
+    restart: "on-failure:5"
+    stop_grace_period: 60s
+    logging: *logging
+
+  api:
+    image: gensw/api:${GENSW_RELEASE:?Defina GENSW_RELEASE}
+    pull_policy: never
+    platform: linux/amd64
+    build:
+      context: ../..
+      dockerfile: deploy/devops-ti/Dockerfile.api
+      args:
+        GENSW_RELEASE: ${GENSW_RELEASE}
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - path: ${GENSW_API_ENV_FILE:?Defina GENSW_API_ENV_FILE}
+        format: raw
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      Images__PrivateRoot: /var/lib/gensw/images
+    volumes:
+      - type: bind
+        source: ${GENSW_DATA_ROOT}/images
+        target: /var/lib/gensw/images
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${GENSW_DATA_ROOT}/data-protection
+        target: /home/app/.aspnet/DataProtection-Keys
+        bind:
+          create_host_path: false
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--max-time", "4", "http://127.0.0.1:8080/api/v1/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [database, frontend]
+    restart: "on-failure:5"
+    stop_grace_period: 45s
+    logging: *logging
+
+  web:
+    image: gensw/web:${GENSW_RELEASE:?Defina GENSW_RELEASE}
+    pull_policy: never
+    platform: linux/amd64
+    build:
+      context: ../..
+      dockerfile: deploy/devops-ti/Dockerfile.web
+      args:
+        GENSW_RELEASE: ${GENSW_RELEASE}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${GENSW_WEB_PORT:-3086}:8080"
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/api/v1/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    networks: [frontend]
+    restart: "on-failure:5"
+    stop_grace_period: 30s
+    logging: *logging
+
+networks:
+  database:
+    internal: true
+  frontend:
+
+secrets:
+  postgres_password:
+    file: ${GENSW_DB_PASSWORD_FILE:?Defina GENSW_DB_PASSWORD_FILE}

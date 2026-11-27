@@ -1,0 +1,25 @@
+[Unit]
+Description=GenSW - ensaio sintético DEVOPS-TI (#576)
+Wants=network-online.target docker.service srv-dados.mount
+After=network-online.target docker.service srv-dados.mount
+StartLimitIntervalSec=0
+
+[Service]
+Type=notify
+NotifyAccess=all
+User=gensw-ensaio
+Group=gensw-ensaio
+SupplementaryGroups=docker
+WorkingDirectory=/srv/apps/gensw-ensaio-576
+ExecStart=/bin/sh /srv/apps/gensw-ensaio-576/current/deploy/devops-ti/systemd/gensw-stack run /srv/apps/gensw-ensaio-576/stack.env
+ExecStopPost=/bin/sh /srv/apps/gensw-ensaio-576/current/deploy/devops-ti/systemd/gensw-stack stop /srv/apps/gensw-ensaio-576/stack.env
+Restart=always
+RestartSec=20s
+TimeoutStartSec=240s
+TimeoutStopSec=150s
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
