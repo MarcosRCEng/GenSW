@@ -1,20 +1,27 @@
+import { bindSessionRecovery, getRecoverySessionId } from './sessionRecovery'
+
 export interface SessionAccessToken {
   accessToken: string
   expiresAtUtc: string
+  sessionId: string
 }
 
 export interface SessionSnapshot {
   accessToken: string | null
+  sessionId: string | null
   generation: number
   revision: number
+  signal: AbortSignal
 }
 
-type SessionRefreshHandler = () => Promise<SessionAccessToken | null>
+type SessionRefreshHandler = (expectedSessionId: string | null) => Promise<SessionAccessToken | null>
 type SessionInvalidationListener = () => void
 
 let accessToken: string | null = null
+let sessionId: string | null = null
 let sessionGeneration = 0
 let sessionRevision = 0
+let sessionAbort = new AbortController()
 let refreshHandler: SessionRefreshHandler | null = null
 let refreshInFlight: Promise<SessionAccessToken | null> | null = null
 
@@ -35,16 +42,27 @@ export function subscribeToSessionGenerationChange(listener: SessionInvalidation
 export function getSessionSnapshot(): SessionSnapshot {
   return {
     accessToken,
+    sessionId,
     generation: sessionGeneration,
     revision: sessionRevision,
+    signal: sessionAbort.signal,
   }
 }
 
-export function setAccessToken(token: string): void {
+function replaceSession(token: string | null, id: string | null): void {
+  const previousAbort = sessionAbort
+  sessionAbort = new AbortController()
   accessToken = token
+  sessionId = id
   sessionGeneration += 1
   sessionRevision += 1
+  bindSessionRecovery(id)
+  previousAbort.abort()
   notifyGenerationChange()
+}
+
+export function setAccessToken(token: string, id: string | null = null): void {
+  replaceSession(token, id)
 }
 
 export function invalidateSession(expectedGeneration?: number): boolean {
@@ -52,10 +70,7 @@ export function invalidateSession(expectedGeneration?: number): boolean {
     return false
   }
 
-  accessToken = null
-  sessionGeneration += 1
-  sessionRevision += 1
-  notifyGenerationChange()
+  replaceSession(null, null)
 
   for (const listener of invalidationListeners) {
     try {
@@ -82,6 +97,7 @@ export function registerSessionRefreshHandler(handler: SessionRefreshHandler): v
 
 async function performRefresh(): Promise<SessionAccessToken | null> {
   const refreshGeneration = sessionGeneration
+  const expectedSessionId = sessionId ?? getRecoverySessionId()
 
   if (refreshHandler === null) {
     invalidateSession(refreshGeneration)
@@ -89,19 +105,23 @@ async function performRefresh(): Promise<SessionAccessToken | null> {
   }
 
   try {
-    const refreshedToken = await refreshHandler()
+    const refreshedToken = await refreshHandler(expectedSessionId)
 
     if (sessionGeneration !== refreshGeneration) {
       return null
     }
 
-    if (refreshedToken === null) {
+    if (refreshedToken === null || (expectedSessionId !== null && refreshedToken.sessionId !== expectedSessionId)) {
       invalidateSession(refreshGeneration)
       return null
     }
 
-    accessToken = refreshedToken.accessToken
-    sessionRevision += 1
+    if (accessToken === null) {
+      replaceSession(refreshedToken.accessToken, refreshedToken.sessionId)
+    } else {
+      accessToken = refreshedToken.accessToken
+      sessionRevision += 1
+    }
     return refreshedToken
   } catch (error) {
     invalidateSession(refreshGeneration)

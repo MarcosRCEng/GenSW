@@ -3,6 +3,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using GenSW.Application.Authentication;
+using GenSW.Infrastructure.Catalog;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -23,13 +24,16 @@ internal sealed class JwtAccessTokenService : IAccessTokenService
             SecurityAlgorithms.HmacSha256);
     }
 
-    public AccessTokenResult Create(Guid userId, IReadOnlyCollection<string> roles)
+    public AccessTokenResult Create(Guid subjectId, Guid sessionId, DateTimeOffset sessionExpiry, ErpAccessClaims? erp)
     {
         var now = timeProvider.GetUtcNow();
         var expiresAtUtc = now.AddMinutes(options.AccessTokenMinutes);
+        if (sessionExpiry < expiresAtUtc)
+            expiresAtUtc = sessionExpiry;
         var claims = new List<Claim>
         {
-            new(JwtRegisteredClaimNames.Sub, userId.ToString("D", CultureInfo.InvariantCulture)),
+            new(CatalogSessionIdentity.SubjectClaim, subjectId.ToString("D", CultureInfo.InvariantCulture)),
+            new(CatalogSessionIdentity.SessionClaim, sessionId.ToString("D", CultureInfo.InvariantCulture)),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)),
             new(
                 JwtRegisteredClaimNames.Iat,
@@ -37,16 +41,19 @@ internal sealed class JwtAccessTokenService : IAccessTokenService
                 ClaimValueTypes.Integer64),
         };
 
-        claims.AddRange(
-            roles
-                .Where(role => !string.IsNullOrWhiteSpace(role))
-                .Distinct(StringComparer.Ordinal)
-                .OrderBy(role => role, StringComparer.Ordinal)
-                .Select(role => new Claim("role", role)));
+        if (erp is not null)
+        {
+            claims.Add(new Claim(CatalogSessionIdentity.AccountClaim, erp.AccountId.ToString("D")));
+            claims.Add(new Claim(CatalogSessionIdentity.BindingClaim, erp.BindingId.ToString("D")));
+            claims.Add(new Claim(CatalogSessionIdentity.BindingRevisionClaim,
+                erp.BindingRevision.ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64));
+            claims.Add(new Claim(CatalogSessionIdentity.AccessGenerationClaim,
+                erp.AccessGeneration.ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64));
+        }
 
         var token = new JwtSecurityToken(
             issuer: options.Issuer,
-            audience: options.Audience,
+            audience: options.GetAudience(erp is null),
             claims: claims,
             expires: expiresAtUtc.UtcDateTime,
             signingCredentials: signingCredentials);
@@ -55,6 +62,7 @@ internal sealed class JwtAccessTokenService : IAccessTokenService
         {
             AccessToken = new JwtSecurityTokenHandler().WriteToken(token),
             ExpiresAtUtc = expiresAtUtc,
+            SessionId = sessionId,
         };
     }
 }

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { httpRequest } from '../../shared/http/httpClient'
 import { isHttpError } from '../../shared/http/httpErrors'
+import { captureSessionRecovery } from '../../shared/http/sessionRecovery'
 import { parseOrder } from './productionService'
 import type { ProductionOrder } from './types'
 
@@ -23,8 +24,8 @@ function validBody(command: PendingProductionCommand) {
   if (command.operation === 'ocorrencias') return strings(body, ['tipo', 'evidencia']) && typeof body.houveConsumoFisico === 'boolean'
   return true
 }
-function restore(scope: string): PendingProductionCommand | null {
-  const value = sessionStorage.getItem(prefix + scope)
+function restore(scope: string, storage: ReturnType<typeof captureSessionRecovery>): PendingProductionCommand | null {
+  const value = storage.getItem(prefix + scope)
   if (!value) return null
   try {
     const v = JSON.parse(value) as PendingProductionCommand
@@ -34,8 +35,8 @@ function restore(scope: string): PendingProductionCommand | null {
     return v
   } catch { throw new Error('O contexto da operação pendente está inválido. Preserve esta sessão e solicite diagnóstico antes de repetir a operação.') }
 }
-function restoreSafely(scope: string) {
-  try { return { pending: restore(scope), error: null } }
+function restoreSafely(scope: string, storage = captureSessionRecovery()) {
+  try { return { pending: restore(scope, storage), error: null } }
   catch { return { pending: null, error: 'Não foi possível recuperar o contexto da operação pendente. Preserve esta sessão e solicite diagnóstico antes de repetir a operação.' } }
 }
 export function hasProductionRetryContext(scope: string) {
@@ -43,9 +44,9 @@ export function hasProductionRetryContext(scope: string) {
   return !!restored.pending || !!restored.error
 }
 
-// Only the exact business request and retry key are retained. No session/token is stored.
 export function useProductionCommand(scope: string) {
-  const [restored] = useState(() => restoreSafely(scope))
+  const [storage] = useState(captureSessionRecovery)
+  const [restored] = useState(() => restoreSafely(scope, storage))
   const [pending, setPending] = useState<PendingProductionCommand | null>(restored.pending)
   const current = useRef(pending)
   const sending = useRef(false)
@@ -53,8 +54,8 @@ export function useProductionCommand(scope: string) {
   const [absent, setAbsent] = useState(false)
   const save = (value: PendingProductionCommand | null) => {
     // Persistence is required before sending: a reload must never invent a new key.
-    if (value) sessionStorage.setItem(prefix + scope, JSON.stringify(value))
-    else sessionStorage.removeItem(prefix + scope)
+    if (value) storage.setItem(prefix + scope, JSON.stringify(value))
+    else storage.removeItem(prefix + scope)
     current.current = value; setPending(value); setAbsent(false)
   }
   const send = async (command: PendingProductionCommand): Promise<ProductionOrder | undefined> => {

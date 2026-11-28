@@ -1,6 +1,6 @@
 using System.Net;
 using System.Text.Json;
-using GenSW.Infrastructure.Identity;
+using GenSW.Infrastructure.Catalog;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,7 +30,8 @@ public sealed class LoginTests(AuthWebApplicationFactory factory)
             .Select(property => property.Name.ToLowerInvariant())
             .OrderBy(name => name)
             .ToArray();
-        Assert.Equal(["accesstoken", "expiresatutc"], propertyNames);
+        Assert.Equal(["accesstoken", "expiresatutc", "sessionid"], propertyNames);
+        Assert.NotEqual(Guid.Empty, AuthTestHttp.GetProperty(responseJson.RootElement, "sessionId").GetGuid());
 
         var cookie = response.GetIssuedCookie();
         Assert.StartsWith("GenSW", cookie.Name, StringComparison.OrdinalIgnoreCase);
@@ -88,8 +89,8 @@ public sealed class LoginTests(AuthWebApplicationFactory factory)
 
         var isLockedOut = await factory.ExecuteScopeAsync(async services =>
         {
-            var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-            var storedUser = await userManager.FindByIdAsync(user.UserId.ToString("D"));
+            var userManager = services.GetRequiredService<UserManager<CatalogUser>>();
+            var storedUser = await userManager.FindByIdAsync(user.SubjectId.ToString("D"));
             return storedUser is not null && await userManager.IsLockedOutAsync(storedUser);
         });
         Assert.True(isLockedOut);
@@ -109,17 +110,17 @@ public sealed class LoginTests(AuthWebApplicationFactory factory)
             Assert.Equal(HttpStatusCode.Unauthorized, failure.StatusCode);
         }
 
-        var failedCount = await GetAccessFailedCountAsync(user.UserId);
+        var failedCount = await GetAccessFailedCountAsync(user.SubjectId);
         Assert.Equal(1, failedCount);
 
         using var success = await client.LoginAsync(user.UserName, user.Password);
         Assert.Equal(HttpStatusCode.OK, success.StatusCode);
-        Assert.Equal(0, await GetAccessFailedCountAsync(user.UserId));
+        Assert.Equal(0, await GetAccessFailedCountAsync(user.SubjectId));
     }
 
     private Task<int> GetAccessFailedCountAsync(Guid userId)
     {
-        return factory.ExecuteDbContextAsync(context => context.Users
+        return factory.ExecuteCatalogAsync(context => context.Users
             .Where(user => user.Id == userId)
             .Select(user => user.AccessFailedCount)
             .SingleAsync());

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { httpRequest } from '../../shared/http/httpClient'
 import { isHttpError } from '../../shared/http/httpErrors'
+import { captureSessionRecovery } from '../../shared/http/sessionRecovery'
 import { costRecord, parseCostEstimate, parseCostHistory, parseCostReference } from './materialCostService'
 
 type Operation = 'referencia' | 'substituicao' | 'avaliacao' | 'compensacao' | 'estimativa' | 'resolucao'
@@ -36,9 +37,9 @@ function parseResult(value: unknown, pending: PendingCostCommand) {
   if (pending.operation === 'resolucao' && (!uuid((result as Record<string, unknown>).apuracaoId) || !uuid((result as Record<string, unknown>).execucaoId) || (result as Record<string, unknown>).originalPreservado !== true)) throw new Error('Resposta de resolução inválida. Preserve o pedido original.')
   return result
 }
-function restore(scope: string) {
+function restore(scope: string, storage: ReturnType<typeof captureSessionRecovery>) {
   try {
-    const raw = sessionStorage.getItem(prefix + scope)
+    const raw = storage.getItem(prefix + scope)
     if (!raw) return { pending: null, error: null }
     const parsed: unknown = JSON.parse(raw)
     if (!validCostPending(parsed)) throw new Error()
@@ -46,15 +47,16 @@ function restore(scope: string) {
   } catch { return { pending: null, error: 'O contexto monetário pendente está inválido ou indisponível. Preserve esta sessão e solicite diagnóstico antes de enviar outro comando.' } }
 }
 export function useCostCommand(scope: string) {
-  const [restored] = useState(() => restore(scope))
+  const [storage] = useState(captureSessionRecovery)
+  const [restored] = useState(() => restore(scope, storage))
   const [pending, setPending] = useState<PendingCostCommand | null>(restored.pending)
   const current = useRef(pending)
   const sending = useRef(false)
   const [busy, setBusy] = useState(false)
   const [absent, setAbsent] = useState(false)
   const save = (value: PendingCostCommand | null) => {
-    if (value) sessionStorage.setItem(prefix + scope, JSON.stringify(value))
-    else sessionStorage.removeItem(prefix + scope)
+    if (value) storage.setItem(prefix + scope, JSON.stringify(value))
+    else storage.removeItem(prefix + scope)
     current.current = value; setPending(value); setAbsent(false)
   }
   const send = async (context: PendingCostCommand) => {

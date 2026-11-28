@@ -1,3 +1,5 @@
+using GenSW.Application.Accounts;
+using GenSW.Infrastructure.Accounts;
 using GenSW.Application.Animals;
 using GenSW.Application.Animals.Filiacoes;
 using GenSW.Application.Animals.Pesagens;
@@ -22,12 +24,18 @@ public sealed class AnimalEvolutionTests : IAsyncLifetime
 {
     private GenSW.API.Tests.EphemeralPostgreSql pg = null!;
     private readonly string volume = Path.Combine(Path.GetTempPath(), "gensw-images-tests-" + Guid.NewGuid().ToString("N"));
-    public async Task InitializeAsync() { pg = await GenSW.API.Tests.EphemeralPostgreSql.StartAsync(); Directory.CreateDirectory(volume); }
+    private readonly Guid volumeId = Guid.NewGuid();
+    public async Task InitializeAsync()
+    {
+        pg = await GenSW.API.Tests.EphemeralPostgreSql.StartAsync();
+        Directory.CreateDirectory(volume);
+        await File.WriteAllTextAsync(Path.Combine(volume, PrivateVolume.MarkerName), volumeId.ToString("D"));
+    }
     public async Task DisposeAsync() { await pg.DisposeAsync(); Directory.Delete(volume, true); }
     private GenSWDbContext Db() => new(new DbContextOptionsBuilder<GenSWDbContext>().UseNpgsql(pg.ConnectionString).Options);
     private static Animal Animal(Guid species, string code, SexoAnimal sex = SexoAnimal.Macho, DateOnly? birth = null) =>
         GenSW.Domain.Animals.Animal.Criar(code, null, species, null, null, sex, birth, EscopoAnimal.Operacional, DateOnly.FromDateTime(DateTime.UtcNow), DateTimeOffset.UtcNow);
-    private IPrivateImageStorage Storage() => new PrivateImageStorage(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Images:PrivateRoot"] = volume, ["Images:MinimumFreeBytes"] = "0" }).Build());
+    private IPrivateImageStorage Storage() => new PrivateImageStorage(() => new AccountPrivateVolume(volume, volumeId), new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Images:MinimumFreeBytes"] = "0" }).Build());
     private static byte[] Png() { using var image = new MagickImage(MagickColors.Red, 20, 10); return image.ToByteArray(MagickFormat.Png); }
     private ImageService Images(GenSWDbContext db) => new(new ImageRepository(db), Storage(), new MagickImageProcessor(), TimeProvider.System);
 
@@ -177,7 +185,7 @@ public sealed class AnimalEvolutionTests : IAsyncLifetime
         }
         Assert.Equal(before,Directory.GetFiles(volume,"*.png").Length);
         Assert.False(await db.ImagensAnimal.AnyAsync(x=>x.AnimalId==other.Id));
-        var disabledStorage=new PrivateImageStorage(new ConfigurationBuilder().Build());
+        var disabledStorage=new PrivateImageStorage(() => throw new AccountUnavailableException(), new ConfigurationBuilder().Build());
         var disabled=new ImageService(new ImageRepository(db),disabledStorage,new MagickImageProcessor(),TimeProvider.System);
         var error=await Assert.ThrowsAsync<AnimalEvolutionException>(()=>disabled.UploadAsync(ImageOwner.Animal,other.Id,new MemoryStream(Png()),null,null,default));
         Assert.Equal(503,error.Status);Assert.False(await db.ImagensAnimal.AnyAsync(x=>x.AnimalId==other.Id));

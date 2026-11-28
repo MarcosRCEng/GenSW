@@ -63,6 +63,8 @@ vi.mock('../features/varieties/services/varietiesService', () => ({
 
 const currentUser: CurrentUser = {
   userId: 'b7f14f7b-a8ff-499e-885f-a62c693de76c',
+  subjectId: 'b7f14f7b-a8ff-499e-885f-a62c693de76c',
+  erpActorId: 'b7f14f7b-a8ff-499e-885f-a62c693de76c',
   pessoaId: '8a11a958-982d-49f4-8ba9-cbe5db840cd4',
   nome: 'Marina Silva',
   userName: 'marina',

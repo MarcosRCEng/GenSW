@@ -11,11 +11,14 @@ import {
 
 const renewedAccessToken = {
   accessToken: 'renewed-access-token',
+  sessionId: '13b819a3-c32c-4fd9-862e-c6a172b509c0',
   expiresAtUtc: '2026-08-20T15:00:00Z',
 }
 
 const currentUser = {
   userId: 'b7f14f7b-a8ff-499e-885f-a62c693de76c',
+  subjectId: 'b7f14f7b-a8ff-499e-885f-a62c693de76c',
+  erpActorId: 'b7f14f7b-a8ff-499e-885f-a62c693de76c',
   pessoaId: '8a11a958-982d-49f4-8ba9-cbe5db840cd4',
   nome: 'Marina Silva',
   userName: 'marina',
@@ -43,6 +46,7 @@ function unauthorizedResponse(): Response {
 }
 
 afterEach(() => {
+  invalidateSession()
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
@@ -286,6 +290,23 @@ describe('httpClient session refresh', () => {
     expect(getSessionSnapshot().accessToken).toBe('session-b-token')
   })
 
+  it('vincula o refresh à sessão já instalada antes de permitir um retry', async () => {
+    const sessionA = '3f9ab769-063a-435b-b602-e75a7a43ea9e'
+    setAccessToken('session-a-token', sessionA)
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith('/auth/refresh')) {
+        expect(new Headers(init?.headers).get('X-GenSW-Session')).toBe(sessionA)
+        return Promise.resolve(jsonResponse(renewedAccessToken))
+      }
+      return Promise.resolve(unauthorizedResponse())
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(httpRequest('/resource', { authenticated: true })).rejects.toBeInstanceOf(SessionExpiredError)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(getSessionSnapshot().accessToken).toBeNull()
+  })
+
   it('preserva o token renovado quando o 401 do usuário atual chega atrasado', async () => {
     setAccessToken('expired-access-token')
 
@@ -446,7 +467,7 @@ describe('httpClient session refresh', () => {
 
   it('mantém o access token somente em memória durante login e leitura do usuário', async () => {
     const localStorageSetItem = vi.spyOn(window.localStorage, 'setItem')
-    const sessionStorageSetItem = vi.spyOn(window.sessionStorage, 'setItem')
+    const sessionStorageSetItem = vi.spyOn(Storage.prototype, 'setItem')
     let currentUserAuthorization: string | null = null
 
     const fetchMock = vi.fn(
@@ -467,6 +488,6 @@ describe('httpClient session refresh', () => {
     await expect(login({ userName: 'marina', password: 'segredo' })).resolves.toEqual(currentUser)
     expect(currentUserAuthorization).toBe('Bearer renewed-access-token')
     expect(localStorageSetItem).not.toHaveBeenCalled()
-    expect(sessionStorageSetItem).not.toHaveBeenCalled()
+    expect(sessionStorageSetItem.mock.calls).toEqual([['gensw.erp-recovery-session.v1', renewedAccessToken.sessionId]])
   })
 })

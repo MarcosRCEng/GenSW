@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using GenSW.Application.Accounts;
 using GenSW.Application.Formulation;
 using GenSW.Application.Optimization;
 using GenSW.Domain.Catalog;
@@ -167,6 +168,7 @@ public sealed class OptimizationApiTests(AnimalApiPostgreSqlFixture fixture)
     [Fact]
     public async Task S05_21_25_pending_replay_precedes_capacity_and_timeout_remains_terminal_after_client_disconnect()
     {
+        using var identity = await PropertyTestHttp.AuthenticateAsync(Factory);
         var data = await SeedAsync();
         var gate = new ControlledSolver();
         using var child = Factory.WithWebHostBuilder(host => host.ConfigureTestServices(services =>
@@ -174,7 +176,6 @@ public sealed class OptimizationApiTests(AnimalApiPostgreSqlFixture fixture)
             services.RemoveAll<IOptimizationSolver>();
             services.AddSingleton<IOptimizationSolver>(gate);
         }));
-        using var identity = await PropertyTestHttp.AuthenticateAsync(Factory);
         using var client = child.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost") });
         client.DefaultRequestHeaders.Authorization = identity.DefaultRequestHeaders.Authorization;
         var key = Key();
@@ -212,12 +213,64 @@ public sealed class OptimizationApiTests(AnimalApiPostgreSqlFixture fixture)
     }
 
     [Fact]
+    public async Task Catalog_unavailability_cancels_an_in_flight_solver_and_prevents_publication()
+    {
+        using var identity = await PropertyTestHttp.AuthenticateAsync(Factory);
+        var data = await SeedAsync();
+        var solver = new ControlledSolver();
+        using var child = Factory.WithWebHostBuilder(host => host.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IOptimizationSolver>();
+            services.AddSingleton<IOptimizationSolver>(solver);
+        }));
+        using var client = child.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost") });
+        client.DefaultRequestHeaders.Authorization = identity.DefaultRequestHeaders.Authorization;
+        var settings = await Factory.ExecuteCatalogAsync(catalog =>
+            Task.FromResult(new NpgsqlConnectionStringBuilder(catalog.Database.GetConnectionString()!)));
+        Assert.Equal("gensw_catalog_tests", settings.Database);
+        Assert.Equal("127.0.0.1", settings.Host);
+        var catalogName = settings.Database;
+        settings.Database = "postgres";
+        await using var cluster = new NpgsqlConnection(settings.ConnectionString);
+        await cluster.OpenAsync();
+
+        var key = Key();
+        var pending = SendAsync(client, Route, data.Command, key);
+        try
+        {
+            await solver.Started.Task.WaitAsync(TimeSpan.FromSeconds(15));
+            await using var offline = new NpgsqlCommand("ALTER DATABASE gensw_catalog_tests ALLOW_CONNECTIONS false", cluster);
+            await offline.ExecuteNonQueryAsync();
+            await using var closeConnections = new NpgsqlCommand(
+                "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = @catalog", cluster);
+            closeConnections.Parameters.AddWithValue("catalog", catalogName!);
+            await closeConnections.ExecuteNonQueryAsync();
+
+            using var receipt = await pending.WaitAsync(TimeSpan.FromSeconds(12));
+            var view = await ReadAsync(receipt, HttpStatusCode.Accepted);
+            var id = view.GetProperty("id").GetGuid();
+            Assert.Equal(JsonValueKind.Null, view.GetProperty("resultado").ValueKind);
+            Assert.False(await Factory.ExecuteDbContextAsync(db =>
+                db.Set<OptimizationResultRow>().AnyAsync(result => result.ExecutionId == id)));
+            Assert.Equal(1, solver.Calls);
+        }
+        finally
+        {
+            await using var online = new NpgsqlCommand("ALTER DATABASE gensw_catalog_tests ALLOW_CONNECTIONS true", cluster);
+            await online.ExecuteNonQueryAsync();
+            solver.Release.TrySetResult();
+        }
+    }
+
+    [Fact]
     public async Task S05_28_recovery_completes_expired_execution_once_and_database_guards_reject_rewrites()
     {
         using var anonymous = Factory.CreateHttpsClient();
         using var unauthorized = await anonymous.GetAsync(Route);
         Assert.Equal(HttpStatusCode.Unauthorized, unauthorized.StatusCode);
         var user = await Factory.SeedUserAsync($"f05_expired_{Key()}");
+        var account = await Factory.ExecuteScopeAsync(services =>
+            Task.FromResult(services.GetRequiredService<IErpAccountScope>().Current));
         var command = (await SeedAsync()).Command;
         var now = DateTimeOffset.UtcNow;
         var pendingId = Guid.NewGuid();
@@ -226,6 +279,8 @@ public sealed class OptimizationApiTests(AnimalApiPostgreSqlFixture fixture)
             db.Add(new OptimizationExecution
             {
                 Id = pendingId, AutorId = user.UserId, Chave = Key(), Hash = new string('b', 64),
+                AccountId = account.AccountId, BindingId = account.BindingId, BindingRevision = account.BindingRevision,
+                AccessGeneration = account.AccessGeneration,
                 CreatedAtUtc = now, DeadlineUtc = now.AddMinutes(10), OwnerToken = Guid.NewGuid(),
                 PedidoJson = FormulationJson.Write(command),
                 EntradasJson = FormulationJson.Write(new OptimizationInputs(now, [], [], [])),
@@ -241,6 +296,8 @@ public sealed class OptimizationApiTests(AnimalApiPostgreSqlFixture fixture)
         var execution = new OptimizationExecution
         {
             Id = Guid.NewGuid(), AutorId = user.UserId, Chave = Key(), Hash = new string('a', 64),
+            AccountId = account.AccountId, BindingId = account.BindingId, BindingRevision = account.BindingRevision,
+            AccessGeneration = account.AccessGeneration,
             CreatedAtUtc = now.AddMinutes(-2), DeadlineUtc = now.AddMinutes(-1), OwnerToken = Guid.NewGuid(),
             PedidoJson = FormulationJson.Write(command),
             EntradasJson = FormulationJson.Write(new OptimizationInputs(now.AddMinutes(-2), [], [], [])),

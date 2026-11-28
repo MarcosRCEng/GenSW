@@ -33,8 +33,20 @@ namespace GenSW.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<long?>("AccessGeneration")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid?>("AccountId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("AutorId")
                         .HasColumnType("uuid");
+
+                    b.Property<Guid?>("BindingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long?>("BindingRevision")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Chave")
                         .IsRequired()
@@ -71,11 +83,13 @@ namespace GenSW.Infrastructure.Persistence.Migrations
                     b.HasIndex("VersaoId")
                         .IsUnique();
 
-                    b.HasIndex("AutorId", "Chave")
-                        .IsUnique();
+                    b.HasIndex("AutorId", "Chave", "AccountId", "BindingId", "BindingRevision", "AccessGeneration")
+                        .IsUnique()
+                        .HasDatabaseName("UX_DerivacoesOtimizacao_Escopo_Chave");
 
                     b.ToTable("DerivacoesOtimizacao", null, t =>
                         {
+                            t.HasCheckConstraint("CK_DerivacoesOtimizacao_Escopo", AccountJobEnvelope.Scope);
                             t.HasCheckConstraint("CK_DerivacoesOtimizacao_Hash", "length(\"Hash\") = 64 AND length(\"Chave\") > 0");
                         });
                 });
@@ -85,8 +99,20 @@ namespace GenSW.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<long?>("AccessGeneration")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid?>("AccountId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("AutorId")
                         .HasColumnType("uuid");
+
+                    b.Property<Guid?>("BindingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long?>("BindingRevision")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Chave")
                         .IsRequired()
@@ -130,13 +156,17 @@ namespace GenSW.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb");
 
+                    b.Property<DateTimeOffset?>("QuarantinedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("Revisao")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AutorId", "Chave")
-                        .IsUnique();
+                    b.HasIndex("AutorId", "Chave", "AccountId", "BindingId", "BindingRevision", "AccessGeneration")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ExecucoesOtimizacao_Escopo_Chave");
 
                     b.HasIndex("CreatedAtUtc", "Id");
 
@@ -144,7 +174,9 @@ namespace GenSW.Infrastructure.Persistence.Migrations
 
                     b.ToTable("ExecucoesOtimizacao", null, t =>
                         {
-                            t.HasCheckConstraint("CK_ExecucoesOtimizacao_Estado", "(\"Estado\" = 'EmCalculo' AND \"Revisao\" = 1) OR (\"Estado\" = 'Finalizada' AND \"Revisao\" = 2)");
+                            t.HasCheckConstraint("CK_ExecucoesOtimizacao_Escopo", AccountJobEnvelope.Scope);
+
+                            t.HasCheckConstraint("CK_ExecucoesOtimizacao_Estado", AccountJobEnvelope.ExecutionState);
 
                             t.HasCheckConstraint("CK_ExecucoesOtimizacao_Hash", "length(\"Hash\") = 64 AND length(\"Chave\") > 0");
 

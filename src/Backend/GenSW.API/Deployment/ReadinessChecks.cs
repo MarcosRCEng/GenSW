@@ -1,54 +1,28 @@
-using GenSW.Infrastructure.Images;
-using GenSW.Infrastructure.Persistence;
+using GenSW.Infrastructure.Catalog;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace GenSW.API.Deployment;
 
-internal sealed class DatabaseReadinessCheck(IServiceScopeFactory scopes) : IHealthCheck
+internal sealed class CatalogReadinessCheck(IServiceScopeFactory scopes) : IHealthCheck
 {
-    public async Task<HealthCheckResult> CheckHealthAsync(
-        HealthCheckContext context,
-        CancellationToken cancellationToken)
+    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken ct)
     {
         try
         {
             await using var scope = scopes.CreateAsyncScope();
-            var database = scope.ServiceProvider.GetRequiredService<GenSWDbContext>();
-            var pending = await database.Database.GetPendingMigrationsAsync(cancellationToken);
-            if (pending.Any())
-            {
-                return HealthCheckResult.Unhealthy("The database requires migrations.");
-            }
+            var catalog = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
+            var actual = await catalog.Database.GetAppliedMigrationsAsync(ct);
+            var expected = catalog.Database.GetMigrations().ToArray();
+            if (expected.Length == 0 || !expected.SequenceEqual(actual))
+                return HealthCheckResult.Unhealthy();
 
-            await database.Users.AnyAsync(cancellationToken);
-            await database.Especies.AnyAsync(cancellationToken);
-            await database.ImagensAnimal.AnyAsync(cancellationToken);
-            await database.ImagensVariedade.AnyAsync(cancellationToken);
+            await catalog.Accounts.AnyAsync(ct);
             return HealthCheckResult.Healthy();
         }
-        catch (Exception) when (!cancellationToken.IsCancellationRequested)
+        catch (Exception) when (!ct.IsCancellationRequested)
         {
-            return HealthCheckResult.Unhealthy("The database or catalog is unavailable.");
-        }
-    }
-}
-
-internal sealed class ImageStorageReadinessCheck(PrivateImageStorage storage) : IHealthCheck
-{
-    public Task<HealthCheckResult> CheckHealthAsync(
-        HealthCheckContext context,
-        CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        try
-        {
-            storage.VerifyWritable();
-            return Task.FromResult(HealthCheckResult.Healthy());
-        }
-        catch (Exception)
-        {
-            return Task.FromResult(HealthCheckResult.Unhealthy("Private image storage is unavailable."));
+            return HealthCheckResult.Unhealthy();
         }
     }
 }

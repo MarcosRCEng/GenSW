@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { message } from '../formulation/api'
 import { isHttpError } from '../../shared/http/httpErrors'
+import { captureSessionRecovery } from '../../shared/http/sessionRecovery'
 import { isGuid } from './api'
 
 export function useRecoverableCommand<TBody, TResult>(scope: string, send: (body: TBody, key: string) => Promise<TResult>, lookup: (key: string) => Promise<TResult>) {
   const storageKey = `gensw.optimization.request.v1:${scope}`
+  const [storage] = useState(captureSessionRecovery)
   const [key, setKey] = useState(() => {
     try {
-      const stored = sessionStorage.getItem(storageKey)
+      const stored = storage.getItem(storageKey)
       return isGuid(stored) ? stored : null
     } catch { return null }
   })
@@ -26,8 +28,8 @@ export function useRecoverableCommand<TBody, TResult>(scope: string, send: (body
   }, [])
 
   function save(value: string | null) {
-    if (value) sessionStorage.setItem(storageKey, value)
-    else sessionStorage.removeItem(storageKey)
+    if (value) storage.setItem(storageKey, value)
+    else storage.removeItem(storageKey)
     currentKey.current = value
     setKey(value)
     setAbsent(false)

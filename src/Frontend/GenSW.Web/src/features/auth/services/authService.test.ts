@@ -3,6 +3,7 @@ import { NetworkError, SessionExpiredError } from '../../../shared/http/httpErro
 import { httpRequest } from '../../../shared/http/httpClient'
 import {
   getSessionSnapshot,
+  invalidateSession,
   setAccessToken,
   subscribeToSessionInvalidation,
 } from '../../../shared/http/sessionManager'
@@ -10,11 +11,14 @@ import { bootstrapSession, login, logout } from './authService'
 
 const accessTokenResponse = {
   accessToken: 'restored-access-token',
+  sessionId: '13b819a3-c32c-4fd9-862e-c6a172b509c0',
   expiresAtUtc: '2026-08-20T15:00:00Z',
 }
 
 const currentUser = {
   userId: 'b7f14f7b-a8ff-499e-885f-a62c693de76c',
+  subjectId: 'b7f14f7b-a8ff-499e-885f-a62c693de76c',
+  erpActorId: 'b7f14f7b-a8ff-499e-885f-a62c693de76c',
   pessoaId: '8a11a958-982d-49f4-8ba9-cbe5db840cd4',
   nome: 'Marina Silva',
   userName: 'marina',
@@ -40,6 +44,7 @@ function jsonResponse(value: unknown): Response {
 }
 
 afterEach(() => {
+  invalidateSession()
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
@@ -103,7 +108,7 @@ describe('authService', () => {
   })
 
   it('limpa o estado local depois do logout remoto', async () => {
-    setAccessToken('active-access-token')
+    setAccessToken('active-access-token', accessTokenResponse.sessionId)
     let invalidations = 0
     const unsubscribe = subscribeToSessionInvalidation(() => {
       invalidations += 1
@@ -112,7 +117,8 @@ describe('authService', () => {
       (_input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
         expect(init?.method).toBe('POST')
         expect(init?.credentials).toBe('include')
-        expect(new Headers(init?.headers).has('Authorization')).toBe(false)
+        expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer active-access-token')
+        expect(new Headers(init?.headers).get('X-GenSW-Session')).toBe(accessTokenResponse.sessionId)
         return Promise.resolve(new Response(null, { status: 204 }))
       },
     )
@@ -139,8 +145,10 @@ describe('authService', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(logout()).rejects.toBeInstanceOf(NetworkError)
+    await expect(bootstrapSession()).resolves.toBeNull()
 
     unsubscribe()
+    expect(fetchMock).toHaveBeenCalledOnce()
     expect(getSessionSnapshot().accessToken).toBeNull()
     expect(invalidations).toBe(1)
   })
@@ -222,7 +230,7 @@ describe('authService', () => {
     setAccessToken('new-session-token')
     currentUserRequest.reject(new TypeError('network unavailable'))
 
-    await expect(oldLogin).rejects.toBeInstanceOf(NetworkError)
+    await expect(oldLogin).rejects.toBeInstanceOf(SessionExpiredError)
     expect(getSessionSnapshot().accessToken).toBe('new-session-token')
   })
 

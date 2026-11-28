@@ -1,3 +1,5 @@
+using GenSW.Infrastructure.Accounts;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using GenSW.Domain.People;
 using GenSW.Domain.Species;
 using GenSW.Domain.Breeds;
@@ -13,6 +15,17 @@ namespace GenSW.Infrastructure.Persistence;
 public sealed class GenSWDbContext(DbContextOptions<GenSWDbContext> options)
     : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>(options)
 {
+    internal async Task VerifySequenceWriteAsync(CancellationToken ct)
+    {
+        if (options.FindExtension<CoreOptionsExtension>()?.Interceptors?.OfType<AccountConnectionInterceptor>().Any() != true)
+            return;
+
+        if (Database.CurrentTransaction is null)
+            throw new InvalidOperationException("A sequence write requires the guarded ERP transaction.");
+
+        await Database.ExecuteSqlRawAsync("SELECT gensw_scope.verify_generation()", ct);
+    }
+
     public DbSet<Pessoa> Pessoas => Set<Pessoa>();
 
     public DbSet<Especie> Especies => Set<Especie>();

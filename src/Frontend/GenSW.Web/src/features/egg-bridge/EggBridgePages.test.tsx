@@ -17,7 +17,7 @@ const first = eggCandidate()
 const second = eggCandidate('10000000-0000-0000-0000-000000000002')
 const third = eggCandidate('10000000-0000-0000-0000-000000000003')
 const animal = { id: first.origem.animalId, codigoInterno: 'AVE-01', nome: 'Ave de teste', especieId: 'species', racaId: null, variedadeId: null, sexo: 2, dataNascimento: null, escopo: 1, ativo: true, createdAtUtc: first.origem.createdAtUtc, updatedAtUtc: first.origem.updatedAtUtc, especie: { id: 'species', nomeComum: 'Galinha', ativo: true }, raca: null, variedade: null }
-const auth = (roles = ['Admin']) => ({ user: { userId: responsible.id, pessoaId: 'p', nome: responsible.nome, userName: 'marina', roles }, isAuthenticated: true, isInitializing: false, bootstrap: vi.fn(), login: vi.fn(), logout: vi.fn() })
+const auth = (roles = ['Admin']) => ({ user: { userId: responsible.id, subjectId: responsible.id, erpActorId: responsible.id, pessoaId: 'p', nome: responsible.nome, userName: 'marina', roles }, isAuthenticated: true, isInitializing: false, bootstrap: vi.fn(), login: vi.fn(), logout: vi.fn() })
 function api(preview: EggPreview = eggPreview) {
   vi.mocked(httpRequest).mockImplementation(async (path, options) => {
     if (path === `${root}/previas`) return preview

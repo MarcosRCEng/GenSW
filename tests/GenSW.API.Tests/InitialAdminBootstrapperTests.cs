@@ -1,6 +1,5 @@
 using GenSW.Infrastructure.Identity;
-using GenSW.Infrastructure.Persistence;
-using GenSW.Domain.People;
+using GenSW.Infrastructure.Catalog;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -12,26 +11,26 @@ namespace GenSW.API.Tests;
 public sealed class InitialAdminBootstrapperTests
 {
     [Fact]
-    public async Task Bootstrap_on_an_empty_database_creates_a_person_user_admin_role_and_valid_identity_password()
+    public async Task Bootstrap_records_the_first_platform_grant_idempotently_without_an_erp_account()
     {
         await using var testHost = await InitialAdminBootstrapTestHost.CreateAsync();
         var password = CreateTestPassword();
 
         await testHost.BootstrapAsync("Bootstrap Test", "bootstrap_admin", password);
+        await testHost.BootstrapAsync("Bootstrap Test", "bootstrap_admin", password);
 
         await testHost.VerifyAsync(async services =>
         {
-            var context = services.GetRequiredService<GenSWDbContext>();
-            var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+            var context = services.GetRequiredService<CatalogDbContext>();
+            var userManager = services.GetRequiredService<UserManager<CatalogUser>>();
             var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-            var pessoa = await context.Pessoas.SingleAsync();
             var user = await context.Users.SingleAsync();
+            var grant = await context.InitialOperators.SingleAsync();
 
-            Assert.Equal("Bootstrap Test", pessoa.Nome);
-            Assert.Equal(TipoPessoa.Fisica, pessoa.TipoPessoa);
-            Assert.Null(pessoa.NomeFantasia);
-            Assert.True(pessoa.Ativo);
-            Assert.Equal(pessoa.Id, user.PessoaId);
+            Assert.Equal("Bootstrap Test", user.DisplayName);
+            Assert.True(user.IsActive);
+            Assert.Equal(user.Id, grant.SubjectId);
+            Assert.False(await context.Accounts.AnyAsync());
             Assert.True(await roleManager.RoleExistsAsync(InitialAdminBootstrapper.AdminRoleName));
             Assert.True(await userManager.IsInRoleAsync(user, InitialAdminBootstrapper.AdminRoleName));
             Assert.True(await userManager.CheckPasswordAsync(user, password));
@@ -39,7 +38,7 @@ public sealed class InitialAdminBootstrapperTests
     }
 
     [Fact]
-    public async Task Bootstrap_rejects_a_second_attempt_when_any_user_exists()
+    public async Task Bootstrap_rejects_granting_a_second_initial_operator()
     {
         await using var testHost = await InitialAdminBootstrapTestHost.CreateAsync();
         var password = CreateTestPassword();
@@ -50,8 +49,8 @@ public sealed class InitialAdminBootstrapperTests
 
         await testHost.VerifyAsync(async services =>
         {
-            var context = services.GetRequiredService<GenSWDbContext>();
-            Assert.Equal(1, await context.Pessoas.CountAsync());
+            var context = services.GetRequiredService<CatalogDbContext>();
+            Assert.Equal(1, await context.InitialOperators.CountAsync());
             Assert.Equal(1, await context.Users.CountAsync());
         });
     }
@@ -67,8 +66,8 @@ public sealed class InitialAdminBootstrapperTests
 
         await testHost.VerifyAsync(async services =>
         {
-            var context = services.GetRequiredService<GenSWDbContext>();
-            var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+            var context = services.GetRequiredService<CatalogDbContext>();
+            var userManager = services.GetRequiredService<UserManager<CatalogUser>>();
             var role = await context.Roles.SingleAsync();
             var user = await context.Users.SingleAsync();
 
@@ -78,7 +77,7 @@ public sealed class InitialAdminBootstrapperTests
     }
 
     [Fact]
-    public async Task Bootstrap_rolls_back_the_person_when_identity_user_creation_fails()
+    public async Task Bootstrap_rolls_back_when_identity_user_creation_fails()
     {
         await using var testHost = await InitialAdminBootstrapTestHost.CreateAsync();
         var password = CreateTestPassword();
@@ -88,9 +87,9 @@ public sealed class InitialAdminBootstrapperTests
 
         await testHost.VerifyAsync(async services =>
         {
-            var context = services.GetRequiredService<GenSWDbContext>();
+            var context = services.GetRequiredService<CatalogDbContext>();
 
-            Assert.Equal(0, await context.Pessoas.CountAsync());
+            Assert.Equal(0, await context.InitialOperators.CountAsync());
             Assert.Equal(0, await context.Users.CountAsync());
             Assert.Equal(0, await context.Roles.CountAsync());
             Assert.Equal(0, await context.UserRoles.CountAsync());
@@ -116,9 +115,9 @@ public sealed class InitialAdminBootstrapperTests
             await connection.OpenAsync();
 
             var serviceCollection = new ServiceCollection();
-            serviceCollection.AddDbContext<GenSWDbContext>(options => options.UseSqlite(connection));
+            serviceCollection.AddDbContext<CatalogDbContext>(options => options.UseSqlite(connection));
             serviceCollection
-                .AddIdentityCore<ApplicationUser>(options =>
+                .AddIdentityCore<CatalogUser>(options =>
                 {
                     options.Password.RequiredLength = 15;
                     options.Password.RequireDigit = false;
@@ -127,13 +126,13 @@ public sealed class InitialAdminBootstrapperTests
                     options.Password.RequireNonAlphanumeric = false;
                 })
                 .AddRoles<IdentityRole<Guid>>()
-                .AddEntityFrameworkStores<GenSWDbContext>();
+                .AddEntityFrameworkStores<CatalogDbContext>();
             serviceCollection.AddScoped<InitialAdminBootstrapper>();
 
             var services = serviceCollection.BuildServiceProvider();
             await using (var scope = services.CreateAsyncScope())
             {
-                var context = scope.ServiceProvider.GetRequiredService<GenSWDbContext>();
+                var context = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
                 await context.Database.EnsureCreatedAsync();
             }
 

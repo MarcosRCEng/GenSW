@@ -7,8 +7,6 @@ using GenSW.Application.Inventory;
 using GenSW.Domain.Catalog;
 using GenSW.Domain.Formulation;
 using GenSW.Domain.Inventory;
-using GenSW.Infrastructure.Identity;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -70,13 +68,8 @@ public sealed class InventoryEdgeApiTests(AnimalApiPostgreSqlFixture fixture)
             var lot = await Created<LoteView>(Post(client, "lotes", command, key)); Assert.Equal("Bloqueado", lot.Situacao);
             using var active = await client.PatchAsJsonAsync($"/api/v1/itens/{item.Id}/ativo", new StatusCommand(true, item.Revisao));
             Assert.Equal(HttpStatusCode.OK, active.StatusCode);
-            await Factory.ExecuteScopeAsync(async services =>
-            {
-                var users = services.GetRequiredService<UserManager<ApplicationUser>>();
-                var current = (await users.FindByIdAsync(user.UserId.ToString()))!;
-                Assert.True((await users.RemoveFromRoleAsync(current, "Admin")).Succeeded); return 0;
-            });
-            // The access token still carries Admin. The service must use the durable
+            await Factory.RemoveLocalRoleAsync(user.UserId, "Admin");
+            // The request keeps the same bearer. The service must use the durable
             // original requirement and the current account, before stale revisions.
             using var replay = await Post(client, "lotes", command, key); Assert.Equal(HttpStatusCode.Forbidden, replay.StatusCode);
             Assert.Equal(1, await Factory.ExecuteDbContextAsync(db => db.Set<LoteMaterial>().CountAsync(x => x.Id == lot.Id)));

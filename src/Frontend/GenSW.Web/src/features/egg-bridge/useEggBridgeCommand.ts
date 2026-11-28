@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { httpRequest } from '../../shared/http/httpClient'
 import { isHttpError } from '../../shared/http/httpErrors'
+import { captureSessionRecovery } from '../../shared/http/sessionRecovery'
 import { eggApi, parseEggCommandResult } from './eggBridgeService'
 import type { EggCommandOperation, EggCommandResult } from './types'
 
@@ -16,9 +17,9 @@ function valid(command: PendingEggCommand) {
   if (operation === 'Entrada' || operation === 'Associacao') return path === '/confirmacoes' && typeof body.token === 'string' && body.token.length > 0
   return ['Anotacao', 'Invalidacao', 'Compensacao'].includes(operation) && /^\/grupos\/[0-9a-f-]{36}\/tratamentos$/i.test(path) && typeof body.token === 'string' && body.token.length > 0
 }
-function restore() {
+function restore(storage: ReturnType<typeof captureSessionRecovery>) {
   try {
-    const saved = sessionStorage.getItem(storageKey)
+    const saved = storage.getItem(storageKey)
     if (!saved) return { pending: null, error: null }
     const command = JSON.parse(saved) as PendingEggCommand
     if (!valid(command)) throw new Error()
@@ -26,15 +27,16 @@ function restore() {
   } catch { return { pending: null, error: 'Não foi possível recuperar o pedido F03 pendente. Preserve esta sessão e solicite diagnóstico antes de enviar outro pedido.' } }
 }
 export function useEggBridgeCommand() {
-  const [restored] = useState(restore)
+  const [storage] = useState(captureSessionRecovery)
+  const [restored] = useState(() => restore(storage))
   const [pending, setPending] = useState<PendingEggCommand | null>(restored.pending)
   const current = useRef(pending)
   const sending = useRef(false)
   const [busy, setBusy] = useState(false)
   const [absent, setAbsent] = useState(false)
   const save = (command: PendingEggCommand | null) => {
-    if (command) sessionStorage.setItem(storageKey, JSON.stringify(command))
-    else sessionStorage.removeItem(storageKey)
+    if (command) storage.setItem(storageKey, JSON.stringify(command))
+    else storage.removeItem(storageKey)
     current.current = command; setPending(command); setAbsent(false)
   }
   const send = async (command: PendingEggCommand): Promise<EggCommandResult | undefined> => {
@@ -54,7 +56,7 @@ export function useEggBridgeCommand() {
     if (current.current) throw new Error('Consulte ou repita o pedido F03 pendente antes de alterar os dados.')
     const command: PendingEggCommand = { operation, path, body, key: crypto.randomUUID() }
     if (!valid(command)) throw new Error('Pedido F03 inválido. Revise os campos e a prévia.')
-    // Preserve the exact token/body before the first request, including after reload/login.
+    // Preserve the exact token/body for reloads within the same session.
     save(command)
     return send(command)
   }

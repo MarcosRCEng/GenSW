@@ -33,6 +33,7 @@ public sealed class PostgreSqlAnimalCodeAllocator(GenSWDbContext dbContext) : IA
         public async Task<string> AllocateNextCodigoInternoAsync(CancellationToken ct = default)
         {
             if (completed) throw new InvalidOperationException("Automatic-code attempt is closed.");
+            await context.VerifySequenceWriteAsync(ct);
             await using var command = context.Database.GetDbConnection().CreateCommand();
             command.Transaction = outer.GetDbTransaction();
             command.CommandText = "SELECT nextval('\"AnimalCodigoInternoSequence\"');";
@@ -79,6 +80,7 @@ public sealed class PostgreSqlAnimalCodeAllocator(GenSWDbContext dbContext) : IA
 
             try
             {
+                await dbContext.VerifySequenceWriteAsync(cancellationToken);
                 await using var command = dbContext.Database.GetDbConnection().CreateCommand();
                 command.Transaction = transaction.GetDbTransaction();
                 command.CommandText = "SELECT nextval('\"AnimalCodigoInternoSequence\"');";

@@ -21,7 +21,7 @@ function showShell(pathname = '/') {
 describe('AppShell A', () => {
   const logout = vi.fn().mockResolvedValue(undefined)
   beforeEach(() => {
-    vi.mocked(useAuth).mockReturnValue({ user: { userId: 'user', pessoaId: 'person', nome: 'Marina', userName: 'marina', roles: [] }, logout, isAuthenticated: true, isInitializing: false, bootstrap: vi.fn(), login: vi.fn() })
+    vi.mocked(useAuth).mockReturnValue({ user: { userId: 'user', subjectId: 'user', erpActorId: 'user', pessoaId: 'person', nome: 'Marina', userName: 'marina', roles: [] }, logout, isAuthenticated: true, isInitializing: false, bootstrap: vi.fn(), login: vi.fn() })
   })
 
   it('oferece somente módulos disponíveis em ordem alfabética e nenhuma seção Ações', () => {

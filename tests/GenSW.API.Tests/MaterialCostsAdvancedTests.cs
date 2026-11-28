@@ -8,8 +8,6 @@ using GenSW.Application.MaterialCosts;
 using GenSW.Application.Production;
 using GenSW.Domain.Inventory;
 using GenSW.Domain.MaterialCosts;
-using GenSW.Infrastructure.Identity;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
@@ -175,7 +173,7 @@ public sealed partial class ProductionApiTests
         var(client,user)=await Session(true);using(client)
         {
             var m=await Stock(client,user.UserId,"0");var command=new MaterialReferenceCommand(Guid.NewGuid(),m.Item.Id,"fonte","doc",InventoryRules.Today(TimeProvider.System),"BRL","kg","1","9",new(2026,1,1),null,"contexto",Evidence);var key=Unique();await Success<MaterialReferenceView>(await CostPost(client,"referencias",command,key),HttpStatusCode.Created);
-            await Factory.ExecuteScopeAsync(async s=>{var users=s.GetRequiredService<UserManager<ApplicationUser>>();var current=(await users.FindByIdAsync(user.UserId.ToString()))!;Assert.True((await users.RemoveFromRoleAsync(current,"Admin")).Succeeded);return 0;});await Error(await CostPost(client,"referencias",command,key),HttpStatusCode.Forbidden);using var recovery=await client.GetAsync($"/api/v1/custos-materiais/comandos/{command.Id}/referencia/{key}");Assert.Equal(HttpStatusCode.Forbidden,recovery.StatusCode);
+            await Factory.RemoveLocalRoleAsync(user.UserId, "Admin");await Error(await CostPost(client,"referencias",command,key),HttpStatusCode.Forbidden);using var recovery=await client.GetAsync($"/api/v1/custos-materiais/comandos/{command.Id}/referencia/{key}");Assert.Equal(HttpStatusCode.Forbidden,recovery.StatusCode);
             await Factory.SetUserActiveAsync(user.UserId,false);using var read=await client.GetAsync($"/api/v1/custos-materiais/lotes/{m.Lot.Id}");Assert.Equal(HttpStatusCode.Unauthorized,read.StatusCode);
         }
     }

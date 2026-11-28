@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using GenSW.API.Authentication;
 using GenSW.Application.Formulation;
 using GenSW.Domain.Formulation;
 using Microsoft.AspNetCore.Authorization;
@@ -9,7 +9,7 @@ namespace GenSW.API.Controllers;
 [ApiController, Authorize, Formulation, Route("api/v1")]
 public sealed class FormulationController(FormulationService service) : ControllerBase
 {
-    private Guid Actor => Guid.Parse(User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private Guid Actor => User.ErpActorId();
     [HttpGet("receitas")] public async Task<IActionResult> Recipes([FromQuery] CatalogQuery query, CancellationToken ct) => Ok(await service.RecipesAsync(query, ct));
     [HttpGet("receitas/{id:guid}")] public async Task<IActionResult> Recipe(Guid id, CancellationToken ct) => Ok(await service.GetRecipeAsync(id, ct));
     [HttpPost("receitas")]

@@ -13,6 +13,7 @@ export function parseAccessTokenResponse(value: unknown): AccessTokenResponse {
   if (
     !isRecord(value) ||
     !isNonEmptyString(value.accessToken) ||
+    !isNonEmptyString(value.sessionId) ||
     !isNonEmptyString(value.expiresAtUtc) ||
     Number.isNaN(Date.parse(value.expiresAtUtc))
   ) {
@@ -22,13 +23,16 @@ export function parseAccessTokenResponse(value: unknown): AccessTokenResponse {
   return {
     accessToken: value.accessToken,
     expiresAtUtc: value.expiresAtUtc,
+    sessionId: value.sessionId,
   }
 }
 
 export function parseCurrentUser(value: unknown): CurrentUser {
   if (
     !isRecord(value) ||
-    !isNonEmptyString(value.userId) ||
+    !isNonEmptyString(value.subjectId) ||
+    value.userId !== value.subjectId ||
+    !isNonEmptyString(value.erpActorId) ||
     !isNonEmptyString(value.pessoaId) ||
     typeof value.nome !== 'string' ||
     !isNonEmptyString(value.userName) ||
@@ -40,6 +44,8 @@ export function parseCurrentUser(value: unknown): CurrentUser {
 
   return {
     userId: value.userId,
+    subjectId: value.subjectId,
+    erpActorId: value.erpActorId,
     pessoaId: value.pessoaId,
     nome: value.nome,
     userName: value.userName,

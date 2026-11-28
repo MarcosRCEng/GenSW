@@ -1,3 +1,6 @@
+using GenSW.Infrastructure.Accounts;
+using GenSW.Infrastructure.Catalog;
+using GenSW.Application.Accounts;
 using GenSW.Application.Authentication;
 using GenSW.Application.People;
 using GenSW.Application.Species;
@@ -20,7 +23,6 @@ using GenSW.Application.Animals.CiclosReprodutivos;
 using GenSW.Infrastructure.Animals.ProducaoOvos;
 using GenSW.Application.Animals.ProducaoOvos;
 using GenSW.Infrastructure.Authentication;
-using GenSW.Infrastructure.Identity;
 using GenSW.Infrastructure.Persistence;
 using GenSW.Infrastructure.People;
 using GenSW.Infrastructure.Species;
@@ -41,6 +43,16 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddIdentityPersistence(configuration);
+        services.AddScoped<CatalogBindings>();
+        services.AddScoped<CatalogCredentialRevocation>();
+        services.AddScoped<AccountScope>();
+        services.AddScoped<IErpAccountScope>(provider => provider.GetRequiredService<AccountScope>());
+        services.AddScoped<IAccountDestinationVerifier, PostgreSqlAccountDestination>();
+        services.AddSingleton(new AccountResources(configuration));
+        services.AddSingleton<AccountRevocations>();
+        services.AddScoped<AccountLifecycle>();
+        services.AddScoped<GenSWDbContext>(provider =>
+            new GenSWDbContext(provider.GetRequiredService<AccountScope>().DatabaseOptions));
 
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IValidateOptions<JwtOptions>, JwtOptionsValidator>());
@@ -57,6 +69,7 @@ public static class DependencyInjection
             })
             .AddJwtBearer();
         services.AddAuthorization();
+        services.AddPlatformAuthentication();
 
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IConfigureOptions<JwtBearerOptions>, JwtBearerOptionsSetup>());
@@ -83,8 +96,13 @@ public static class DependencyInjection
         services.AddScoped<IAnimalRepository, AnimalRepository>();
         services.AddScoped<IAnimalMutationGuard, AnimalMutationGuard>();
         services.AddScoped<GenSW.Application.Images.IImageRepository, GenSW.Infrastructure.Images.ImageRepository>();
-        services.AddSingleton<GenSW.Infrastructure.Images.PrivateImageStorage>();
-        services.AddSingleton<GenSW.Application.Images.IPrivateImageStorage>(provider =>
+        services.AddScoped<GenSW.Infrastructure.Images.PrivateImageStorage>(provider =>
+        {
+            var account = provider.GetRequiredService<AccountScope>();
+            return new GenSW.Infrastructure.Images.PrivateImageStorage(
+                () => new GenSW.Infrastructure.Images.AccountPrivateVolume(account.PrivateRoot, account.VolumeId), configuration);
+        });
+        services.AddScoped<GenSW.Application.Images.IPrivateImageStorage>(provider =>
             provider.GetRequiredService<GenSW.Infrastructure.Images.PrivateImageStorage>());
         services.AddSingleton<GenSW.Application.Images.IImageProcessor, GenSW.Infrastructure.Images.MagickImageProcessor>();
         services.AddScoped<GenSW.Application.Animals.Pesagens.IPesagemRepository, GenSW.Infrastructure.Animals.Pesagens.PesagemRepository>();
@@ -106,18 +124,18 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("GenSW");
+        var connectionString = configuration.GetConnectionString("GenSWCatalog");
 
         if (string.IsNullOrWhiteSpace(connectionString))
         {
             throw new InvalidOperationException(
-                "ConnectionStrings:GenSW is required to configure identity and authentication persistence.");
+                "ConnectionStrings:GenSWCatalog is required to configure central identity.");
         }
 
-        services.AddDbContext<GenSWDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddDbContext<CatalogDbContext>(options => options.UseNpgsql(connectionString));
 
         services
-            .AddIdentityCore<ApplicationUser>(options =>
+            .AddIdentityCore<CatalogUser>(options =>
             {
                 options.Password.RequiredLength = 15;
                 options.Password.RequireDigit = false;
@@ -130,7 +148,7 @@ public static class DependencyInjection
                 options.Lockout.AllowedForNewUsers = true;
             })
             .AddRoles<IdentityRole<Guid>>()
-            .AddEntityFrameworkStores<GenSWDbContext>();
+            .AddEntityFrameworkStores<CatalogDbContext>();
 
         return services;
     }

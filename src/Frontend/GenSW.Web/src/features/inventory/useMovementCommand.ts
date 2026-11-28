@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { httpRequest } from '../../shared/http/httpClient'
 import { isHttpError } from '../../shared/http/httpErrors'
+import { captureSessionRecovery } from '../../shared/http/sessionRecovery'
 import { parseCommittedEvent, parseVersions } from './inventoryService'
 import { operationInfo, type MovementCommand, type Operation } from './types'
 
@@ -19,13 +20,14 @@ export function validMovementPending(v: unknown): v is Pending {
   }
   return true
 }
-function restore(scope: string) {
-  try { const raw = sessionStorage.getItem(prefix + scope); if (!raw) return { pending: null, error: null }; const v: unknown = JSON.parse(raw); if (!validMovementPending(v)) throw new Error(); return { pending: v, error: null } }
+function restore(scope: string, storage: ReturnType<typeof captureSessionRecovery>) {
+  try { const raw = storage.getItem(prefix + scope); if (!raw) return { pending: null, error: null }; const v: unknown = JSON.parse(raw); if (!validMovementPending(v)) throw new Error(); return { pending: v, error: null } }
   catch { return { pending: null, error: 'Contexto do movimento inválido ou indisponível. Preserve a sessão para diagnóstico antes de criar outro pedido.' } }
 }
 export function useMovementCommand(scope: string, actor: string) {
-  const [restored] = useState(() => restore(scope)); const [pending, setPending] = useState<Pending | null>(restored.pending); const current = useRef(pending); const sending = useRef(false); const [busy, setBusy] = useState(false); const [absent, setAbsent] = useState(false)
-  const save = (v: Pending | null) => { if (v) sessionStorage.setItem(prefix + scope, JSON.stringify(v)); else sessionStorage.removeItem(prefix + scope); current.current = v; setPending(v); setAbsent(false) }
+  const [storage] = useState(captureSessionRecovery)
+  const [restored] = useState(() => restore(scope, storage)); const [pending, setPending] = useState<Pending | null>(restored.pending); const current = useRef(pending); const sending = useRef(false); const [busy, setBusy] = useState(false); const [absent, setAbsent] = useState(false)
+  const save = (v: Pending | null) => { if (v) storage.setItem(prefix + scope, JSON.stringify(v)); else storage.removeItem(prefix + scope); current.current = v; setPending(v); setAbsent(false) }
   const owner = (v: Pending) => { if (v.actor !== actor) throw new Error('Este movimento pertence ao autor original. Retome com a mesma conta para consultar ou repetir; nenhum novo pedido foi enviado.') }
   const send = async (v: Pending) => {
     owner(v); if (sending.current) return undefined; sending.current = true; setBusy(true)

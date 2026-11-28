@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using GenSW.API.Authentication;
 using GenSW.Application.Financial;
 using GenSW.Domain.Financial;
 using Microsoft.AspNetCore.Authorization;
@@ -10,7 +10,7 @@ namespace GenSW.API.Controllers;
 public sealed class FinanceiroController(FinancialService service) : ControllerBase
 {
     private ObjectResult Error(string title, int status, string code) { var problem = new ProblemDetails { Title = title, Status = status }; problem.Extensions["code"] = code; return new ObjectResult(problem) { StatusCode = status }; }
-    private Guid Autor => Guid.Parse(User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private Guid Autor => User.ErpActorId();
     private string Key => Request.Headers["Idempotency-Key"].ToString();
     private async Task<IActionResult> Run<T>(Func<Task<T>> action, bool created = false)
     {

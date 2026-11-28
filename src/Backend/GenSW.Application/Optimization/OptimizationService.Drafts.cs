@@ -1,3 +1,4 @@
+using GenSW.Application.Accounts;
 using GenSW.Application.Formulation;
 using GenSW.Domain.Catalog;
 using GenSW.Domain.Formulation;
@@ -13,9 +14,9 @@ public sealed partial class OptimizationService
         OptimizationDraftDestination destination, Guid actor, CancellationToken ct)
     {
         destination = ValidateDestination(destination);
+        var account = Authorize(actor);
         await using var transaction = await catalog.BeginAsync(ct);
-        await AuthorizeAsync(actor, ct);
-        var (preview, _) = await BuildDraftPreviewAsync(executionId, destination, ct);
+        var (preview, _) = await BuildDraftPreviewAsync(executionId, destination, account, ct);
         await transaction.CommitAsync(ct);
         return preview;
     }
@@ -30,9 +31,10 @@ public sealed partial class OptimizationService
         var hash = Hash(new { ExecutionId = executionId, Destination = destination, PreviewHash = previewHash,
             command.AceitaResiduos, command.AceitaAvisos });
 
+        var account = Authorize(actor);
         await using var transaction = await catalog.BeginAsync(ct);
-        await AuthorizeAsync(actor, ct);
-        if (await repository.FindDerivationAsync(actor, key, ct) is { } existing)
+        await accountScope.RevalidateAsync(ct);
+        if (await repository.FindDerivationAsync(account, key, ct) is { } existing)
         {
             if (existing.ExecutionId != executionId || existing.Hash != hash) throw DivergentKey();
             var replay = FormulationJson.Read<DraftDerivationContent>(existing.ConteudoJson);
@@ -40,7 +42,7 @@ public sealed partial class OptimizationService
             return replay.Recibo;
         }
 
-        var (preview, recipe) = await BuildDraftPreviewAsync(executionId, destination, ct);
+        var (preview, recipe) = await BuildDraftPreviewAsync(executionId, destination, account, ct);
         if (preview.Hash != previewHash)
             throw new FormulationException(409, "previa_desatualizada", "A prévia não corresponde ao destino e à solução atuais.");
         if (!command.AceitaAvisos || (preview.ExigeAceiteResiduos && !command.AceitaResiduos))
@@ -52,6 +54,8 @@ public sealed partial class OptimizationService
         repository.Add(new OptimizationDerivation
         {
             Id = receipt.Id, ExecutionId = executionId, AutorId = actor, Chave = key, Hash = hash,
+            AccountId = account.AccountId, BindingId = account.BindingId, BindingRevision = account.BindingRevision,
+            AccessGeneration = account.AccessGeneration,
             ReceitaId = recipe.Id, VersaoId = version.Id, CreatedAtUtc = receipt.CreatedAtUtc, ConteudoJson = FormulationJson.Write(content)
         });
         await catalog.SaveAsync(ct);
@@ -61,21 +65,20 @@ public sealed partial class OptimizationService
 
     public async Task<OptimizationDraftReceipt> GetDraftByKeyAsync(Guid executionId, string key, Guid actor, CancellationToken ct)
     {
-        await AuthorizeAsync(actor, ct);
-        var row = await repository.FindDerivationAsync(actor, Key(key), ct);
+        var row = await repository.FindDerivationAsync(Authorize(actor), Key(key), ct);
         if (row?.ExecutionId != executionId) throw Missing();
         return FormulationJson.Read<DraftDerivationContent>(row.ConteudoJson).Recibo;
     }
 
     public async Task<OptimizationDraftReceipt> GetDraftByVersionAsync(Guid versionId, Guid actor, CancellationToken ct)
     {
-        await AuthorizeAsync(actor, ct);
+        Authorize(actor);
         var row = await repository.FindDerivationByVersionAsync(versionId, ct) ?? throw Missing();
         return FormulationJson.Read<DraftDerivationContent>(row.ConteudoJson).Recibo;
     }
 
     private async Task<(OptimizationDraftPreview, Recipe?)> BuildDraftPreviewAsync(Guid executionId,
-        OptimizationDraftDestination destination, CancellationToken ct)
+        OptimizationDraftDestination destination, ErpAccountContext account, CancellationToken ct)
     {
         var execution = await FindAsync(executionId, ct);
         var resultRow = await repository.FindResultAsync(executionId, ct);
@@ -129,8 +132,9 @@ public sealed partial class OptimizationService
         if (lines.Sum(x => CatalogRules.Decimal(x.Quantidade)) != CatalogRules.Decimal(command.MassaKg))
             throw new FormulationException(409, "resultado_sem_rascunho", "As massas transferíveis não fecham o lote da solução.");
 
-        var hash = Hash(new { ExecutionId = execution.Id, Resultado = HashJson(resultRow!.ConteudoJson), Destination = destination, Data = data,
-            Avisos = warnings, ExigeAceiteResiduos = residuals });
+        var hash = Hash(new { account.AccountId, account.BindingId, account.BindingRevision, account.AccessGeneration,
+            account.ActorId, ExecutionId = execution.Id, Resultado = HashJson(resultRow!.ConteudoJson),
+            Destination = destination, Data = data, Avisos = warnings, ExigeAceiteResiduos = residuals });
         return (new(hash, data, warnings, residuals), recipe);
     }
 

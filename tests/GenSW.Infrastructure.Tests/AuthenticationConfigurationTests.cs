@@ -18,7 +18,7 @@ public sealed class AuthenticationConfigurationTests
         var exception = Assert.Throws<InvalidOperationException>(() =>
             DependencyInjection.AddInfrastructure(new ServiceCollection(), configuration));
 
-        Assert.Contains("ConnectionStrings:GenSW", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("ConnectionStrings:GenSWCatalog", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public sealed class AuthenticationConfigurationTests
 
         if (includeConnectionString)
         {
-            values["ConnectionStrings:GenSW"] =
+            values["ConnectionStrings:GenSWCatalog"] =
                 "Host=127.0.0.1;Database=gensw_test_configuration_only";
         }
 

@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using GenSW.API.Authentication;
 using GenSW.Application.Inventory;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +8,7 @@ namespace GenSW.API.Controllers;
 [ApiController, Authorize, Inventory, Route("api/v1/estoque")]
 public sealed class EstoqueController(InventoryService service) : ControllerBase
 {
-    private Guid Actor => Guid.Parse(User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private Guid Actor => User.ErpActorId();
     private string Key => Request.Headers["Idempotency-Key"].ToString();
 
     // The stored bytes, status and Location are also the response on replay.

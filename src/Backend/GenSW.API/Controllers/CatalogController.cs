@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using GenSW.API.Authentication;
 using GenSW.Application.Formulation;
 using GenSW.Domain.Catalog;
 using GenSW.Domain.Formulation;
@@ -10,7 +10,7 @@ namespace GenSW.API.Controllers;
 [ApiController, Authorize, Formulation, Route("api/v1")]
 public sealed class CatalogController(FormulationService service) : ControllerBase
 {
-    private Guid Actor => Guid.Parse(User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private Guid Actor => User.ErpActorId();
     [HttpGet("itens")] public async Task<IActionResult> Items([FromQuery] CatalogQuery query, CancellationToken ct) => Ok(await service.ItemsAsync(query, ct));
     [HttpGet("itens/{id:guid}")] public async Task<IActionResult> Item(Guid id, CancellationToken ct) => Ok(await service.GetItemAsync(id, ct));
     [HttpPost("itens")]

@@ -29,8 +29,8 @@ public sealed class MaterialCostsMigrationTests
     [Fact]
     public async Task C24_C25_C29_upgrade_preserves_populated_F01_F02_F03_cash_and_replays_dump_restore_and_legacy_recognition()
     {
-        await using var pg=await EphemeralPostgreSql.StartAsync();await using var factory=new AuthWebApplicationFactory(pg.ConnectionString);await factory.InitializeAsync();
-        await factory.ExecuteDbContextAsync(async db=>{await db.GetService<IMigrator>().MigrateAsync(Prior);await FormulationMigrationTests.SeedPreviousAsync(db);return 0;});
+        await using var pg=await EphemeralPostgreSql.StartAsync();await using var factory=new AuthWebApplicationFactory(pg.ConnectionString,Prior);await factory.InitializeAsync();
+        await factory.ExecuteDbContextAsync(db=>FormulationMigrationTests.SeedPreviousAsync(db));
         var actor=(await factory.SeedUserAsync("f04-upgrade",roles:["Admin"])).UserId;
         var legacy=await factory.ExecuteScopeAsync(async services=>
         {

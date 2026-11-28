@@ -11,7 +11,7 @@ import { EventDetailsPage } from './InventoryPages'
 
 vi.mock('../../shared/http/httpClient', () => ({ httpRequest: vi.fn() }))
 vi.mock('../auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
-const auth = (roles = ['Admin']) => ({ user: { userId: responsible.id, pessoaId: 'p', nome: responsible.nome, userName: 'marina', roles }, isAuthenticated: true, isInitializing: false, bootstrap: vi.fn(), login: vi.fn(), logout: vi.fn() })
+const auth = (roles = ['Admin']) => ({ user: { userId: responsible.id, subjectId: responsible.id, erpActorId: responsible.id, pessoaId: 'p', nome: responsible.nome, userName: 'marina', roles }, isAuthenticated: true, isInitializing: false, bootstrap: vi.fn(), login: vi.fn(), logout: vi.fn() })
 const writes = () => vi.mocked(httpRequest).mock.calls.filter(([, options]) => options?.method && options.method !== 'GET')
 function ReturnedOrigin() {
   const location = useLocation()

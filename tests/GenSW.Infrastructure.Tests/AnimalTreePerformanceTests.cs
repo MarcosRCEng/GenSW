@@ -43,7 +43,7 @@ public sealed class AnimalTreePerformanceTests(ITestOutputHelper output)
             """);
         var root = await db.Animais.Where(x=>x.CodigoInterno=="S00001").Select(x=>x.Id).SingleAsync();
         var leaf = await db.Animais.Where(x=>x.CodigoInterno=="S09000").Select(x=>x.Id).SingleAsync();
-        var storage = new PrivateImageStorage(new ConfigurationBuilder().Build());
+        var storage = new PrivateImageStorage(() => throw new GenSW.Application.Accounts.AccountUnavailableException(), new ConfigurationBuilder().Build());
         var tree = new AnimalTreeQuery(db,storage);
         await tree.GetAsync(leaf,4,2,default);
         counter.Commands=0;

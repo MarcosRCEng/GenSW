@@ -64,10 +64,11 @@ async function sendRequest(
       headers: createHeaders(options, snapshot),
       body: options.body === undefined ? undefined : options.body instanceof FormData ? options.body : JSON.stringify(options.body),
       credentials: 'include',
+      cache: 'no-store',
       signal: options.signal,
     })
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
+    if (options.signal?.aborted || (error instanceof Error && error.name === 'AbortError')) {
       throw error
     }
 
@@ -99,9 +100,15 @@ async function executeRequest<T>(
   path: string,
   options: HttpRequestOptions,
   hasRetried: boolean,
+  expectedGeneration?: number,
 ): Promise<T> {
   const requestSnapshot = getSessionSnapshot()
+  if (expectedGeneration !== undefined && requestSnapshot.generation !== expectedGeneration) {
+    throw new SessionExpiredError()
+  }
+  options.signal?.throwIfAborted()
   const response = await sendRequest(path, options, requestSnapshot)
+  options.signal?.throwIfAborted()
   const normalizedEndpoint = endpointPath(path)
 
   if (normalizedEndpoint === '/auth/login') {
@@ -129,7 +136,7 @@ async function executeRequest<T>(
         throw new SessionExpiredError()
       }
 
-      return executeRequest<T>(path, options, true)
+      return executeRequest<T>(path, options, true, expectedGeneration)
     }
 
     if (hasRetried || !permitsAutomaticRefresh(path, options)) {
@@ -152,7 +159,7 @@ async function executeRequest<T>(
       throw new SessionExpiredError()
     }
 
-    return executeRequest<T>(path, options, true)
+    return executeRequest<T>(path, options, true, expectedGeneration)
   }
 
   if (!response.ok) {
@@ -168,16 +175,36 @@ async function executeRequest<T>(
 
   const result = options.responseType === 'blob' ? await response.blob() as T : await readSuccessfulResponse<T>(response)
 
-  if (
-    options.authenticated === true &&
-    getSessionSnapshot().generation !== requestSnapshot.generation
-  ) {
-    throw new SessionExpiredError()
-  }
+  options.signal?.throwIfAborted()
 
   return result
 }
 
-export function httpRequest<T>(path: string, options: HttpRequestOptions = {}): Promise<T> {
-  return executeRequest<T>(path, options, false)
+export async function httpRequest<T>(path: string, options: HttpRequestOptions = {}): Promise<T> {
+  if (options.authenticated !== true) return executeRequest<T>(path, options, false)
+
+  const session = getSessionSnapshot()
+  if (session.accessToken === null) throw new SessionExpiredError()
+
+  const callerSignal = options.signal
+  const combined = callerSignal && new AbortController()
+  const cancel = () => combined?.abort(callerSignal?.aborted ? callerSignal.reason : session.signal.reason)
+  if (callerSignal && combined) {
+    callerSignal.addEventListener('abort', cancel, { once: true })
+    session.signal.addEventListener('abort', cancel, { once: true })
+    if (callerSignal.aborted || session.signal.aborted) cancel()
+  }
+
+  try {
+    const signal = combined?.signal ?? session.signal
+    const result = await executeRequest<T>(path, { ...options, signal }, false, session.generation)
+    signal.throwIfAborted()
+    return result
+  } catch (error) {
+    if (session.signal.aborted) throw new SessionExpiredError()
+    throw error
+  } finally {
+    callerSignal?.removeEventListener('abort', cancel)
+    session.signal.removeEventListener('abort', cancel)
+  }
 }

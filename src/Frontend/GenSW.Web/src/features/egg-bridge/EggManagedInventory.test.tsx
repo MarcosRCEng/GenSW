@@ -46,7 +46,7 @@ describe('Recebimento F01 de ovos geridos pela F03', () => {
   beforeEach(() => {
     sessionStorage.clear()
     vi.mocked(httpRequest).mockReset()
-    vi.mocked(useAuth).mockReturnValue({ user: { userId: responsible.id, pessoaId: 'p', nome: responsible.nome, userName: 'marina', roles: ['Admin'] }, isAuthenticated: true, isInitializing: false, bootstrap: vi.fn(), login: vi.fn(), logout: vi.fn() })
+    vi.mocked(useAuth).mockReturnValue({ user: { userId: responsible.id, subjectId: responsible.id, erpActorId: responsible.id, pessoaId: 'p', nome: responsible.nome, userName: 'marina', roles: ['Admin'] }, isAuthenticated: true, isInitializing: false, bootstrap: vi.fn(), login: vi.fn(), logout: vi.fn() })
     mockApi()
   })
   it('exige origem distinta explícita e conferência antes da prévia sem presumir declaração', async () => {

@@ -1,3 +1,4 @@
+using GenSW.API.Authentication;
 using GenSW.API.Contracts.AnimalEvolution;
 using GenSW.Application.Animals;
 using GenSW.Application.Images;
@@ -16,7 +17,7 @@ public sealed record ImageActiveRequest(bool Ativo);
 public sealed record ImagePreferredRequest(bool Representativa);
 public sealed record ImageOrderRequest(IReadOnlyList<Guid> Ids);
 
-[ApiController, Authorize, AnimalEvolution]
+[ApiController, Authorize, AnimalEvolution, AccountFileAccess]
 [Route("api/v1/animais/{owner:guid}/imagens")]
 [Route("api/v1/variedades/{owner:guid}/imagens")]
 public sealed class ImagesController(ImageService service) : ControllerBase

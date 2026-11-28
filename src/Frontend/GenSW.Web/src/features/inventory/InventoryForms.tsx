@@ -66,7 +66,7 @@ function LoteForm() {
   const admin = user?.roles.includes('Admin') === true
   const [record, setRecord] = useState<Lote | null>(null)
   const [item, setItem] = useState<Item | null>(null)
-  const [form, setForm] = useState({ itemId: '', codigo: '', codigoExterno: '', origem: '', fonte: '', responsavelId: user?.userId ?? '', dataOrigem: '', fabricacao: '', coleta: '', validade: '', fonteValidade: '', responsavelValidadeId: '', perfilNutricionalId: '', conversaoItemId: '', aplicabilidade: '', pendente: false, motivo: '' })
+  const [form, setForm] = useState({ itemId: '', codigo: '', codigoExterno: '', origem: '', fonte: '', responsavelId: user?.erpActorId ?? '', dataOrigem: '', fabricacao: '', coleta: '', validade: '', fonteValidade: '', responsavelValidadeId: '', perfilNutricionalId: '', conversaoItemId: '', aplicabilidade: '', pendente: false, motivo: '' })
   const [loading, setLoading] = useState(Boolean(id))
   const [error, setError] = useState<string | null>(null)
   const [retry, setRetry] = useState(0)
@@ -121,7 +121,7 @@ function InventoryStateForm({ kind }: { kind: 'locais' | 'lotes' }) {
   const location = useLocation()
   const origin = inventoryOrigin(location.state, kind)
   const [record, setRecord] = useState<Local | Lote | null>(null)
-  const [form, setForm] = useState({ motivo: '', evidencia: '', finalidade: 'Ordinario', validade: '', fonteValidade: '', responsavelId: user?.userId ?? '', perfilNutricionalId: '', conversaoItemId: '', aplicabilidade: '' })
+  const [form, setForm] = useState({ motivo: '', evidencia: '', finalidade: 'Ordinario', validade: '', fonteValidade: '', responsavelId: user?.erpActorId ?? '', perfilNutricionalId: '', conversaoItemId: '', aplicabilidade: '' })
   const [error, setError] = useState<string | null>(null)
   const [retry, setRetry] = useState(0)
   const { submit, busy, resetAttempt } = useInventoryMutation()
@@ -131,9 +131,9 @@ function InventoryStateForm({ kind }: { kind: 'locais' | 'lotes' }) {
     let live = true
     if (!id || !admin) return
     const request = kind === 'locais' ? inventoryRead(`locais/${id}`, parseLocal) : inventoryRead(`lotes/${id}`, parseLote)
-    void request.then(x => { if (live) { setRecord(x); if (retry === 0) { if ('itemId' in x) setForm(f => ({ ...f, validade: x.validade ?? '', fonteValidade: x.fonteValidade ?? '', responsavelId: x.responsavelValidadeId ?? user?.userId ?? '', perfilNutricionalId: x.perfilNutricionalId ?? '', conversaoItemId: x.conversaoItemId ?? '', aplicabilidade: x.aplicabilidade ?? '' })); else setForm(f => ({ ...f, finalidade: x.finalidade })) } } }).catch(e => { if (live) setError(inventoryError(e)) })
+    void request.then(x => { if (live) { setRecord(x); if (retry === 0) { if ('itemId' in x) setForm(f => ({ ...f, validade: x.validade ?? '', fonteValidade: x.fonteValidade ?? '', responsavelId: x.responsavelValidadeId ?? user?.erpActorId ?? '', perfilNutricionalId: x.perfilNutricionalId ?? '', conversaoItemId: x.conversaoItemId ?? '', aplicabilidade: x.aplicabilidade ?? '' })); else setForm(f => ({ ...f, finalidade: x.finalidade })) } } }).catch(e => { if (live) setError(inventoryError(e)) })
     return () => { live = false }
-  }, [id, kind, admin, retry, user?.userId])
+  }, [id, kind, admin, retry, user?.erpActorId])
   const set = (key: keyof typeof form, value: string) => { resetAttempt(); setForm(x => ({ ...x, [key]: value })) }
   const save = async (e: FormEvent) => {
     e.preventDefault(); setError(null)

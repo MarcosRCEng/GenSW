@@ -2,8 +2,6 @@ using System.Net;
 using GenSW.Application.MaterialCosts;
 using GenSW.Application.Production;
 using GenSW.Domain.MaterialCosts;
-using GenSW.Infrastructure.Identity;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -51,14 +49,7 @@ public sealed partial class ProductionApiTests
                 Commands = await db.Set<ComandoCustoMaterial>().CountAsync()
             });
 
-            await Factory.ExecuteScopeAsync(async services =>
-            {
-                var users = services.GetRequiredService<UserManager<ApplicationUser>>();
-                var current = await users.FindByIdAsync(user.UserId.ToString("D"));
-                Assert.NotNull(current);
-                Assert.True((await users.RemoveFromRoleAsync(current, "Admin")).Succeeded);
-                return 0;
-            });
+            await Factory.RemoveLocalRoleAsync(user.UserId, "Admin");
 
             // Reuse the authenticated client and its original bearer token after the role change.
             await Error(await CostPost(client, $"execucoes/{execution.Id}/resolucoes", command, Unique()),

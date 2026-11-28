@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using GenSW.API.Authentication;
 using GenSW.Application.Production;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +8,7 @@ namespace GenSW.API.Controllers;
 [ApiController,Authorize,Production,Route("api/v1/ordens-producao")]
 public sealed class ProductionController(ProductionService service):ControllerBase
 {
-    private Guid Actor=>Guid.Parse(User.FindFirstValue("sub")??User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private Guid Actor=>User.ErpActorId();
     private string Key=>Request.Headers["Idempotency-Key"].ToString();
     private async Task<IActionResult> Mutation(Task<ProductionMutationResult> action)
     {var result=await action;if(result.Location is not null)Response.Headers.Location=result.Location;if(result.Replayed)Response.Headers["Idempotency-Replayed"]="true";return new ContentResult{StatusCode=result.StatusHttp,ContentType="application/json; charset=utf-8",Content=result.RespostaJson};}

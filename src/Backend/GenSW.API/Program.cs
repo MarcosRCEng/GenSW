@@ -4,10 +4,15 @@ using GenSW.API.Authentication;
 using GenSW.API.Deployment;
 using GenSW.Application;
 using GenSW.Infrastructure;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Database driver exceptions can contain destination names or query details.
+builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.None);
+builder.Logging.AddFilter("Npgsql", LogLevel.None);
 
 var allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
@@ -33,9 +38,20 @@ if (loginPermitLimit <= 0 || loginWindowSeconds <= 0)
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+var protection = builder.Services.AddDataProtection().SetApplicationName("GenSW");
+var keyRing = builder.Configuration["DataProtection:KeyRingDirectory"];
+if (builder.Environment.IsEnvironment("Testing") && string.IsNullOrWhiteSpace(keyRing))
+{
+    builder.Services.AddSingleton<IDataProtectionProvider, EphemeralDataProtectionProvider>();
+}
+else
+{
+    if (string.IsNullOrWhiteSpace(keyRing) || !Path.IsPathFullyQualified(keyRing) || !Directory.Exists(keyRing))
+        throw new InvalidOperationException("DataProtection:KeyRingDirectory must identify the managed key ring.");
+    protection.PersistKeysToFileSystem(new DirectoryInfo(keyRing)).DisableAutomaticKeyGeneration();
+}
 builder.Services.AddHealthChecks()
-    .AddCheck<DatabaseReadinessCheck>("database", timeout: TimeSpan.FromSeconds(4))
-    .AddCheck<ImageStorageReadinessCheck>("private_images");
+    .AddCheck<CatalogReadinessCheck>("catalog", timeout: TimeSpan.FromSeconds(4));
 builder.Services.AddControllers(options => { options.Filters.Add<GenSW.API.Controllers.AnimalEvolutionFilter>(); options.Filters.Add<GenSW.API.Controllers.FormulationFilter>(); options.Filters.Add<GenSW.API.Controllers.InventoryFilter>(); options.Filters.Add<GenSW.API.Controllers.ProductionFilter>(); options.Filters.Add<GenSW.API.Controllers.EggBridgeFilter>(); options.Filters.Add<GenSW.API.Controllers.MaterialCostsFilter>(); });
 builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
 {
@@ -116,6 +132,7 @@ app.UseRouting();
 app.UseCors(ApiPolicyNames.FrontendCors);
 app.UseRateLimiter();
 app.UseAuthentication();
+app.UseMiddleware<ErpAccountMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/api/v1/ready").AllowAnonymous();

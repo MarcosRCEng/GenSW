@@ -1,6 +1,6 @@
 using System.Net;
 using GenSW.Infrastructure.Authentication;
-using GenSW.Infrastructure.Identity;
+using GenSW.Infrastructure.Catalog;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
@@ -19,14 +19,14 @@ public sealed class RefreshSessionTests(AuthWebApplicationFactory factory)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var cookie = response.GetIssuedCookie();
         var responseBody = await response.Content.ReadAsStringAsync();
-        var storedSession = Assert.Single(await GetUserSessionsAsync(user.UserId));
+        var storedSession = Assert.Single(await GetUserSessionsAsync(user.SubjectId));
         var expectedHash = new RefreshTokenProtector().ComputeHash(cookie.Value);
 
         Assert.Equal(expectedHash, storedSession.TokenHash);
         Assert.Equal(32, storedSession.TokenHash.Length);
         Assert.DoesNotContain(cookie.Value, responseBody, StringComparison.Ordinal);
-        Assert.Null(typeof(RefreshSession).GetProperty("Token"));
-        Assert.Null(typeof(RefreshSession).GetProperty("RawToken"));
+        Assert.Null(typeof(CatalogRefreshToken).GetProperty("Token"));
+        Assert.Null(typeof(CatalogRefreshToken).GetProperty("RawToken"));
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public sealed class RefreshSessionTests(AuthWebApplicationFactory factory)
         using var login = await client.LoginAsync(user.UserName, user.Password);
         Assert.Equal(HttpStatusCode.OK, login.StatusCode);
         var originalCookie = login.GetIssuedCookie();
-        var original = Assert.Single(await GetUserSessionsAsync(user.UserId));
+        var original = Assert.Single(await GetUserSessionsAsync(user.SubjectId));
 
         using var response = await client.PostWithCookieAsync("/api/v1/auth/refresh", originalCookie);
 
@@ -50,12 +50,11 @@ public sealed class RefreshSessionTests(AuthWebApplicationFactory factory)
         Assert.Contains("samesite=lax", replacementCookie.Header, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("path=/api/v1/auth", replacementCookie.Header, StringComparison.OrdinalIgnoreCase);
 
-        var sessions = await GetUserSessionsAsync(user.UserId);
+        var sessions = await GetUserSessionsAsync(user.SubjectId);
         Assert.Equal(2, sessions.Count);
         var consumed = sessions.Single(session => session.Id == original.Id);
         var successor = sessions.Single(session => session.Id != original.Id);
-        Assert.NotNull(consumed.RevokedAtUtc);
-        Assert.Equal(successor.Id, consumed.ReplacedBySessionId);
+        Assert.NotNull(consumed.ConsumedAtUtc);
         Assert.Equal(original.FamilyId, successor.FamilyId);
         Assert.Equal(original.ExpiresAtUtc, successor.ExpiresAtUtc);
         Assert.Null(successor.RevokedAtUtc);
@@ -73,34 +72,17 @@ public sealed class RefreshSessionTests(AuthWebApplicationFactory factory)
         using var client = factory.CreateHttpsClient();
         using var login = await client.LoginAsync(user.UserName, user.Password);
         var issuedCookie = login.GetIssuedCookie();
-        var protector = new RefreshTokenProtector();
-        var expiredToken = protector.Generate();
-        var expiredSessionId = Guid.NewGuid();
+        var expired = DateTimeOffset.UtcNow.AddMinutes(-1);
+        await factory.ExecuteCatalogAsync(context => context.Sessions.Where(session => session.SubjectId == user.SubjectId)
+            .ExecuteUpdateAsync(update => update.SetProperty(session => session.ExpiresAtUtc, expired)));
 
-        await factory.ExecuteDbContextAsync(async context =>
-        {
-            context.RefreshSessions.Add(new RefreshSession
-            {
-                Id = expiredSessionId,
-                UserId = user.UserId,
-                FamilyId = expiredSessionId,
-                TokenHash = protector.ComputeHash(expiredToken),
-                CreatedAtUtc = DateTimeOffset.UtcNow.AddDays(-8),
-                ExpiresAtUtc = DateTimeOffset.UtcNow.AddMinutes(-1),
-            });
-            await context.SaveChangesAsync();
-        });
-
-        using var response = await client.PostWithCookieAsync(
-            "/api/v1/auth/refresh",
-            issuedCookie with { Value = expiredToken });
+        using var response = await client.PostWithCookieAsync("/api/v1/auth/refresh", issuedCookie);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         AssertCookieDeleted(response, issuedCookie.Name);
-        var storedExpiredSession = (await GetUserSessionsAsync(user.UserId))
-            .Single(session => session.Id == expiredSessionId);
+        var storedExpiredSession = Assert.Single(await GetUserSessionsAsync(user.SubjectId));
         Assert.NotNull(storedExpiredSession.RevokedAtUtc);
-        Assert.Null(storedExpiredSession.ReplacedBySessionId);
+        Assert.Null(storedExpiredSession.ConsumedAtUtc);
     }
 
     [Fact]
@@ -110,14 +92,14 @@ public sealed class RefreshSessionTests(AuthWebApplicationFactory factory)
         using var client = factory.CreateHttpsClient();
         using var login = await client.LoginAsync(user.UserName, user.Password);
         var cookie = login.GetIssuedCookie();
-        var sessionCountBefore = (await GetUserSessionsAsync(user.UserId)).Count;
+        var sessionCountBefore = (await GetUserSessionsAsync(user.SubjectId)).Count;
         await factory.SetUserActiveAsync(user.UserId, isActive: false);
 
         using var response = await client.PostWithCookieAsync("/api/v1/auth/refresh", cookie);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         AssertCookieDeleted(response, cookie.Name);
-        Assert.Equal(sessionCountBefore, (await GetUserSessionsAsync(user.UserId)).Count);
+        Assert.Equal(sessionCountBefore, (await GetUserSessionsAsync(user.SubjectId)).Count);
     }
 
     [Fact]
@@ -146,7 +128,7 @@ public sealed class RefreshSessionTests(AuthWebApplicationFactory factory)
         using var client = factory.CreateHttpsClient();
         using var login = await client.LoginAsync(user.UserName, user.Password);
         var originalCookie = login.GetIssuedCookie();
-        var original = Assert.Single(await GetUserSessionsAsync(user.UserId));
+        var original = Assert.Single(await GetUserSessionsAsync(user.SubjectId));
         using var firstRefresh = await client.PostWithCookieAsync("/api/v1/auth/refresh", originalCookie);
         Assert.Equal(HttpStatusCode.OK, firstRefresh.StatusCode);
         var successorCookie = firstRefresh.GetIssuedCookie();
@@ -155,7 +137,7 @@ public sealed class RefreshSessionTests(AuthWebApplicationFactory factory)
 
         Assert.Equal(HttpStatusCode.Unauthorized, replay.StatusCode);
         AssertCookieDeleted(replay, originalCookie.Name);
-        var family = (await GetUserSessionsAsync(user.UserId))
+        var family = (await GetUserSessionsAsync(user.SubjectId))
             .Where(session => session.FamilyId == original.FamilyId)
             .ToArray();
         Assert.Equal(2, family.Length);
@@ -175,7 +157,7 @@ public sealed class RefreshSessionTests(AuthWebApplicationFactory factory)
         using var loginClient = factory.CreateHttpsClient();
         using var login = await loginClient.LoginAsync(user.UserName, user.Password);
         var originalCookie = login.GetIssuedCookie();
-        var original = Assert.Single(await GetUserSessionsAsync(user.UserId));
+        var original = Assert.Single(await GetUserSessionsAsync(user.SubjectId));
         using var firstClient = factory.CreateHttpsClient();
         using var secondClient = factory.CreateHttpsClient();
 
@@ -188,7 +170,7 @@ public sealed class RefreshSessionTests(AuthWebApplicationFactory factory)
             Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.OK));
             Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Unauthorized));
 
-            var family = (await GetUserSessionsAsync(user.UserId))
+            var family = (await GetUserSessionsAsync(user.SubjectId))
                 .Where(session => session.FamilyId == original.FamilyId)
                 .ToArray();
             var successors = family.Where(session => session.Id != original.Id).ToArray();
@@ -204,14 +186,18 @@ public sealed class RefreshSessionTests(AuthWebApplicationFactory factory)
         }
     }
 
-    private async Task<IReadOnlyList<RefreshSession>> GetUserSessionsAsync(Guid userId)
-    {
-        return await factory.ExecuteDbContextAsync(async context =>
-            (IReadOnlyList<RefreshSession>)await context.RefreshSessions
-                .AsNoTracking()
-                .Where(session => session.UserId == userId)
-                .ToListAsync());
-    }
+    private Task<List<CatalogRefreshRow>> GetUserSessionsAsync(Guid subjectId) =>
+        ReadRefreshRowsAsync(factory, subjectId);
+
+    internal static Task<List<CatalogRefreshRow>> ReadRefreshRowsAsync(AuthWebApplicationFactory factory, Guid subjectId) =>
+        factory.ExecuteCatalogAsync(context => (from token in context.RefreshTokens.AsNoTracking()
+                                                join session in context.Sessions.AsNoTracking() on token.SessionId equals session.Id
+                                                where session.SubjectId == subjectId
+                                                select new CatalogRefreshRow(token.Id, session.Id, token.Digest,
+                                                    token.ConsumedAtUtc, session.RevokedAtUtc, session.ExpiresAtUtc)).ToListAsync());
+
+    internal sealed record CatalogRefreshRow(Guid Id, Guid FamilyId, byte[] TokenHash,
+        DateTimeOffset? ConsumedAtUtc, DateTimeOffset? RevokedAtUtc, DateTimeOffset ExpiresAtUtc);
 
     private static void AssertCookieDeleted(HttpResponseMessage response, string cookieName)
     {
