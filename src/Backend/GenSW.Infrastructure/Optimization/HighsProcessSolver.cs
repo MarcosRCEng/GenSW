@@ -13,10 +13,15 @@ public sealed class HighsProcessSolver : IOptimizationSolver
 {
     private const string WorkerAssembly = "GenSW.OptimizationWorker.dll";
     private readonly TimeSpan watchdog;
+    private readonly bool useSandbox;
 
-    public HighsProcessSolver() : this(TimeSpan.FromSeconds(10)) { }
+    public HighsProcessSolver() : this(TimeSpan.FromSeconds(10), useSandbox: true) { }
 
-    internal HighsProcessSolver(TimeSpan watchdog) => this.watchdog = watchdog;
+    internal HighsProcessSolver(TimeSpan watchdog, bool useSandbox = false)
+    {
+        this.watchdog = watchdog;
+        this.useSandbox = useSandbox;
+    }
 
     public async Task<OptimizationSolverResult> SolveAsync(OptimizationNativeModel model, TimeSpan budget, CancellationToken cancellationToken)
     {
@@ -26,7 +31,11 @@ public sealed class HighsProcessSolver : IOptimizationSolver
         if (!File.Exists(worker) || host is null)
             return new(OptimizationNativeStatus.Error, "WorkerNativoIndisponivel");
 
-        using var process = new Process { StartInfo = StartInfo(host, worker) };
+        var startInfo = useSandbox ? SandboxedStartInfo(host) : DirectTestStartInfo(host, worker);
+        if (startInfo is null)
+            return new(OptimizationNativeStatus.Error, "IsolamentoWorkerIndisponivel");
+
+        using var process = new Process { StartInfo = startInfo };
         using var timeout = new CancellationTokenSource(watchdog);
         using var execution = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         var started = false;
@@ -70,9 +79,81 @@ public sealed class HighsProcessSolver : IOptimizationSolver
         }
     }
 
-    private static ProcessStartInfo StartInfo(string host, string worker)
+    private static ProcessStartInfo? SandboxedStartInfo(string host)
     {
-        var info = new ProcessStartInfo(host)
+        const string sandbox = "/usr/bin/bwrap";
+        if (!OperatingSystem.IsLinux() || RuntimeInformation.ProcessArchitecture != Architecture.X64 || !File.Exists(sandbox))
+            return null;
+
+        var dotnetDirectory = Path.GetDirectoryName(host)!;
+        if (!Directory.Exists(Path.Combine(dotnetDirectory, "host")) ||
+            !Directory.Exists(Path.Combine(dotnetDirectory, "shared", "Microsoft.NETCore.App")))
+            return null;
+
+        var info = StartInfo(sandbox, "/");
+        foreach (var argument in new[]
+        {
+            "--unshare-user", "--disable-userns", "--unshare-pid", "--unshare-net", "--unshare-ipc", "--unshare-uts",
+            "--cap-drop", "ALL", "--die-with-parent", "--new-session", "--clearenv",
+            "--proc", "/proc", "--dev", "/dev", "--size", "16777216", "--tmpfs", "/tmp", "--chdir", "/worker",
+            "--setenv", "DOTNET_EnableDiagnostics", "0",
+            "--setenv", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1"
+        })
+            info.ArgumentList.Add(argument);
+
+        // Bind platform libraries and the exact shipped solver assets. The API directory, its
+        // configuration and the host's temporary directory are outside the mount namespace.
+        foreach (var directory in new[] { "/lib/x86_64-linux-gnu", "/usr/lib/x86_64-linux-gnu", "/lib64", "/usr/lib64" })
+        {
+            if (Directory.Exists(directory)) ReadOnlyBind(info, directory, directory);
+        }
+        ReadOnlyBind(info, host, "/dotnet/dotnet");
+        ReadOnlyBind(info, Path.Combine(dotnetDirectory, "host"), "/dotnet/host");
+        ReadOnlyBind(info, Path.Combine(dotnetDirectory, "shared", "Microsoft.NETCore.App"), "/dotnet/shared/Microsoft.NETCore.App");
+
+        foreach (var asset in new[]
+        {
+            WorkerAssembly, "GenSW.OptimizationWorker.runtimeconfig.json", "GenSW.OptimizationWorker.deps.json",
+            "GenSW.Domain.dll", "Highs.Native.dll"
+        })
+        {
+            var source = Path.Combine(AppContext.BaseDirectory, asset);
+            if (!File.Exists(source)) return null;
+            ReadOnlyBind(info, source, $"/worker/{asset}");
+        }
+
+        const string native = "highs.so";
+        const string packaged = "runtimes/linux-x64/native/highs.so";
+        var library = File.Exists(Path.Combine(AppContext.BaseDirectory, packaged)) ? packaged : native;
+        var librarySource = Path.Combine(AppContext.BaseDirectory, library);
+        if (!File.Exists(librarySource)) return null;
+        ReadOnlyBind(info, librarySource, $"/worker/{library}");
+
+        info.ArgumentList.Add("--");
+        info.ArgumentList.Add("/dotnet/dotnet");
+        info.ArgumentList.Add($"/worker/{WorkerAssembly}");
+        return info;
+    }
+
+    private static void ReadOnlyBind(ProcessStartInfo info, string source, string destination)
+    {
+        info.ArgumentList.Add("--ro-bind");
+        info.ArgumentList.Add(source);
+        info.ArgumentList.Add(destination);
+    }
+
+    private static ProcessStartInfo DirectTestStartInfo(string host, string worker)
+    {
+        var info = StartInfo(host, AppContext.BaseDirectory);
+        info.ArgumentList.Add(worker);
+        if (OperatingSystem.IsWindows() && Environment.GetEnvironmentVariable("SystemRoot") is { } systemRoot)
+            info.Environment["SystemRoot"] = systemRoot;
+        return info;
+    }
+
+    private static ProcessStartInfo StartInfo(string executable, string directory)
+    {
+        var info = new ProcessStartInfo(executable)
         {
             UseShellExecute = false,
             CreateNoWindow = true,
@@ -80,12 +161,9 @@ public sealed class HighsProcessSolver : IOptimizationSolver
             RedirectStandardInput = true,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
-            WorkingDirectory = AppContext.BaseDirectory,
+            WorkingDirectory = directory,
         };
-        info.ArgumentList.Add(worker);
         info.Environment.Clear();
-        if (OperatingSystem.IsWindows() && Environment.GetEnvironmentVariable("SystemRoot") is { } systemRoot)
-            info.Environment["SystemRoot"] = systemRoot;
         info.Environment["DOTNET_EnableDiagnostics"] = "0";
         return info;
     }

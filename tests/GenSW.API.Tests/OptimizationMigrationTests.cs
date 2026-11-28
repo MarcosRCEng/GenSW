@@ -24,8 +24,9 @@ public sealed class OptimizationMigrationTests
         await using var source = Context(baseline);
         await source.GetService<IMigrator>().MigrateAsync(Baseline);
         await FormulationMigrationTests.SeedPreviousAsync(source);
-        using (var factory = new AuthWebApplicationFactory(baseline.ConnectionString))
+        await using (var factory = new AuthWebApplicationFactory(baseline.ConnectionString, Baseline))
         {
+            await factory.InitializeAsync();
             var actor = (await factory.SeedUserAsync("f05_migration_fixture", roles: ["Admin"])).UserId;
             await factory.ExecuteScopeAsync(async services =>
             {
@@ -72,7 +73,7 @@ public sealed class OptimizationMigrationTests
             Assert.All(AddedTables, table => Assert.Empty(after[table]));
             Assert.Equal(JsonSerializer.Serialize(before),
                 JsonSerializer.Serialize(await FormulationMigrationTests.RowsAsync(migrated, before.Keys)));
-            Assert.Empty(await migrated.Database.GetPendingMigrationsAsync());
+            Assert.DoesNotContain("20261112205407_AddFormulationOptimization", await migrated.Database.GetPendingMigrationsAsync());
             Assert.False(migrated.Database.HasPendingModelChanges());
             Assert.Equal(22, (await migrated.Database.GetAppliedMigrationsAsync()).Count());
 

@@ -1,12 +1,13 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { httpRequest } from '../../../shared/http/httpClient'
 import { invalidateSession, registerSessionRefreshHandler, setAccessToken } from '../../../shared/http/sessionManager'
 import { AuthenticatedPhoto } from './AuthenticatedPhoto'
 import { AnimalFiliationsPanel } from '../filiations/components/AnimalFiliationsPanel'
 import { AnimalTree } from './AnimalTree'
 
-afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals() })
+beforeEach(() => { setAccessToken('test-access-token') })
+afterEach(() => { invalidateSession(); vi.restoreAllMocks(); vi.unstubAllGlobals() })
 const json = (value: unknown) => new Response(JSON.stringify(value), { headers: { 'Content-Type': 'application/json' } })
 
 describe('Animal evolution', () => {
@@ -38,6 +39,46 @@ describe('Animal evolution', () => {
     expect(revoke).toHaveBeenCalledWith('blob:test-photo')
     expect(screen.getByRole('img', { name: 'Bela: sem foto disponível' })).toBeInTheDocument()
     view.unmount()
+  })
+
+  it('cancels a delayed original and then shows only the current session thumbnail for the same image ID', async () => {
+    const path = '/api/v1/animais/a/imagens/i/conteudo'
+    let completeOriginal!: (response: Response) => void
+    let originalSignal: AbortSignal | null | undefined
+    const fetcher = vi.fn((_url: string, init?: RequestInit) => {
+      if (new Headers(init?.headers).get('Authorization') === 'Bearer conta-a') {
+        originalSignal = init?.signal
+        return new Promise<Response>(resolve => { completeOriginal = resolve })
+      }
+      if (!navigator.onLine) return Promise.reject(new TypeError('offline'))
+      return Promise.resolve(new Response('conta-b', { headers: { 'Content-Type': 'image/png' } }))
+    })
+    vi.stubGlobal('fetch', fetcher)
+    const create = vi.fn().mockReturnValue('blob:current-image')
+    const revoke = vi.fn()
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: create })
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revoke })
+
+    setAccessToken('conta-a', 'sessao-a')
+    const view = render(<AuthenticatedPhoto key="a" path={path} name="Conta A" presentation="full" />)
+    await waitFor(() => expect(completeOriginal).toBeTypeOf('function'))
+
+    const connectivity = vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false)
+    act(() => { invalidateSession(); setAccessToken('conta-b', 'sessao-b') })
+    view.rerender(<AuthenticatedPhoto key="b-offline" path={`${path}?versao=miniatura`} name="Conta B" />)
+    await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2))
+    expect(originalSignal?.aborted).toBe(true)
+    await act(async () => { completeOriginal(new Response('conta-a')) })
+    expect(create).not.toHaveBeenCalled()
+    expect(screen.getByRole('img', { name: 'Conta B: sem foto disponível' })).toBeInTheDocument()
+
+    connectivity.mockReturnValue(true)
+    view.rerender(<AuthenticatedPhoto key="b-online" path={`${path}?versao=miniatura`} name="Conta B" />)
+    expect(await screen.findByRole('img', { name: 'Foto de Conta B' })).toHaveAttribute('src', 'blob:current-image')
+    expect(create).toHaveBeenCalledOnce()
+    expect(fetcher.mock.calls[2][1]?.cache).toBe('no-store')
+    view.unmount()
+    expect(revoke).toHaveBeenCalledWith('blob:current-image')
   })
 
   it('ignores stale candidate responses and selects by keyboard without a UUID field', async () => {

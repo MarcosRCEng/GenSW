@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using GenSW.API.Authentication;
 using GenSW.Application.Formulation;
 using GenSW.Application.Optimization;
 using Microsoft.AspNetCore.Authorization;
@@ -9,7 +9,7 @@ namespace GenSW.API.Controllers;
 [ApiController, Authorize, Formulation, Route("api/v1/otimizacoes-formulacao")]
 public sealed class OptimizationController(OptimizationService service) : ControllerBase
 {
-    private Guid Actor => Guid.Parse(User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private Guid Actor => User.ErpActorId();
     private string Key => Request.Headers["Idempotency-Key"].ToString();
 
     [HttpPost]

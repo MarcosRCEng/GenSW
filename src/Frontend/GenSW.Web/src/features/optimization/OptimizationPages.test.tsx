@@ -18,7 +18,7 @@ const actorId = guid(90)
 const runId = guid(91)
 const now = '2026-11-12T10:00:00Z'
 const auth: ReturnType<typeof useAuth> = {
-  user: { userId: actorId, pessoaId: guid(89), nome: 'Operador sintético', userName: 'teste', roles: [] },
+  user: { userId: actorId, subjectId: actorId, erpActorId: actorId, pessoaId: guid(89), nome: 'Operador sintético', userName: 'teste', roles: [] },
   isAuthenticated: true, isInitializing: false, bootstrap: vi.fn(), login: vi.fn(), logout: vi.fn(),
 }
 

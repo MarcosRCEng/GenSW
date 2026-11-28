@@ -16,7 +16,8 @@ internal sealed class JwtBearerOptionsSetup(IOptions<JwtOptions> jwtOptions)
 
     public void Configure(string? name, JwtBearerOptions options)
     {
-        if (!string.Equals(name, JwtBearerDefaults.AuthenticationScheme, StringComparison.Ordinal))
+        var platform = string.Equals(name, PlatformAuthentication.Scheme, StringComparison.Ordinal);
+        if (!platform && !string.Equals(name, JwtBearerDefaults.AuthenticationScheme, StringComparison.Ordinal))
         {
             return;
         }
@@ -35,7 +36,7 @@ internal sealed class JwtBearerOptionsSetup(IOptions<JwtOptions> jwtOptions)
             ValidateIssuer = true,
             ValidIssuer = settings.Issuer,
             ValidateAudience = true,
-            ValidAudience = settings.Audience,
+            ValidAudience = settings.GetAudience(platform),
             ValidateLifetime = true,
             RequireExpirationTime = true,
             RequireSignedTokens = true,
@@ -43,5 +44,10 @@ internal sealed class JwtBearerOptionsSetup(IOptions<JwtOptions> jwtOptions)
             NameClaimType = JwtRegisteredClaimNames.Sub,
             RoleClaimType = "role",
         };
+
+        if (platform)
+        {
+            options.EventsType = typeof(PlatformJwtEvents);
+        }
     }
 }

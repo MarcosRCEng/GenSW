@@ -1,4 +1,4 @@
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { FinancialPage } from '../features/financial/FinancialPage'
 import { CategoryDetailsPage, EntryDetailsPage } from '../features/financial/FinancialDetailsPage'
 import { PeopleDetailsPage } from '../features/people/pages/PeopleDetailsPage'
@@ -73,15 +73,16 @@ function AnonymousRoute() {
   return isAuthenticated ? <Navigate replace to="/" /> : <Outlet />
 }
 
-export function AppRoutes() {
+export function AppRoutes({ readNavigationState }: { readNavigationState?: (state: unknown) => unknown }) {
   const { isInitializing } = useAuth()
+  const location = useLocation()
 
   if (isInitializing) {
     return <ApplicationLoading />
   }
 
   return (
-    <Routes>
+    <Routes location={readNavigationState ? { ...location, state: readNavigationState(location.state) } : undefined}>
       <Route element={<AnonymousRoute />}>
         <Route element={<LoginPage />} path="/login" />
       </Route>

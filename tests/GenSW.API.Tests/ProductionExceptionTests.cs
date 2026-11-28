@@ -3,8 +3,6 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using GenSW.Application.Inventory;
 using GenSW.Application.Production;
-using GenSW.Infrastructure.Identity;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -137,11 +135,7 @@ public sealed partial class ProductionApiTests
             var command = new AbortCommand(order.Revisao, true, "Sem consumo confirmado", Evidence); var key = Unique();
             await Success<OrderView>(await Post(client, $"{order.Id}/aborto-sem-consumo", command, key));
             var before = await Snapshot();
-            await Factory.ExecuteScopeAsync(async s =>
-            {
-                var users = s.GetRequiredService<UserManager<ApplicationUser>>(); var current = await users.FindByIdAsync(user.UserId.ToString());
-                Assert.True((await users.RemoveFromRoleAsync(current!, "Admin")).Succeeded); return 0;
-            });
+            await Factory.RemoveLocalRoleAsync(user.UserId, "Admin");
             await Error(await Post(client, $"{order.Id}/aborto-sem-consumo", command, key), HttpStatusCode.Forbidden);
             await Error(await Post(ordinary, $"{order.Id}/aborto-sem-consumo", command, key), HttpStatusCode.Forbidden);
             Assert.Equal(HttpStatusCode.NotFound, (await ordinary.GetAsync($"/api/v1/ordens-producao/{Guid.NewGuid()}")).StatusCode);

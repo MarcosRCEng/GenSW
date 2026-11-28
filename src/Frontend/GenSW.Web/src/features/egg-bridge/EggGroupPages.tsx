@@ -46,7 +46,7 @@ function EggGroupDetails({ id }: { id?: string }) {
   const { record: detail, state, retry } = useRecordDetails(id, readDetail)
   const [result, setResult] = useState<EggCommandResult | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [treatment, setTreatment] = useState({ tipo: 'Anotacao' as EggTreatment, responsavelId: user?.userId ?? '', motivo: '', evidencia: '', coerenciaFisicaConfirmada: false })
+  const [treatment, setTreatment] = useState({ tipo: 'Anotacao' as EggTreatment, responsavelId: user?.erpActorId ?? '', motivo: '', evidencia: '', coerenciaFisicaConfirmada: false })
   const [preview, setPreview] = useState<EggTreatmentPreview | null>(null)
   const [accepted, setAccepted] = useState(false)
   const [loading, setLoading] = useState(false)

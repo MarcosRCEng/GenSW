@@ -1,5 +1,4 @@
 using System.Net;
-using GenSW.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
@@ -23,9 +22,9 @@ public sealed class PostgreSqlRefreshConcurrencyTests
 
         try
         {
-            var appliedMigrations = await factory.ExecuteDbContextAsync(context =>
+            var appliedMigrations = await factory.ExecuteCatalogAsync(context =>
                 context.Database.GetAppliedMigrationsAsync());
-            Assert.Contains("20260820002015_AddIdentityFoundation", appliedMigrations);
+            Assert.Contains("20261128122043_CatalogIdentity", appliedMigrations);
 
             var user = await factory.SeedUserAsync($"postgres_sequential_{Guid.NewGuid():N}");
             using var client = factory.CreateHttpsClient();
@@ -37,7 +36,7 @@ public sealed class PostgreSqlRefreshConcurrencyTests
                 login.GetIssuedCookie());
 
             Assert.Equal(HttpStatusCode.OK, refresh.StatusCode);
-            Assert.Equal(2, (await LoadSessionsAsync(factory, user.UserId)).Count);
+            Assert.Equal(2, (await RefreshSessionTests.ReadRefreshRowsAsync(factory, user.SubjectId)).Count);
         }
         finally
         {
@@ -54,7 +53,7 @@ public sealed class PostgreSqlRefreshConcurrencyTests
 
         try
         {
-            var providerName = await factory.ExecuteDbContextAsync(context =>
+            var providerName = await factory.ExecuteCatalogAsync(context =>
                 Task.FromResult(context.Database.ProviderName));
             Assert.Equal("Npgsql.EntityFrameworkCore.PostgreSQL", providerName);
 
@@ -63,7 +62,7 @@ public sealed class PostgreSqlRefreshConcurrencyTests
             using var login = await loginClient.LoginAsync(user.UserName, user.Password);
             Assert.Equal(HttpStatusCode.OK, login.StatusCode);
             var originalCookie = login.GetIssuedCookie();
-            var original = Assert.Single(await LoadSessionsAsync(factory, user.UserId));
+            var original = Assert.Single(await RefreshSessionTests.ReadRefreshRowsAsync(factory, user.SubjectId));
             using var firstClient = factory.CreateHttpsClient();
             using var secondClient = factory.CreateHttpsClient();
             using var requestTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
@@ -83,7 +82,7 @@ public sealed class PostgreSqlRefreshConcurrencyTests
                 Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.OK));
                 Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Unauthorized));
 
-                var family = (await LoadSessionsAsync(factory, user.UserId))
+                var family = (await RefreshSessionTests.ReadRefreshRowsAsync(factory, user.SubjectId))
                     .Where(session => session.FamilyId == original.FamilyId)
                     .ToArray();
                 var successors = family.Where(session => session.Id != original.Id).ToArray();
@@ -104,14 +103,4 @@ public sealed class PostgreSqlRefreshConcurrencyTests
         }
     }
 
-    private static async Task<IReadOnlyList<RefreshSession>> LoadSessionsAsync(
-        AuthWebApplicationFactory factory,
-        Guid userId)
-    {
-        return await factory.ExecuteDbContextAsync(async context =>
-            (IReadOnlyList<RefreshSession>)await context.RefreshSessions
-                .AsNoTracking()
-                .Where(session => session.UserId == userId)
-                .ToListAsync());
-    }
 }

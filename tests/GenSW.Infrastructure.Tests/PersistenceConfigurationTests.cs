@@ -1,5 +1,6 @@
 using GenSW.Infrastructure;
-using GenSW.Infrastructure.Identity;
+using GenSW.Infrastructure.Catalog;
+using GenSW.Application.Accounts;
 using GenSW.Infrastructure.Persistence;
 using GenSW.Application.Species;
 using GenSW.Application.Breeds;
@@ -22,7 +23,7 @@ public sealed class PersistenceConfigurationTests
     public void AddInfrastructure_registers_EspecieRepository_as_scoped()
     {
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:GenSW"] = "Host=localhost;Database=gensw_test" })
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:GenSWCatalog"] = "Host=localhost;Database=gensw_test" })
             .Build();
         var services = new ServiceCollection();
 
@@ -40,7 +41,7 @@ public sealed class PersistenceConfigurationTests
     public void AddInfrastructure_registers_master_data_repositories_as_scoped(Type serviceType, Type implementationType)
     {
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:GenSW"] = "Host=localhost;Database=gensw_test" })
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:GenSWCatalog"] = "Host=localhost;Database=gensw_test" })
             .Build();
         var services = new ServiceCollection();
 
@@ -50,12 +51,12 @@ public sealed class PersistenceConfigurationTests
     }
 
     [Fact]
-    public void AddInfrastructure_registers_postgresql_context_when_connection_string_is_configured()
+    public void AddInfrastructure_configures_PostgreSQL_for_catalog_and_requires_admission_for_ERP()
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:GenSW"] = "Host=localhost;Database=gensw_test"
+                ["ConnectionStrings:GenSWCatalog"] = "Host=localhost;Database=gensw_test"
             })
             .Build();
         var services = new ServiceCollection();
@@ -63,7 +64,8 @@ public sealed class PersistenceConfigurationTests
         DependencyInjection.AddInfrastructure(services, configuration);
         using var provider = services.BuildServiceProvider();
         using var scope = provider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<GenSWDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
+        Assert.Throws<AccountUnavailableException>(() => scope.ServiceProvider.GetRequiredService<GenSWDbContext>());
 
         Assert.Equal("Npgsql.EntityFrameworkCore.PostgreSQL", context.Database.ProviderName);
     }
@@ -74,7 +76,7 @@ public sealed class PersistenceConfigurationTests
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:GenSW"] = "Host=localhost;Database=gensw_test"
+                ["ConnectionStrings:GenSWCatalog"] = "Host=localhost;Database=gensw_test"
             })
             .Build();
         var services = new ServiceCollection();
@@ -91,7 +93,7 @@ public sealed class PersistenceConfigurationTests
         Assert.Equal(5, options.Lockout.MaxFailedAccessAttempts);
         Assert.Equal(TimeSpan.FromMinutes(15), options.Lockout.DefaultLockoutTimeSpan);
         Assert.True(options.Lockout.AllowedForNewUsers);
-        Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(IUserStore<ApplicationUser>));
+        Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(IUserStore<CatalogUser>));
         Assert.Contains(services, descriptor => descriptor.ServiceType == typeof(IRoleStore<IdentityRole<Guid>>));
     }
 }

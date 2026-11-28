@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -35,8 +36,15 @@ public sealed partial class EggBridgeApiTests
                 var egg = await db.ProducoesOvos.SingleAsync(x => x.Id == eggs[0].Id);
                 egg.Atualizar(egg.DataPostura, 44m, "Edição posterior sintética", DateTimeOffset.UtcNow); await db.SaveChangesAsync();
             });
-            var (other, _) = await Session(); using (other)
+            var (outside, _) = await Session();
+            using (outside)
+                await Error(await Post(outside, "confirmacoes", new EggConfirmCommand(preview.Token), key), HttpStatusCode.Conflict);
+
+            using (var other = Factory.CreateHttpsClient())
             {
+                using var login = await other.LoginAsync(owner.UserName, owner.Password);
+                Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+                other.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", (await login.ReadAccessTokenAsync()).AccessToken);
                 using var replay = await Post(other, "confirmacoes", new EggConfirmCommand(preview.Token), key);
                 Assert.Equal(committed.StatusCode, replay.StatusCode); Assert.Equal(committed.Headers.Location, replay.Headers.Location);
                 Assert.Equal(original, await replay.Content.ReadAsStringAsync()); Assert.Equal("true", replay.Headers.GetValues("Idempotency-Replayed").Single());

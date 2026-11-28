@@ -44,7 +44,7 @@ export function EggCandidatesPage() {
   const admin = user?.roles.includes('Admin') === true
   const [search] = useSearchParams()
   const [selected, setSelected] = useState<EggSelected>({})
-  const [form, setForm] = useState({ operacao: 'Entrada' as EggOperation, itemId: '', recorteId: '', provaId: '', loteId: '', localId: '', responsavelId: user?.userId ?? '', motivo: '', evidencia: '' })
+  const [form, setForm] = useState({ operacao: 'Entrada' as EggOperation, itemId: '', recorteId: '', provaId: '', loteId: '', localId: '', responsavelId: user?.erpActorId ?? '', motivo: '', evidencia: '' })
   const [cost, setCost] = useState(receiptForm)
   const [ordinals, setOrdinals] = useState<Record<string, string>>({})
   const [preview, setPreview] = useState<EggPreview | null>(null)

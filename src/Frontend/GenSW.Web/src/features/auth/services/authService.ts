@@ -19,8 +19,46 @@ const AUTH_ENDPOINTS = {
   logout: '/auth/logout',
   me: '/auth/me',
 } as const
+const signedOutKey = 'gensw.auth.signed-out'
 
 let logoutInFlight: Promise<void> | null = null
+let cookieOperations = Promise.resolve()
+let authIntent = 0
+let signedOutLocally = false
+
+function rememberSignOut(signedOut: boolean): void {
+  signedOutLocally = signedOut
+  try {
+    if (signedOut) sessionStorage.setItem(signedOutKey, '1')
+    else sessionStorage.removeItem(signedOutKey)
+  } catch { /* The current document still honors the local sign-out. */ }
+}
+
+function allowsSessionRestore(): boolean {
+  if (signedOutLocally) return false
+  try { return sessionStorage.getItem(signedOutKey) === null }
+  catch { return true }
+}
+
+function withAuthCookie<T>(operation: () => Promise<T>): Promise<T> {
+  const pending = cookieOperations.then(() => navigator.locks
+    ? navigator.locks.request('gensw.auth-cookie', operation)
+    : operation())
+  cookieOperations = pending.then(() => undefined, () => undefined)
+  return pending
+}
+
+function endRemoteSession(accessToken: string | null, sessionId: string | null): Promise<void> {
+  const headers = new Headers()
+  if (accessToken !== null) headers.set('Authorization', `Bearer ${accessToken}`)
+  if (sessionId !== null) headers.set('X-GenSW-Session', sessionId)
+  return httpRequest<void>(AUTH_ENDPOINTS.logout, {
+    method: 'POST',
+    headers,
+    authenticated: false,
+    retryOnUnauthorized: false,
+  })
+}
 
 async function waitForPendingLogout(): Promise<void> {
   if (logoutInFlight === null) {
@@ -55,13 +93,14 @@ async function requestAccessToken(request: LoginRequest): Promise<AccessTokenRes
   }
 }
 
-async function requestRefreshedAccessToken(): Promise<AccessTokenResponse | null> {
+async function requestRefreshedAccessToken(expectedSessionId: string | null): Promise<AccessTokenResponse | null> {
   try {
-    const response = await httpRequest<unknown>(AUTH_ENDPOINTS.refresh, {
+    const response = await withAuthCookie(() => httpRequest<unknown>(AUTH_ENDPOINTS.refresh, {
       method: 'POST',
+      headers: expectedSessionId !== null ? { 'X-GenSW-Session': expectedSessionId } : undefined,
       authenticated: false,
       retryOnUnauthorized: false,
-    })
+    }))
 
     return parseAccessTokenResponse(response)
   } catch (error) {
@@ -105,6 +144,7 @@ async function loadCurrentUserAfterToken(): Promise<CurrentUser> {
 }
 
 export async function bootstrapSession(): Promise<CurrentUser | null> {
+  if (!allowsSessionRestore()) return null
   const refreshedToken = await refreshSession()
 
   if (refreshedToken === null) {
@@ -115,6 +155,8 @@ export async function bootstrapSession(): Promise<CurrentUser | null> {
 }
 
 export async function login(request: LoginRequest): Promise<CurrentUser> {
+  const intent = ++authIntent
+  if (getSessionSnapshot().accessToken !== null) invalidateSession()
   logAuthDiagnostic({ event: 'login.attempt.started' })
   let stage = 'wait_for_pending_logout'
 
@@ -124,14 +166,24 @@ export async function login(request: LoginRequest): Promise<CurrentUser> {
     await waitForSessionRefresh()
 
     stage = 'request_access_token'
-    const accessTokenResponse = await requestAccessToken(request)
+    const accessTokenResponse = await withAuthCookie(async () => {
+      if (intent !== authIntent) throw new SessionExpiredError()
+      const access = await requestAccessToken(request)
+      if (intent !== authIntent) {
+        await endRemoteSession(access.accessToken, access.sessionId)
+        throw new SessionExpiredError()
+      }
+      return access
+    })
+
+    if (intent !== authIntent) throw new SessionExpiredError()
 
     stage = 'set_access_token'
     logAuthDiagnostic({
       event: 'login.token_store.started',
       tokenPresent: accessTokenResponse.accessToken.length > 0,
     })
-    setAccessToken(accessTokenResponse.accessToken)
+    setAccessToken(accessTokenResponse.accessToken, accessTokenResponse.sessionId)
     logAuthDiagnostic({
       event: 'login.token_store.completed',
       tokenPresent: getSessionSnapshot().accessToken !== null,
@@ -139,6 +191,8 @@ export async function login(request: LoginRequest): Promise<CurrentUser> {
 
     stage = 'load_current_user'
     const currentUser = await loadCurrentUserAfterToken()
+    if (intent !== authIntent) throw new SessionExpiredError()
+    rememberSignOut(false)
     logAuthDiagnostic({ event: 'login.completed' })
     return currentUser
   } catch (error) {
@@ -156,16 +210,15 @@ export function logout(): Promise<void> {
     return logoutInFlight
   }
 
+  authIntent += 1
+  const { accessToken, sessionId } = getSessionSnapshot()
+  rememberSignOut(true)
   invalidateSession()
 
   const operation = (async () => {
     await waitForSessionRefresh()
 
-    await httpRequest<void>(AUTH_ENDPOINTS.logout, {
-      method: 'POST',
-      authenticated: false,
-      retryOnUnauthorized: false,
-    })
+    await withAuthCookie(() => endRemoteSession(accessToken, sessionId))
   })().finally(() => {
     if (logoutInFlight === operation) {
       logoutInFlight = null

@@ -260,7 +260,7 @@ public sealed class AnimalCodeAllocatorTests : IAsyncLifetime
     public void AddInfrastructure_registers_the_animal_code_allocator_as_scoped()
     {
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:GenSW"] = "Host=localhost;Database=gensw_test" })
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:GenSWCatalog"] = "Host=localhost;Database=gensw_test" })
             .Build();
         var services = new ServiceCollection();
 

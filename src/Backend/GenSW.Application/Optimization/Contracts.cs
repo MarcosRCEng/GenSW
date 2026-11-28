@@ -1,3 +1,4 @@
+using GenSW.Application.Accounts;
 using GenSW.Application.Formulation;
 using GenSW.Domain.Catalog;
 using GenSW.Domain.Formulation;
@@ -94,11 +95,16 @@ public sealed class OptimizationExecution
 {
     public Guid Id { get; init; }
     public Guid AutorId { get; init; }
+    public Guid? AccountId { get; init; }
+    public Guid? BindingId { get; init; }
+    public long? BindingRevision { get; init; }
+    public long? AccessGeneration { get; init; }
     public string Chave { get; init; } = "";
     public string Hash { get; init; } = "";
     public DateTimeOffset CreatedAtUtc { get; init; }
     public DateTimeOffset DeadlineUtc { get; init; }
     public Guid OwnerToken { get; init; }
+    public DateTimeOffset? QuarantinedAtUtc { get; init; }
     public string Estado { get; init; } = "EmCalculo";
     public int Revisao { get; init; } = 1;
     public Guid? EspecieId { get; init; }
@@ -121,6 +127,10 @@ public sealed class OptimizationDerivation
     public Guid Id { get; init; }
     public Guid ExecutionId { get; init; }
     public Guid AutorId { get; init; }
+    public Guid? AccountId { get; init; }
+    public Guid? BindingId { get; init; }
+    public long? BindingRevision { get; init; }
+    public long? AccessGeneration { get; init; }
     public string Chave { get; init; } = "";
     public string Hash { get; init; } = "";
     public Guid ReceitaId { get; init; }
@@ -132,13 +142,16 @@ public sealed class OptimizationDerivation
 public interface IOptimizationRepository
 {
     Task<OptimizationExecution?> FindAsync(Guid id, CancellationToken ct);
-    Task<OptimizationExecution?> FindByKeyAsync(Guid actor, string key, CancellationToken ct);
+    Task<OptimizationExecution?> FindByKeyAsync(ErpAccountContext account, string key, CancellationToken ct);
+    Task<bool> HasActiveLeaseAsync(ErpAccountContext account, DateTimeOffset now, CancellationToken ct);
     Task<CatalogPage<OptimizationSummary>> ListAsync(OptimizationQuery query, CancellationToken ct);
     void Add(OptimizationExecution execution);
     Task<OptimizationResultRow?> FindResultAsync(Guid executionId, CancellationToken ct);
-    Task<bool> TryCompleteAsync(Guid executionId, Guid ownerToken, OptimizationResultRow result, bool expired, CancellationToken ct);
-    Task<IReadOnlyList<OptimizationExecution>> FindExpiredAsync(DateTimeOffset now, int limit, CancellationToken ct);
-    Task<OptimizationDerivation?> FindDerivationAsync(Guid actor, string key, CancellationToken ct);
+    Task<bool> TryCompleteAsync(ErpAccountContext account, Guid executionId, Guid ownerToken,
+        OptimizationResultRow result, bool expired, CancellationToken ct);
+    Task<IReadOnlyList<OptimizationExecution>> FindExpiredAsync(ErpAccountContext account, DateTimeOffset now, int limit,
+        CancellationToken ct);
+    Task<OptimizationDerivation?> FindDerivationAsync(ErpAccountContext account, string key, CancellationToken ct);
     Task<OptimizationDerivation?> FindDerivationByVersionAsync(Guid versionId, CancellationToken ct);
     void Add(OptimizationDerivation derivation);
 }

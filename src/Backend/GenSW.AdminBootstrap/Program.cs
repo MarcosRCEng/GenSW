@@ -15,7 +15,7 @@ if (string.IsNullOrWhiteSpace(name) ||
     string.IsNullOrWhiteSpace(userName) ||
     string.IsNullOrWhiteSpace(password))
 {
-    Console.Error.WriteLine("Initial administrator bootstrap configuration is incomplete.");
+    Console.Error.WriteLine("Initial platform manager bootstrap configuration is incomplete.");
     return 1;
 }
 
@@ -26,16 +26,16 @@ var bootstrapper = scope.ServiceProvider.GetRequiredService<InitialAdminBootstra
 try
 {
     await bootstrapper.BootstrapAsync(name, userName, password);
-    Console.WriteLine("Initial administrator provisioned.");
+    Console.WriteLine("Initial platform manager grant verified.");
     return 0;
 }
 catch (InitialAdminBootstrapRejectedException)
 {
-    Console.Error.WriteLine("Initial administrator bootstrap was rejected.");
+    Console.Error.WriteLine("Initial platform manager bootstrap was rejected.");
     return 2;
 }
 catch (InitialAdminBootstrapException)
 {
-    Console.Error.WriteLine("Initial administrator bootstrap failed.");
+    Console.Error.WriteLine("Initial platform manager bootstrap failed.");
     return 3;
 }

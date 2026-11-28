@@ -19,7 +19,7 @@ public sealed class HighsProcessSolverTests
             new(Guid.Parse("00000000-0000-4000-8000-000000000103"), null, 50, "g/kg BN", new Dictionary<Guid, Rational> { [a] = 20, [b] = 80 }),
         ]);
 
-        var result = await new OptimizationEngine(new HighsProcessSolver()).EvaluateAsync(problem);
+        var result = await new OptimizationEngine(new HighsProcessSolver(TimeSpan.FromSeconds(10))).EvaluateAsync(problem);
 
         Assert.True(result.Outcome == OptimizationOutcome.SolucaoViavel, $"{result.Outcome}/{result.Code}/{result.Native?.RawStatus}");
         Assert.Equal("50", result.Candidate!.QuantizedMasses![a]);
@@ -67,7 +67,7 @@ public sealed class HighsProcessSolverTests
             new(Guid.Parse("00000000-0000-4000-8000-000000000102"), minimum, null, "MJ/kg BN", new Dictionary<Guid, Rational> { [a] = 0, [b] = 0, [c] = 1 }),
         ]);
 
-        var result = await new OptimizationEngine(new HighsProcessSolver()).EvaluateAsync(problem);
+        var result = await new OptimizationEngine(new HighsProcessSolver(TimeSpan.FromSeconds(10))).EvaluateAsync(problem);
 
         Assert.Equal("Infeasible", result.Native?.RawStatus);
         Assert.NotNull(result.Native?.DualRay);
@@ -84,5 +84,17 @@ public sealed class HighsProcessSolverTests
 
         Assert.Equal(OptimizationNativeStatus.TimeLimit, result.Status);
         Assert.Equal("WatchdogExcedido", result.Code);
+    }
+
+    [Fact]
+    public async Task ProductionSolverFailsClosedWithoutTheLinuxSandbox()
+    {
+        if (OperatingSystem.IsLinux() && File.Exists("/usr/bin/bwrap")) return;
+        var model = new OptimizationNativeModel([0, 1], [[1, 0], [-1, 0], [0, -1]], [1, -1, 0], 1e-12);
+
+        var result = await new HighsProcessSolver().SolveAsync(model, TimeSpan.FromSeconds(5), default);
+
+        Assert.Equal(OptimizationNativeStatus.Error, result.Status);
+        Assert.Equal("IsolamentoWorkerIndisponivel", result.Code);
     }
 }

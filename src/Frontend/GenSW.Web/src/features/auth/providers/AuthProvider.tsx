@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type PropsWithChildren } from 'react'
+import { getSessionSnapshot, subscribeToSessionGenerationChange } from '../../../shared/http/sessionManager'
 import {
   bootstrapSession,
   login as loginSession,
@@ -8,10 +9,14 @@ import {
 import type { CurrentUser, LoginRequest } from '../types/auth'
 import { AuthContext, type AuthContextValue } from './AuthContext'
 
+const getGeneration = () => getSessionSnapshot().generation
+
 export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<CurrentUser | null>(null)
   const [isInitializing, setIsInitializing] = useState(true)
   const bootstrapInFlight = useRef<Promise<void> | null>(null)
+  const latestIntent = useRef(0)
+  const generation = useSyncExternalStore(subscribeToSessionGenerationChange, getGeneration)
 
   const bootstrap = useCallback(() => {
     if (bootstrapInFlight.current) {
@@ -19,10 +24,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
 
     setIsInitializing(true)
+    const intent = latestIntent.current
 
     const operation = bootstrapSession()
-      .then(setUser)
-      .catch(() => setUser(null))
+      .then(currentUser => { if (intent === latestIntent.current) setUser(currentUser) })
+      .catch(() => { if (intent === latestIntent.current) setUser(null) })
       .finally(() => {
         setIsInitializing(false)
         bootstrapInFlight.current = null
@@ -43,16 +49,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [bootstrap])
 
   const login = useCallback(async (request: LoginRequest) => {
+    const intent = ++latestIntent.current
+    setUser(null)
     const currentUser = await loginSession(request)
-    setUser(currentUser)
+    if (intent === latestIntent.current) setUser(currentUser)
   }, [])
 
   const logout = useCallback(async () => {
-    try {
-      await logoutSession()
-    } finally {
-      setUser(null)
-    }
+    latestIntent.current += 1
+    setUser(null)
+    await logoutSession()
   }, [])
 
   const value = useMemo<AuthContextValue>(
@@ -67,5 +73,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     [bootstrap, isInitializing, login, logout, user],
   )
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={value}>
+    <Fragment key={user === null ? 'anonymous' : generation}>{children}</Fragment>
+  </AuthContext.Provider>
 }

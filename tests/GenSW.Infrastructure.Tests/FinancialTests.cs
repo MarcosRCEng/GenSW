@@ -1,13 +1,11 @@
-using GenSW.Application;
 using GenSW.Application.Financial;
 using GenSW.Domain.Financial;
 using GenSW.Domain.People;
-using GenSW.Infrastructure;
+using GenSW.Infrastructure.Financial;
 using GenSW.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -24,9 +22,11 @@ public sealed class FinancialTests : IAsyncLifetime
     public async Task InitializeAsync()
     {
         pg = await GenSW.API.Tests.EphemeralPostgreSql.StartAsync();
-        var c = new ServiceCollection(); c.AddLogging(); c.AddSingleton<TimeProvider>(new Clock()); c.AddApplication();
-        c.AddInfrastructure(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string,string?> { ["ConnectionStrings:GenSW"] = pg.ConnectionString }).Build());
-        services = c.BuildServiceProvider();
+        var collection = new ServiceCollection();
+        collection.AddDbContext<GenSWDbContext>(options => options.UseNpgsql(pg.ConnectionString));
+        collection.AddSingleton<TimeProvider>(new Clock());
+        collection.AddScoped<IFinancialRepository, FinancialRepository>();
+        services = collection.BuildServiceProvider();
         await using var scope = services.CreateAsyncScope(); await scope.ServiceProvider.GetRequiredService<GenSWDbContext>().Database.MigrateAsync();
     }
     public async Task DisposeAsync() { await services.DisposeAsync(); await pg.DisposeAsync(); }

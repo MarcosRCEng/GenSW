@@ -5,9 +5,7 @@ using GenSW.Application.Formulation;
 using GenSW.Application.Inventory;
 using GenSW.Domain.Catalog;
 using GenSW.Domain.Inventory;
-using GenSW.Infrastructure.Identity;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -233,11 +231,7 @@ public sealed class InventoryApiTests(AnimalApiPostgreSqlFixture fixture)
         {
             var f = await Material(admin, user.UserId); var command = Command(f.Item, f.Lot, f.A, user.UserId, "5"); var key = Guid.NewGuid().ToString("N");
             await Created<object>(await Post(admin, "aberturas", command, key));
-            await Factory.ExecuteScopeAsync(async s =>
-            {
-                var users = s.GetRequiredService<UserManager<ApplicationUser>>(); var current = (await users.FindByIdAsync(user.UserId.ToString()))!;
-                Assert.True((await users.RemoveFromRoleAsync(current, "Admin")).Succeeded); return 0;
-            });
+            await Factory.RemoveLocalRoleAsync(user.UserId, "Admin");
             using var replay = await Post(admin, "aberturas", command, key); Assert.Equal(HttpStatusCode.Forbidden, replay.StatusCode);
             await Factory.SetUserActiveAsync(user.UserId, false);
             using var inactive = await Post(admin, "entradas", command); Assert.Equal(HttpStatusCode.Unauthorized, inactive.StatusCode);

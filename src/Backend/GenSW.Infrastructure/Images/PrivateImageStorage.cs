@@ -1,75 +1,114 @@
+using GenSW.Application.Accounts;
 using GenSW.Application.Animals;
 using GenSW.Application.Images;
+using GenSW.Infrastructure.Accounts;
 using Microsoft.Extensions.Configuration;
+
 namespace GenSW.Infrastructure.Images;
 
-public sealed class PrivateImageStorage(IConfiguration configuration) : IPrivateImageStorage
+public sealed record AccountPrivateVolume(string Root, Guid Id);
+
+public sealed class PrivateImageStorage(Func<AccountPrivateVolume> volume, IConfiguration configuration) : IPrivateImageStorage
 {
     private string Root()
     {
-        var configured = configuration["Images:PrivateRoot"];
-        if (string.IsNullOrWhiteSpace(configured) || !Path.IsPathFullyQualified(configured)) throw Unavailable();
-        var root = Path.GetFullPath(configured);
-        // Never serve from an application directory or a repository. Operator provisions the volume explicitly.
-        for (var dir = new DirectoryInfo(root); dir is not null; dir = dir.Parent)
-            if (Directory.Exists(Path.Combine(dir.FullName, ".git")) || File.Exists(Path.Combine(dir.FullName, ".git")) ||
-                dir.Name.Equals("wwwroot", StringComparison.OrdinalIgnoreCase) || dir.Name.Equals(".gensw", StringComparison.OrdinalIgnoreCase)) throw Unavailable();
-        if (!Directory.Exists(root)) throw Unavailable();
-        return root;
+        try
+        {
+            var binding = volume();
+            PrivateVolume.Verify(binding.Root, binding.Id);
+            return binding.Root;
+        }
+        catch (Exception error) when (error is AccountUnavailableException or IOException or UnauthorizedAccessException)
+        {
+            throw Unavailable();
+        }
     }
+
     private string Resolve(string key)
     {
-        if (!Guid.TryParseExact(Path.GetFileNameWithoutExtension(key), "N", out _) || Path.GetExtension(key) != ".png" || Path.GetFileName(key) != key) throw Unavailable();
-        return Path.Combine(Root(), key);
-    }
-    public bool Available(string key) { try { return File.Exists(Resolve(key)); } catch (AnimalEvolutionException) { return false; } }
-    public void VerifyWritable()
-    {
-        var root = Root();
-        EnsureFreeSpace(root, 1);
+        if (!Guid.TryParseExact(Path.GetFileNameWithoutExtension(key), "N", out _) ||
+            Path.GetExtension(key) != ".png" || Path.GetFileName(key) != key)
+            throw Unavailable();
 
-        var path = Path.Combine(root, $".readiness-{Guid.NewGuid():N}.tmp");
-        using var probe = new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 1, FileOptions.DeleteOnClose);
-        probe.WriteByte(0);
+        var path = Path.Combine(Root(), key);
+        try
+        {
+            if ((File.GetAttributes(path) & (FileAttributes.ReparsePoint | FileAttributes.Directory)) != 0)
+                throw Unavailable();
+        }
+        catch (FileNotFoundException) { }
+        return path;
+    }
+
+    public bool Available(string key)
+    {
+        try { return File.Exists(Resolve(key)); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { throw Unavailable(); }
     }
 
     private void EnsureFreeSpace(string root, long payloadBytes)
     {
         var minimumFree = configuration.GetValue<long?>("Images:MinimumFreeBytes") ?? 100L * 1024 * 1024;
         var volume = OperatingSystem.IsWindows() ? Path.GetPathRoot(root)! : root;
-        if (new DriveInfo(volume).AvailableFreeSpace - payloadBytes < minimumFree) throw Unavailable();
+        if (new DriveInfo(volume).AvailableFreeSpace - payloadBytes < minimumFree)
+            throw Unavailable();
     }
 
     public async Task<StoredImage> PublishAsync(ImageDerivatives image, CancellationToken ct)
     {
         var files = new StoredImage($"{Guid.NewGuid():N}.png", $"{Guid.NewGuid():N}.png");
+        var publishedView = false;
         try
         {
             var root = Root();
             EnsureFreeSpace(root, image.View.LongLength + image.Thumbnail.LongLength);
             await PublishOne(Resolve(files.ViewKey), image.View, ct);
+            publishedView = true;
             await PublishOne(Resolve(files.ThumbnailKey), image.Thumbnail, ct);
             return files;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or AnimalEvolutionException or OperationCanceledException)
         {
-            await RemoveAsync(files);
+            if (publishedView) RemoveOwnedFile(files.ViewKey);
             if (e is OperationCanceledException) throw;
             throw Unavailable();
         }
     }
+
     private static async Task PublishOne(string path, byte[] bytes, CancellationToken ct)
     {
         var temporary = path + ".tmp";
-        try { await File.WriteAllBytesAsync(temporary, bytes, ct); File.Move(temporary, path); }
-        finally { if (File.Exists(temporary)) File.Delete(temporary); }
+        await using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, 65536, true))
+        {
+            try { await stream.WriteAsync(bytes, ct); }
+            catch
+            {
+                await stream.DisposeAsync();
+                File.Delete(temporary);
+                throw;
+            }
+        }
+
+        try { File.Move(temporary, path); }
+        finally { File.Delete(temporary); }
     }
+
     public Task RemoveAsync(StoredImage image)
     {
-        foreach (var key in new[] { image.ViewKey, image.ThumbnailKey })
-            try { File.Delete(Resolve(key)); } catch (Exception e) when (e is IOException or UnauthorizedAccessException or AnimalEvolutionException) { /* Manual orphan reconciliation documented. */ }
+        RemoveOwnedFile(image.ViewKey);
+        RemoveOwnedFile(image.ThumbnailKey);
         return Task.CompletedTask;
     }
+
+    private void RemoveOwnedFile(string key)
+    {
+        try { File.Delete(Resolve(key)); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or AnimalEvolutionException)
+        {
+            // A committed item never loses its files during compensation. Uncertain names are reconciled separately.
+        }
+    }
+
     public Task<Stream?> OpenAsync(string key, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
@@ -77,5 +116,6 @@ public sealed class PrivateImageStorage(IConfiguration configuration) : IPrivate
         catch (FileNotFoundException) { return Task.FromResult<Stream?>(null); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { throw Unavailable(); }
     }
+
     private static AnimalEvolutionException Unavailable() => new(503, "armazenamento_indisponivel", "Armazenamento de imagens indisponível.");
 }

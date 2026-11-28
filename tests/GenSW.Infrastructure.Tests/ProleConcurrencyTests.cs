@@ -1,12 +1,18 @@
 using GenSW.Application;
 using GenSW.Application.Animals;
 using GenSW.Application.Animals.Proles;
+using GenSW.Application.Breeds;
+using GenSW.Application.Species;
+using GenSW.Application.Varieties;
 using GenSW.Domain.Animals;
 using GenSW.Domain.Species;
-using GenSW.Infrastructure;
+using GenSW.Infrastructure.Animals;
+using GenSW.Infrastructure.Animals.Proles;
+using GenSW.Infrastructure.Breeds;
 using GenSW.Infrastructure.Persistence;
+using GenSW.Infrastructure.Species;
+using GenSW.Infrastructure.Varieties;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -21,10 +27,17 @@ public sealed class ProleConcurrencyTests : IAsyncLifetime
     public async Task InitializeAsync()
     {
         pg = await GenSW.API.Tests.EphemeralPostgreSql.StartAsync();
-        var collection = new ServiceCollection(); collection.AddLogging();
-        collection.AddInfrastructure(new ConfigurationBuilder().AddInMemoryCollection(
-            new Dictionary<string,string?> { ["ConnectionStrings:GenSW"] = pg.ConnectionString }).Build());
-        collection.AddApplication(); services = collection.BuildServiceProvider();
+        var collection = new ServiceCollection();
+        collection.AddDbContext<GenSWDbContext>(options => options.UseNpgsql(pg.ConnectionString));
+        collection.AddScoped<IProleRepository, ProleRepository>();
+        collection.AddScoped<IAnimalRepository, AnimalRepository>();
+        collection.AddScoped<IAnimalMutationGuard, AnimalMutationGuard>();
+        collection.AddScoped<IAnimalCodeAllocator, PostgreSqlAnimalCodeAllocator>();
+        collection.AddScoped<IEspecieRepository, EspecieRepository>();
+        collection.AddScoped<IRacaRepository, RacaRepository>();
+        collection.AddScoped<IVariedadeRepository, VariedadeRepository>();
+        collection.AddApplication();
+        services = collection.BuildServiceProvider();
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<GenSWDbContext>(); await db.Database.MigrateAsync();
         var now = DateTimeOffset.UtcNow; var species = Especie.Criar("Proles concorrentes", null, now);

@@ -64,7 +64,11 @@ public sealed partial class InventoryRepository(GenSWDbContext db, TimeProvider 
     }
     public async Task<long> NextSequenceAsync(CancellationToken ct)
     {
-        if (Postgres) return await db.Database.SqlQueryRaw<long>("SELECT nextval('\"SequenciaEstoque\"') AS \"Value\"").SingleAsync(ct);
+        if (Postgres)
+        {
+            await db.VerifySequenceWriteAsync(ct);
+            return await db.Database.SqlQueryRaw<long>("SELECT nextval('\"SequenciaEstoque\"') AS \"Value\"").SingleAsync(ct);
+        }
         return await LastSequenceAsync(ct) + 1;
     }
     public async Task<long> LastSequenceAsync(CancellationToken ct)

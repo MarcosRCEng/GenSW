@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using GenSW.API.Authentication;
 using GenSW.Application.EggBridge;
 using GenSW.Domain.Inventory;
 using Microsoft.AspNetCore.Authorization;
@@ -9,7 +9,7 @@ namespace GenSW.API.Controllers;
 [ApiController, Authorize, EggBridge, Route("api/v1/producao/ponte-ovos")]
 public sealed class EggBridgeController(EggBridgeService service) : ControllerBase
 {
-    private Guid Actor => Guid.Parse(User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private Guid Actor => User.ErpActorId();
     private string Key => Request.Headers["Idempotency-Key"].ToString();
     private static JsonResult Data(object value) => new(value, InventoryJson.Options);
     private async Task<IActionResult> Mutation(Task<EggMutationResult> action)

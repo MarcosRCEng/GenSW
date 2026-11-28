@@ -27,7 +27,7 @@ export function OptimizationDraft({ execution }: { execution: OptimizationExecut
   const [acceptWarnings, setAcceptWarnings] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const request = useRecoverableCommand(`${user?.userId ?? 'sessao'}:rascunho:${execution.id}`,
+  const request = useRecoverableCommand(`${user?.erpActorId ?? 'sessao'}:rascunho:${execution.id}`,
     (body: DraftCommand, key) => submitDraft(execution.id, body, key),
     (key) => recoverDraft(execution.id, key))
 

@@ -32,18 +32,53 @@ public sealed class OptimizationCommandTests
     {
         var gate = new OptimizationWorkGate();
         var actor = Guid.NewGuid();
-        using var owner = Assert.IsType<OptimizationWorkGate.Lease>(gate.TryEnter(actor, "same", out var noWait));
+        var account = Guid.NewGuid();
+        var binding = Guid.NewGuid();
+        using var owner = Assert.IsType<OptimizationWorkGate.Lease>(
+            gate.TryEnter(account, binding, 1, 1, actor, "same", out var noWait));
         Assert.Null(noWait);
-        Assert.Null(gate.TryEnter(actor, "same", out var matchingCapture));
+        Assert.Null(gate.TryEnter(account, binding, 1, 1, actor, "same", out var matchingCapture));
         Assert.NotNull(matchingCapture);
         Assert.False(matchingCapture.IsCompleted);
-        Assert.Null(gate.TryEnter(Guid.NewGuid(), "same", out var differentActor));
+        Assert.Null(gate.TryEnter(account, binding, 1, 1, Guid.NewGuid(), "same", out var differentActor));
         Assert.Null(differentActor);
+        Assert.Null(gate.TryEnter(account, binding, 1, 2, actor, "same", out var differentGeneration));
+        Assert.Null(differentGeneration);
+        using var independent = Assert.IsType<OptimizationWorkGate.Lease>(
+            gate.TryEnter(Guid.NewGuid(), Guid.NewGuid(), 1, 1, actor, "same", out var otherAccount));
+        Assert.Null(otherAccount);
         owner.SignalCapture();
         Assert.True(matchingCapture.IsCompletedSuccessfully);
-        Assert.Null(gate.TryEnter(actor, "different", out _));
+        Assert.Null(gate.TryEnter(account, binding, 1, 1, actor, "different", out _));
         owner.Dispose();
-        using var next = Assert.IsType<OptimizationWorkGate.Lease>(gate.TryEnter(actor, "different", out _));
+        using var next = Assert.IsType<OptimizationWorkGate.Lease>(gate.TryEnter(account, binding, 1, 1, actor, "different", out _));
+    }
+
+    [Fact]
+    public void Saturated_process_admits_waiting_accounts_in_order_and_skips_abandoned_requests()
+    {
+        var gate = new OptimizationWorkGate();
+        var actor = Guid.NewGuid();
+        OptimizationWorkGate.Lease Enter() =>
+            Assert.IsType<OptimizationWorkGate.Lease>(gate.TryEnter(Guid.NewGuid(), Guid.NewGuid(), 1, 1, actor, "same", out _));
+
+        var active = Enumerable.Range(0, 8).Select(_ => Enter()).ToArray();
+        Assert.All(active, lease => Assert.True(lease.Ready.IsCompletedSuccessfully));
+        using var abandoned = Enter();
+        using var first = Enter();
+        using var second = Enter();
+        Assert.False(first.Ready.IsCompleted);
+        Assert.False(second.Ready.IsCompleted);
+
+        abandoned.Dispose();
+        active[0].Dispose();
+        Assert.True(first.Ready.IsCompletedSuccessfully);
+        Assert.False(abandoned.Ready.IsCompleted);
+        Assert.False(second.Ready.IsCompleted);
+        first.Dispose();
+        Assert.True(second.Ready.IsCompletedSuccessfully);
+
+        foreach (var lease in active) lease.Dispose();
     }
 
     private static OptimizationCandidateCommand Line(Guid id, string reference) =>

@@ -8,6 +8,8 @@ public sealed class JwtOptions
 
     public string Audience { get; init; } = string.Empty;
 
+    internal string GetAudience(bool platform) => Audience + (platform ? ":platform-v2" : ":erp-v2");
+
     public int AccessTokenMinutes { get; init; } = 10;
 
     /// <summary>

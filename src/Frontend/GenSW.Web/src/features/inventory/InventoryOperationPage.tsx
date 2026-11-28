@@ -36,7 +36,7 @@ function OperationForm() {
   const origin = inventoryOrigin(location.state, 'saldos')
   const [dirty, setDirty] = useState(false)
   const draft = useUnsavedChanges(dirty)
-  const [form, setForm] = useState({ loteId: params.get('lote') ?? '', localId: '', origemLocalId: '', destinoLocalId: '', quantidade: '', unidade: 'kg', responsavelId: user?.userId ?? '', motivo: '', dataObservada: today(), origem: '', fonte: '', documento: '', destino: '', evidencia: '', eventoReferenciaId: '', ordemReferenciaId: params.get('ordem') ?? '', execucaoReferenciaId: '', conciliacaoOvosId: '', origemOvosComprovada: '', grupoPonteOvosReferenciaId: params.get('grupoPonteOvos') ?? '' })
+  const [form, setForm] = useState({ loteId: params.get('lote') ?? '', localId: '', origemLocalId: '', destinoLocalId: '', quantidade: '', unidade: 'kg', responsavelId: user?.erpActorId ?? '', motivo: '', dataObservada: today(), origem: '', fonte: '', documento: '', destino: '', evidencia: '', eventoReferenciaId: '', ordemReferenciaId: params.get('ordem') ?? '', execucaoReferenciaId: '', conciliacaoOvosId: '', origemOvosComprovada: '', grupoPonteOvosReferenciaId: params.get('grupoPonteOvos') ?? '' })
   const [cost, setCost] = useState(receiptForm)
   const [lot, setLot] = useState<Lote | null>(null)
   const [preview, setPreview] = useState<Preview | null>(null)
@@ -48,7 +48,7 @@ function OperationForm() {
   const [conflicted, setConflicted] = useState(false)
   const preparing = useRef(false)
   const heading = useRef<HTMLElement>(null)
-  const recovery = useMovementCommand(`${type}:${params.get('lote') ?? ''}`, user?.userId ?? '')
+  const recovery = useMovementCommand(`${type}:${params.get('lote') ?? ''}`, user?.erpActorId ?? '')
   const { busy } = recovery
   const resetAttempt = () => undefined
   const locked = busy || !!recovery.pending || !!recovery.recoveryError

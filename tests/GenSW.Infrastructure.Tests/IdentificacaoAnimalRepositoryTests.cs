@@ -220,7 +220,7 @@ public sealed class IdentificacaoAnimalRepositoryTests(AnimalRepositoryPostgreSq
         var services = new ServiceCollection();
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
-            ["ConnectionStrings:GenSW"] = fixture.PostgreSql.ConnectionString
+            ["ConnectionStrings:GenSWCatalog"] = fixture.PostgreSql.ConnectionString
         }).Build();
 
         services.AddInfrastructure(configuration);

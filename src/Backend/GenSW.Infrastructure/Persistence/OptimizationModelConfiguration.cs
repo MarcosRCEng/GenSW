@@ -1,6 +1,7 @@
 using GenSW.Application.Optimization;
 using GenSW.Domain.Formulation;
 using GenSW.Infrastructure.Identity;
+using GenSW.Infrastructure.Persistence.Migrations;
 using Microsoft.EntityFrameworkCore;
 
 namespace GenSW.Infrastructure.Persistence;
@@ -13,9 +14,10 @@ internal static class OptimizationModelConfiguration
         {
             entity.ToTable("ExecucoesOtimizacao", table =>
             {
-                table.HasCheckConstraint("CK_ExecucoesOtimizacao_Estado", "(\"Estado\" = 'EmCalculo' AND \"Revisao\" = 1) OR (\"Estado\" = 'Finalizada' AND \"Revisao\" = 2)");
+                table.HasCheckConstraint("CK_ExecucoesOtimizacao_Estado", AccountJobEnvelope.ExecutionState);
                 table.HasCheckConstraint("CK_ExecucoesOtimizacao_Prazo", "\"DeadlineUtc\" > \"CreatedAtUtc\"");
                 table.HasCheckConstraint("CK_ExecucoesOtimizacao_Hash", "length(\"Hash\") = 64 AND length(\"Chave\") > 0");
+                table.HasCheckConstraint("CK_ExecucoesOtimizacao_Escopo", AccountJobEnvelope.Scope);
             });
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Id).ValueGeneratedNever();
@@ -26,7 +28,8 @@ internal static class OptimizationModelConfiguration
             entity.Property(x => x.PedidoJson).HasColumnType("jsonb");
             entity.Property(x => x.EntradasJson).HasColumnType("jsonb");
             entity.Property(x => x.ModeloJson).HasColumnType("jsonb");
-            entity.HasIndex(x => new { x.AutorId, x.Chave }).IsUnique();
+            entity.HasIndex(x => new { x.AutorId, x.Chave, x.AccountId, x.BindingId, x.BindingRevision, x.AccessGeneration })
+                .HasDatabaseName("UX_ExecucoesOtimizacao_Escopo_Chave").IsUnique();
             entity.HasIndex(x => new { x.Estado, x.DeadlineUtc, x.Id });
             entity.HasIndex(x => new { x.CreatedAtUtc, x.Id });
             entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.AutorId).OnDelete(DeleteBehavior.Restrict);
@@ -48,13 +51,17 @@ internal static class OptimizationModelConfiguration
         model.Entity<OptimizationDerivation>(entity =>
         {
             entity.ToTable("DerivacoesOtimizacao", table =>
-                table.HasCheckConstraint("CK_DerivacoesOtimizacao_Hash", "length(\"Hash\") = 64 AND length(\"Chave\") > 0"));
+            {
+                table.HasCheckConstraint("CK_DerivacoesOtimizacao_Hash", "length(\"Hash\") = 64 AND length(\"Chave\") > 0");
+                table.HasCheckConstraint("CK_DerivacoesOtimizacao_Escopo", AccountJobEnvelope.Scope);
+            });
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Id).ValueGeneratedNever();
             entity.Property(x => x.Chave).HasMaxLength(100);
             entity.Property(x => x.Hash).HasMaxLength(64);
             entity.Property(x => x.ConteudoJson).HasColumnType("jsonb");
-            entity.HasIndex(x => new { x.AutorId, x.Chave }).IsUnique();
+            entity.HasIndex(x => new { x.AutorId, x.Chave, x.AccountId, x.BindingId, x.BindingRevision, x.AccessGeneration })
+                .HasDatabaseName("UX_DerivacoesOtimizacao_Escopo_Chave").IsUnique();
             entity.HasIndex(x => x.VersaoId).IsUnique();
             entity.HasOne<OptimizationResultRow>().WithMany().HasForeignKey(x => x.ExecutionId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<RecipeVersion>().WithMany().HasForeignKey(x => x.VersaoId).OnDelete(DeleteBehavior.Restrict);

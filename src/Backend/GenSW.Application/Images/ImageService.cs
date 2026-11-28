@@ -15,16 +15,20 @@ public sealed class ImageService(IImageRepository repository, IPrivateImageStora
         var active = await repository.ActiveAsync(kind, owner, ct);
         CheckQuota(active, image.View.LongLength + image.Thumbnail.LongLength);
         var files = await storage.PublishAsync(image, ct);
+        var commitStarted = false;
         try
         {
             var order = active.Count == 0 ? 0 : checked(active.Max(x => x.Ordem) + 1);
             Imagem item = kind == ImageOwner.Animal
                 ? ImagemAnimal.Criar(owner, files.ViewKey, files.ThumbnailKey, image.View.LongLength + image.Thumbnail.LongLength, image.Width, image.Height, order, caption, date, clock.GetUtcNow())
                 : ImagemVariedade.Criar(owner, files.ViewKey, files.ThumbnailKey, image.View.LongLength + image.Thumbnail.LongLength, image.Width, image.Height, order, caption, date, clock.GetUtcNow());
-            await repository.AddAsync(item, ct); await repository.SaveAsync(ct); await tx.CommitAsync(ct);
+            await repository.AddAsync(item, ct);
+            await repository.SaveAsync(ct);
+            commitStarted = true;
+            await tx.CommitAsync(ct);
             return ToResult(kind, owner, item);
         }
-        catch { await storage.RemoveAsync(files); throw; }
+        catch when (!commitStarted) { await storage.RemoveAsync(files); throw; }
     }
     public async Task<AnimalEvolutionPage<ImageResult>> ListAsync(ImageOwner kind, Guid owner, bool? active, int page, int size, CancellationToken ct)
     {

@@ -53,7 +53,7 @@ function OrderForm({ id }: { id?: string }) {
   const navigate = useNavigate()
   const location = useLocation()
   const command = useProductionCommand(id ?? 'nova')
-  const [form, setForm] = useState<OrderCommand>(() => command.pending ? command.pending.body as OrderCommand : blankCommand(id ?? crypto.randomUUID(), user?.userId ?? ''))
+  const [form, setForm] = useState<OrderCommand>(() => command.pending ? command.pending.body as OrderCommand : blankCommand(id ?? crypto.randomUUID(), user?.erpActorId ?? ''))
   const [recipeId, setRecipeId] = useState('')
   const [version, setVersion] = useState<RecipeVersion | null>(null)
   const [ready, setReady] = useState(!id)

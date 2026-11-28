@@ -13,7 +13,7 @@ import type { ProductionOrder } from './types'
 
 vi.mock('../../shared/http/httpClient', () => ({ httpRequest: vi.fn() }))
 vi.mock('../auth/hooks/useAuth', () => ({ useAuth: vi.fn() }))
-const auth = (roles = ['Admin']) => ({ user: { userId: responsible.id, pessoaId: 'p', nome: responsible.nome, userName: 'marina', roles }, isAuthenticated: true, isInitializing: false, bootstrap: vi.fn(), login: vi.fn(), logout: vi.fn() })
+const auth = (roles = ['Admin']) => ({ user: { userId: responsible.id, subjectId: responsible.id, erpActorId: responsible.id, pessoaId: 'p', nome: responsible.nome, userName: 'marina', roles }, isAuthenticated: true, isInitializing: false, bootstrap: vi.fn(), login: vi.fn(), logout: vi.fn() })
 const writeCalls = () => vi.mocked(httpRequest).mock.calls.filter(([path, options]) => options?.method && !path.endsWith('/previas'))
 function renderAction(action: string) {
   return render(<MemoryRouter initialEntries={[`/producao/ordens/${order.id}/acoes/${action}`]}><Routes><Route path="/producao/ordens/:id/acoes/:action" element={<OrderActionPage />} /><Route path="/producao/ordens/:id" element={<h1>Ordem atualizada</h1>} /></Routes></MemoryRouter>)

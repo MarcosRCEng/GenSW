@@ -46,7 +46,7 @@ function OptimizationForm({ prior }: { prior: string | null }) {
   const [review, setReview] = useState<{ body: OptimizationRequest; inputs: OptimizationInputs } | null>(null)
   const reviewSection = useRef<HTMLHeadingElement>(null)
   const unsaved = useUnsavedChanges(dirty)
-  const request = useRecoverableCommand(`${user?.userId ?? 'sessao'}:execucao`, submitOptimization, recoverOptimization)
+  const request = useRecoverableCommand(`${user?.erpActorId ?? 'sessao'}:execucao`, submitOptimization, recoverOptimization)
   const change = () => { setReview(null); setDirty(true); setError(null); request.clearError() }
 
   useEffect(() => {

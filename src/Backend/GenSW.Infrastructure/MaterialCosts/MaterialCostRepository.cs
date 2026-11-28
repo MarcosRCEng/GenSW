@@ -26,9 +26,15 @@ public sealed class MaterialCostRepository(GenSWDbContext db, IInventoryReposito
     public async Task<IReadOnlyList<T>> ListAsync<T>(Expression<Func<T,bool>> predicate, bool tracking, CancellationToken ct) where T : class =>
         await (tracking ? db.Set<T>() : db.Set<T>().AsNoTracking()).Where(predicate).ToArrayAsync(ct);
     public async Task<long> LastSequenceAsync(CancellationToken ct) => await db.Set<EventoCustoMaterial>().Select(x => (long?)x.Sequencia).MaxAsync(ct) ?? 0;
-    public async Task<long> NextSequenceAsync(CancellationToken ct) => db.Database.IsNpgsql()
-        ? await db.Database.SqlQueryRaw<long>("SELECT nextval('\"SequenciaCustoMaterial\"') AS \"Value\"").SingleAsync(ct)
-        : await LastSequenceAsync(ct) + db.ChangeTracker.Entries<EventoCustoMaterial>().Count(x => x.State == EntityState.Added) + 1;
+    public async Task<long> NextSequenceAsync(CancellationToken ct)
+    {
+        if (db.Database.IsNpgsql())
+        {
+            await db.VerifySequenceWriteAsync(ct);
+            return await db.Database.SqlQueryRaw<long>("SELECT nextval('\"SequenciaCustoMaterial\"') AS \"Value\"").SingleAsync(ct);
+        }
+        return await LastSequenceAsync(ct) + db.ChangeTracker.Entries<EventoCustoMaterial>().Count(x => x.State == EntityState.Added) + 1;
+    }
     public async Task<IReadOnlyList<PosicaoCustoMaterial>> LayerPositionsAsync(Guid lot, bool tracking, CancellationToken ct)
     {
         var query = from position in tracking ? db.Set<PosicaoCustoMaterial>() : db.Set<PosicaoCustoMaterial>().AsNoTracking()
