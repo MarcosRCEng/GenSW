@@ -130,6 +130,10 @@ public sealed class AccountJobIsolationTests
             }
         }
 
+        var restrictedRole = await Assert.ThrowsAsync<PostgresException>(() =>
+            ScalarAsync(maintenance, """SELECT 1 FROM public."ResultadosOtimizacao" LIMIT 1"""));
+        Assert.Equal(PostgresErrorCodes.InsufficientPrivilege, restrictedRole.SqlState);
+
         var late = await Assert.ThrowsAsync<PostgresException>(() => competingRepoA.TryCompleteAsync(a.Context, lateId, lateLease,
             Result(lateId, a.Name), expired: false, default));
         Assert.Equal("GS001", late.SqlState);

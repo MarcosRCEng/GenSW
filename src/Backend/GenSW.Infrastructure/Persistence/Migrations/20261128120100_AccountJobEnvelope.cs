@@ -80,6 +80,23 @@ public sealed class AccountJobEnvelope : Migration
             END;
             $job$;
 
+            -- Deferred checks can run after advance_fence has returned to the restricted caller.
+            CREATE OR REPLACE FUNCTION public.gensw_check_optimization_execution_result()
+                RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $job$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM public."ExecucoesOtimizacao" e WHERE e."Id" = NEW."Id"
+                      AND (e."Estado" = 'Finalizada') <> EXISTS (
+                          SELECT 1 FROM public."ResultadosOtimizacao" r WHERE r."ExecutionId" = e."Id"
+                      )
+                ) THEN
+                    RAISE EXCEPTION 'Finalização da otimização exige um resultado na mesma transação' USING ERRCODE = '23514';
+                END IF;
+                RETURN NULL;
+            END;
+            $job$;
+            REVOKE EXECUTE ON FUNCTION public.gensw_check_optimization_execution_result() FROM PUBLIC;
+
             CREATE FUNCTION public.gensw_quarantine_optimization_jobs(next_generation bigint) RETURNS integer
                 LANGUAGE plpgsql SET search_path = pg_catalog, public AS $job$
             DECLARE affected integer;
@@ -119,6 +136,9 @@ public sealed class AccountJobEnvelope : Migration
             END;
             $job$;
             DROP FUNCTION public.gensw_quarantine_optimization_jobs(bigint);
+            ALTER FUNCTION public.gensw_check_optimization_execution_result() SECURITY INVOKER;
+            ALTER FUNCTION public.gensw_check_optimization_execution_result() RESET search_path;
+            GRANT EXECUTE ON FUNCTION public.gensw_check_optimization_execution_result() TO PUBLIC;
             DROP TRIGGER "TR_DerivacoesOtimizacao_Escopo" ON public."DerivacoesOtimizacao";
             DROP TRIGGER "TR_ExecucoesOtimizacao_Escopo" ON public."ExecucoesOtimizacao";
             DROP FUNCTION public.gensw_require_optimization_envelope();
